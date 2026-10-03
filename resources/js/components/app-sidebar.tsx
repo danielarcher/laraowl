@@ -19,6 +19,7 @@ import {
     Globe,
     Shield,
     Lock as LockIcon,
+    Server as ServerIcon,
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavMain } from '@/components/nav-main';
@@ -245,6 +246,17 @@ export function AppSidebar() {
                     <NavMain items={securityNavItems} label="Security" />
 
                     <NavMain items={monitoringNavItems} label="Monitoring" />
+
+                    <NavMain
+                        items={[
+                            {
+                                title: 'Servers',
+                                href: `/${teamSlug}/servers`,
+                                icon: ServerIcon,
+                            },
+                        ]}
+                        label="Infrastructure"
+                    />
 
                     <NavMain
                         items={[

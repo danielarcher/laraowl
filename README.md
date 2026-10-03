@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="art/banner.png" alt="LaraOwl, Archer flavor: self-hosted monitoring for Laravel apps and the servers they run on" width="100%">
+  <img src="art/banner-archer-flavor.png" alt="LaraOwl, Archer flavor: self-hosted monitoring for Laravel apps and the servers they run on" width="100%">
 </p>
 
 <h1 align="center">LaraOwl · Archer flavor</h1>
@@ -29,7 +29,7 @@
 
 <table>
   <tr>
-    <td width="50%"><img src="art/screenshots/dashboard.png" alt="An app's dashboard: requests by outcome, latency with p50/p95 and its distribution"></td>
+    <td width="50%"><img src="art/screenshots/app-dashboard.png" alt="An app's dashboard: requests by outcome, latency with p50/p95 and its distribution"></td>
     <td width="50%"><img src="art/screenshots/servers.png" alt="Servers: CPU, memory, disk, swap and load for each machine, with the apps it runs"></td>
   </tr>
   <tr>

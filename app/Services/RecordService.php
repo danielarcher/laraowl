@@ -244,6 +244,8 @@ class RecordService
                 'failed' => (int) $overview->server_error,
                 'avg_duration' => round($this->avgDuration($overview), 2),
                 'max_duration' => round((float) ($overview->max_duration ?? 0), 2),
+                'latency' => $this->latencySummary($overview),
+                'histogram' => $this->latencyHistogram($overview),
             ],
         ];
     }
@@ -316,6 +318,8 @@ class RecordService
                 'success' => (int) $overview->ok,
                 'failed' => (int) $overview->server_error,
                 'avg_duration' => round($this->avgDuration($overview), 2),
+                'latency' => $this->latencySummary($overview),
+                'histogram' => $this->latencyHistogram($overview),
             ],
         ];
     }
@@ -362,6 +366,8 @@ class RecordService
                 'success' => (int) $overview->ok,
                 'failed' => (int) $overview->server_error,
                 'avg_duration' => round($this->avgDuration($overview), 2),
+                'latency' => $this->latencySummary($overview),
+                'histogram' => $this->latencyHistogram($overview),
             ],
         ];
     }
@@ -391,6 +397,8 @@ class RecordService
             'overview' => [
                 'total' => (int) $overview->total,
                 'avg_duration' => round($this->avgDuration($overview), 2),
+                'latency' => $this->latencySummary($overview),
+                'histogram' => $this->latencyHistogram($overview),
             ],
         ];
     }
@@ -420,8 +428,12 @@ class RecordService
             'overview' => [
                 'total' => (int) $overview->total,
                 'ok' => (int) $overview->ok,
+                'client_error' => (int) $overview->client_error,
+                'server_error' => (int) $overview->server_error,
                 'failed' => (int) $overview->client_error + (int) $overview->server_error,
                 'avg_duration' => round($this->avgDuration($overview), 2),
+                'latency' => $this->latencySummary($overview),
+                'histogram' => $this->latencyHistogram($overview),
             ],
         ];
     }

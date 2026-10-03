@@ -1,9 +1,11 @@
 ﻿import { Head, Link, usePage } from '@inertiajs/react';
 import { ArrowUpRight, AlertCircle, Users } from 'lucide-react';
-import { BarChart, Bar, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
+import { ActivityCharts } from '@/components/charts/activity-charts';
+import { ChartCard } from '@/components/charts/chart-card';
+import { seriesColor } from '@/components/charts/format';
+import { TimeSeriesChart } from '@/components/charts/time-series-chart';
 import { EmptyState } from '@/components/empty-state';
 import { Pagination } from '@/components/pagination';
-import { Card, CardContent } from '@/components/ui/card';
 import {
     Table,
     TableBody,
@@ -33,7 +35,6 @@ export default function UsersIndex({
     to?: string | null;
     overview: any;
 }) {
-    const periodLabel = period?.toUpperCase() || '24H';
     const { props }: any = usePage();
     const teamSlug = props.current_team?.slug || props.currentTeam?.slug;
     const currentProject = props.current_project || props.currentProject;
@@ -62,198 +63,50 @@ export default function UsersIndex({
             <div className="mb-8 space-y-4"></div>
 
             <div className="space-y-8">
-                {/* Stats Cards */}
-                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                    <Card className="overflow-hidden border-border bg-card">
-                        <CardContent className="p-6">
-                            <div className="mb-6 flex items-start justify-between">
-                                <div>
-                                    <div className="mb-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
-                                        Authenticated Users ({periodLabel})
-                                    </div>
-                                    <div className="text-3xl font-bold text-foreground">
-                                        {formatCompactNumber(
-                                            overview.auth_users,
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="h-[120px] w-full">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={timeSeries}>
-                                        <XAxis dataKey="minute" hide />
-                                        <Tooltip
-                                            content={({ active, payload }) => {
-                                                if (
-                                                    active &&
-                                                    payload &&
-                                                    payload.length
-                                                ) {
-                                                    return (
-                                                        <div className="rounded-lg border border-border bg-background/95 p-2 shadow-xl backdrop-blur-sm">
-                                                            <div className="mb-1.5 border-b border-border/50 pb-1 text-[9px] font-bold tracking-tight text-muted-foreground uppercase">
-                                                                {
-                                                                    payload[0]
-                                                                        .payload
-                                                                        .minute
-                                                                }
-                                                            </div>
-                                                            <div className="flex items-center gap-2">
-                                                                <div className="h-2 w-2 rounded-full bg-emerald-500" />
-                                                                <span className="text-[10px] font-medium text-muted-foreground uppercase">
-                                                                    Active
-                                                                    Users:
-                                                                </span>
-                                                                <span className="text-[10px] font-bold text-foreground">
-                                                                    {formatCompactNumber(
-                                                                        payload[0]
-                                                                            .value,
-                                                                    )}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                }
-
-                                                return null;
-                                            }}
-                                        />
-                                        <Bar
-                                            dataKey="active_users"
-                                            name="Active Users"
-                                            fill="rgba(34, 197, 94, 0.4)"
-                                            radius={[2, 2, 0, 0]}
-                                        />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="overflow-hidden border-border bg-card">
-                        <CardContent className="p-6">
-                            <div className="mb-6 flex items-start justify-between">
-                                <div>
-                                    <div className="mb-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
-                                        Requests ({periodLabel})
-                                    </div>
-                                    <div className="text-3xl font-bold text-foreground">
-                                        {formatCompactNumber(
-                                            overview.auth_requests +
-                                                overview.guest_requests,
-                                        )}
-                                    </div>
-                                </div>
-                                <div className="flex gap-4 text-[10px] font-bold tracking-tight uppercase">
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="h-2 w-2 rounded-full bg-emerald-500"></span>{' '}
-                                        Authenticated{' '}
-                                        <span className="ml-1 text-foreground">
-                                            {formatCompactNumber(
-                                                overview.auth_requests,
-                                            )}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="h-2 w-2 rounded-full bg-orange-500"></span>{' '}
-                                        Guest{' '}
-                                        <span className="ml-1 text-foreground">
-                                            {formatCompactNumber(
-                                                overview.guest_requests,
-                                            )}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="relative h-[120px] w-full">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={timeSeries}>
-                                        <XAxis dataKey="minute" hide />
-                                        <Tooltip
-                                            content={({ active, payload }) => {
-                                                if (
-                                                    active &&
-                                                    payload &&
-                                                    payload.length
-                                                ) {
-                                                    return (
-                                                        <div className="rounded-lg border border-border bg-background/95 p-2 shadow-xl backdrop-blur-sm">
-                                                            <div className="mb-1.5 border-b border-border/50 pb-1 text-[9px] font-bold tracking-tight text-muted-foreground uppercase">
-                                                                {
-                                                                    payload[0]
-                                                                        .payload
-                                                                        .minute
-                                                                }
-                                                            </div>
-                                                            <div className="grid gap-1">
-                                                                {payload.map(
-                                                                    (
-                                                                        entry: any,
-                                                                        index: number,
-                                                                    ) => (
-                                                                        <div
-                                                                            key={
-                                                                                index
-                                                                            }
-                                                                            className="flex items-center gap-2"
-                                                                        >
-                                                                            <div
-                                                                                className="h-2 w-2 rounded-full"
-                                                                                style={{
-                                                                                    backgroundColor:
-                                                                                        entry.color,
-                                                                                }}
-                                                                            />
-                                                                            <span className="text-[10px] font-medium text-muted-foreground uppercase">
-                                                                                {
-                                                                                    entry.name
-                                                                                }
-
-                                                                                :
-                                                                            </span>
-                                                                            <span className="text-[10px] font-bold text-foreground">
-                                                                                {formatCompactNumber(
-                                                                                    entry.value,
-                                                                                )}
-                                                                            </span>
-                                                                        </div>
-                                                                    ),
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                }
-
-                                                return null;
-                                            }}
-                                        />
-                                        <Bar
-                                            dataKey="ok"
-                                            name="1/2/3xx"
-                                            fill="rgba(255,255,255,0.4)"
-                                            radius={[2, 2, 0, 0]}
-                                            stackId="a"
-                                        />
-                                        <Bar
-                                            dataKey="client_error"
-                                            name="4xx"
-                                            fill="#f97316"
-                                            radius={[2, 2, 0, 0]}
-                                            stackId="a"
-                                        />
-                                        <Bar
-                                            dataKey="server_error"
-                                            name="5xx"
-                                            fill="#ef4444"
-                                            radius={[2, 2, 0, 0]}
-                                            stackId="a"
-                                        />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
+                <ActivityCharts
+                    data={timeSeries}
+                    title="Requests"
+                    total={overview.auth_requests + overview.guest_requests}
+                    series={[
+                        {
+                            key: 'authed',
+                            name: 'Signed in',
+                            color: seriesColor.good,
+                            total: overview.auth_requests,
+                        },
+                        {
+                            key: 'guest',
+                            name: 'Guest',
+                            color: seriesColor.ok,
+                            total: overview.guest_requests,
+                        },
+                    ]}
+                    extra={
+                        <ChartCard
+                            title="Active users"
+                            value={formatCompactNumber(overview.auth_users)}
+                            delta={
+                                <span className="text-[11px] text-muted-foreground">
+                                    signed in
+                                </span>
+                            }
+                        >
+                            <TimeSeriesChart
+                                data={timeSeries}
+                                syncId="activity-Requests"
+                                height={180}
+                                series={[
+                                    {
+                                        key: 'active_users',
+                                        name: 'Active users',
+                                        color: seriesColor.good,
+                                        kind: 'area',
+                                    },
+                                ]}
+                            />
+                        </ChartCard>
+                    }
+                />
 
                 {/* Table Section */}
                 <div className="space-y-4">

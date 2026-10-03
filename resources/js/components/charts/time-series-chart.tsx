@@ -46,6 +46,8 @@ type Props = {
     reference?: { value: number; label: string; color?: string };
     /** Hides the time axis for compact charts. */
     compact?: boolean;
+    /** Lets the value axis tick between whole numbers (rates, ratios). */
+    decimals?: boolean;
 };
 
 /**
@@ -61,6 +63,7 @@ export function TimeSeriesChart({
     footer,
     reference,
     compact = false,
+    decimals = false,
 }: Props) {
     const gradientId = useId().replace(/:/g, '');
     const slot = slotOf(data);
@@ -130,7 +133,7 @@ export function TimeSeriesChart({
                         tick={{ fontSize: 10, fill: 'var(--chart-axis)' }}
                         tickFormatter={(value: number) => format(value)}
                         tickCount={4}
-                        allowDecimals={false}
+                        allowDecimals={decimals}
                     />
                     <Tooltip
                         isAnimationActive={false}

@@ -1,17 +1,9 @@
 ﻿import { Head, Link, usePage } from '@inertiajs/react';
 import { Database, ArrowUpRight, FileCode } from 'lucide-react';
-import {
-    BarChart,
-    Bar,
-    ResponsiveContainer,
-    AreaChart,
-    Area,
-    Tooltip,
-    XAxis,
-} from 'recharts';
+import { ActivityCharts } from '@/components/charts/activity-charts';
+import { seriesColor } from '@/components/charts/format';
 import { EmptyState } from '@/components/empty-state';
 import { Pagination } from '@/components/pagination';
-import { Card, CardContent } from '@/components/ui/card';
 import {
     Table,
     TableBody,
@@ -66,94 +58,21 @@ export default function QueriesIndex({
             <Head title="Database Queries" />
 
             <div className="mb-8 space-y-4"></div>
-
-            {/* Stats Cards */}
-            <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
-                <Card className="overflow-hidden border-border bg-card">
-                    <CardContent className="p-6">
-                        <div className="mb-6 flex items-start justify-between">
-                            <div>
-                                <div className="text-3xl font-bold text-foreground">
-                                    {formatCompactNumber(overview.total)}
-                                </div>
-                            </div>
-                        </div>
-                        <div className="h-[120px] w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={timeSeries}>
-                                    <XAxis dataKey="minute" hide />
-                                    <Tooltip
-                                        content={({ active, payload }) => {
-                                            if (
-                                                active &&
-                                                payload &&
-                                                payload.length
-                                            ) {
-                                                return (
-                                                    <div className="rounded-lg border border-border bg-background/95 p-2 shadow-xl backdrop-blur-sm">
-                                                        <div className="mb-1.5 border-b border-border/50 pb-1 text-[9px] font-bold tracking-tight text-muted-foreground uppercase">
-                                                            {
-                                                                payload[0]
-                                                                    .payload
-                                                                    .minute
-                                                            }
-                                                        </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="h-2 w-2 rounded-full bg-white/40" />
-                                                            <span className="text-[10px] font-medium text-muted-foreground uppercase">
-                                                                Queries:
-                                                            </span>
-                                                            <span className="text-[10px] font-bold text-foreground">
-                                                                {formatCompactNumber(
-                                                                    payload[0]
-                                                                        .value,
-                                                                )}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            }
-
-                                            return null;
-                                        }}
-                                    />
-                                    <Bar
-                                        dataKey="total"
-                                        name="Total Queries"
-                                        fill="rgba(255,255,255,0.4)"
-                                        radius={[2, 2, 0, 0]}
-                                    />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card className="overflow-hidden border-border bg-card">
-                    <CardContent className="p-6">
-                        <div className="mb-6 flex items-start justify-between">
-                            <div>
-                                <div className="text-3xl font-bold text-foreground">
-                                    {formatMicroSeconds(overview.avg_duration)}
-                                </div>
-                            </div>
-                        </div>
-                        <div className="h-[120px] w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={timeSeries}>
-                                    <Area
-                                        type="monotone"
-                                        dataKey="avg_duration"
-                                        stroke="#f97316"
-                                        fill="#f97316"
-                                        fillOpacity={0.1}
-                                        strokeWidth={2}
-                                    />
-                                </AreaChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </CardContent>
-                </Card>
+            <div className="mb-8">
+                <ActivityCharts
+                    data={timeSeries}
+                    title="Queries"
+                    total={overview.total}
+                    series={[
+                        {
+                            key: 'total',
+                            name: 'Queries',
+                            color: seriesColor.avg,
+                        },
+                    ]}
+                    latency={overview.latency}
+                    histogram={overview.histogram}
+                />
             </div>
 
             {/* Table Section */}

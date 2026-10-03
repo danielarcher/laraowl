@@ -1,9 +1,11 @@
 ﻿import { Head, usePage } from '@inertiajs/react';
 import { Database, Layers, FileCode } from 'lucide-react';
-import { BarChart, Bar, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
+import { ActivityCharts } from '@/components/charts/activity-charts';
+import { ChartCard } from '@/components/charts/chart-card';
+import { formatPercent, seriesColor } from '@/components/charts/format';
+import { TimeSeriesChart } from '@/components/charts/time-series-chart';
 import { EmptyState } from '@/components/empty-state';
 import { Pagination } from '@/components/pagination';
-import { Card, CardContent } from '@/components/ui/card';
 import {
     Table,
     TableBody,
@@ -31,10 +33,6 @@ export default function CacheIndex({
     useLiveReload(currentProject?.id);
 
     const data = keys.data || [];
-    const totalWrites = data.reduce(
-        (acc: any, k: any) => acc + Number(k.writes),
-        0,
-    );
 
     return (
         <>
@@ -43,194 +41,75 @@ export default function CacheIndex({
             <div className="mb-8 space-y-4"></div>
 
             <div className="space-y-8">
-                {/* Stats Cards */}
-                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                    <Card className="overflow-hidden border-border bg-card">
-                        <CardContent className="p-6">
-                            <div className="mb-6 flex items-start justify-between">
-                                <div>
-                                    <div className="mb-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
-                                        Events (Current View)
-                                    </div>
-                                    <div className="text-3xl font-bold text-foreground">
-                                        {formatCompactNumber(overview.total)}
-                                    </div>
-                                </div>
-                                <div className="flex gap-4 text-[10px] font-bold tracking-tight uppercase">
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="h-2 w-2 rounded-full bg-red-500"></span>{' '}
-                                        Miss{' '}
-                                        <span className="ml-1 text-foreground">
-                                            {formatCompactNumber(
-                                                overview.misses,
-                                            )}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="h-2 w-2 rounded-full bg-blue-500"></span>{' '}
-                                        Hit{' '}
-                                        <span className="ml-1 text-foreground">
-                                            {formatCompactNumber(overview.hits)}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="h-2 w-2 rounded-full bg-orange-500"></span>{' '}
-                                        Write{' '}
-                                        <span className="ml-1 text-foreground">
-                                            {formatCompactNumber(totalWrites)}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="h-[120px] w-full">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={timeSeries}>
-                                        <XAxis dataKey="minute" hide />
-                                        <Tooltip
-                                            content={({ active, payload }) => {
-                                                if (
-                                                    active &&
-                                                    payload &&
-                                                    payload.length
-                                                ) {
-                                                    return (
-                                                        <div className="rounded-lg border border-border bg-background/95 p-2 shadow-xl backdrop-blur-sm">
-                                                            <div className="mb-1.5 border-b border-border/50 pb-1 text-[9px] font-bold tracking-tight text-muted-foreground uppercase">
-                                                                {
-                                                                    payload[0]
-                                                                        .payload
-                                                                        .minute
-                                                                }
-                                                            </div>
-                                                            <div className="grid gap-1">
-                                                                {payload.map(
-                                                                    (
-                                                                        entry: any,
-                                                                        index: number,
-                                                                    ) => (
-                                                                        <div
-                                                                            key={
-                                                                                index
-                                                                            }
-                                                                            className="flex items-center gap-2"
-                                                                        >
-                                                                            <div
-                                                                                className="h-2 w-2 rounded-full"
-                                                                                style={{
-                                                                                    backgroundColor:
-                                                                                        entry.color,
-                                                                                }}
-                                                                            />
-                                                                            <span className="text-[10px] font-medium text-muted-foreground uppercase">
-                                                                                {
-                                                                                    entry.name
-                                                                                }
-
-                                                                                :
-                                                                            </span>
-                                                                            <span className="text-[10px] font-bold text-foreground">
-                                                                                {formatCompactNumber(
-                                                                                    entry.value,
-                                                                                )}
-                                                                            </span>
-                                                                        </div>
-                                                                    ),
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                }
-
-                                                return null;
-                                            }}
-                                        />
-                                        <Bar
-                                            dataKey="hits"
-                                            name="Hits"
-                                            stackId="a"
-                                            fill="rgba(59, 130, 246, 0.5)"
-                                            radius={[0, 0, 0, 0]}
-                                        />
-                                        <Bar
-                                            dataKey="misses"
-                                            name="Misses"
-                                            stackId="a"
-                                            fill="rgba(239, 68, 68, 0.5)"
-                                            radius={[0, 0, 0, 0]}
-                                        />
-                                        <Bar
-                                            dataKey="writes"
-                                            name="Writes"
-                                            stackId="a"
-                                            fill="rgba(249, 115, 22, 0.5)"
-                                            radius={[2, 2, 0, 0]}
-                                        />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="overflow-hidden border-border bg-card">
-                        <CardContent className="p-6">
-                            <div className="mb-6 flex items-start justify-between">
-                                <div>
-                                    <div className="text-3xl font-bold text-foreground">
-                                        {overview.hit_rate}%
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="h-[120px] w-full">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={timeSeries}>
-                                        <XAxis dataKey="minute" hide />
-                                        <Tooltip
-                                            content={({ active, payload }) => {
-                                                if (
-                                                    active &&
-                                                    payload &&
-                                                    payload.length
-                                                ) {
-                                                    return (
-                                                        <div className="rounded-lg border border-border bg-background/95 p-2 shadow-xl backdrop-blur-sm">
-                                                            <div className="mb-1.5 border-b border-border/50 pb-1 text-[9px] font-bold tracking-tight text-muted-foreground uppercase">
-                                                                {
-                                                                    payload[0]
-                                                                        .payload
-                                                                        .minute
-                                                                }
-                                                            </div>
-                                                            <div className="flex items-center gap-2">
-                                                                <div className="h-2 w-2 rounded-full bg-orange-500" />
-                                                                <span className="text-[10px] font-medium text-muted-foreground uppercase">
-                                                                    Writes:
-                                                                </span>
-                                                                <span className="text-[10px] font-bold text-foreground">
-                                                                    {formatCompactNumber(
-                                                                        payload[0]
-                                                                            .value,
-                                                                    )}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                }
-
-                                                return null;
-                                            }}
-                                        />
-                                        <Bar
-                                            dataKey="writes"
-                                            name="Writes"
-                                            fill="#f97316"
-                                            radius={[2, 2, 0, 0]}
-                                        />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
+                <ActivityCharts
+                    data={timeSeries}
+                    title="Cache events"
+                    total={overview.total}
+                    series={[
+                        {
+                            key: 'hits',
+                            name: 'Hits',
+                            color: seriesColor.good,
+                            total: overview.hits,
+                        },
+                        {
+                            key: 'misses',
+                            name: 'Misses',
+                            color: seriesColor.warn,
+                            total: overview.misses,
+                        },
+                        {
+                            key: 'writes',
+                            name: 'Writes',
+                            color: seriesColor.avg,
+                            total: timeSeries.reduce(
+                                (sum: number, point: any) =>
+                                    sum + Number(point.writes ?? 0),
+                                0,
+                            ),
+                        },
+                    ]}
+                    extra={
+                        <ChartCard
+                            title="Hit rate"
+                            value={formatPercent(
+                                overview.hits + overview.misses
+                                    ? overview.hits /
+                                          (overview.hits + overview.misses)
+                                    : 0,
+                                1,
+                            )}
+                            delta={
+                                <span className="text-[11px] text-muted-foreground">
+                                    of reads
+                                </span>
+                            }
+                        >
+                            <TimeSeriesChart
+                                data={timeSeries.map((point: any) => ({
+                                    ...point,
+                                    hit_rate:
+                                        point.hits + point.misses
+                                            ? point.hits /
+                                              (point.hits + point.misses)
+                                            : null,
+                                }))}
+                                syncId="activity-Cache events"
+                                height={180}
+                                decimals
+                                format={(value) => formatPercent(value, 1)}
+                                series={[
+                                    {
+                                        key: 'hit_rate',
+                                        name: 'Hit rate',
+                                        color: seriesColor.good,
+                                        kind: 'area',
+                                    },
+                                ]}
+                            />
+                        </ChartCard>
+                    }
+                />
 
                 {/* Table Section */}
                 <div className="space-y-4">

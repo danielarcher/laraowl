@@ -1,10 +1,10 @@
 ﻿import { Head, Link, usePage } from '@inertiajs/react';
 import { AlertCircle, ArrowUpRight } from 'lucide-react';
-import { BarChart, Bar, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
+import { ActivityCharts } from '@/components/charts/activity-charts';
+import { seriesColor } from '@/components/charts/format';
 import { EmptyState } from '@/components/empty-state';
 import { Pagination } from '@/components/pagination';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
 import {
     Table,
     TableBody,
@@ -61,66 +61,18 @@ export default function ExceptionsIndex({
             <div className="mb-8 space-y-4"></div>
 
             <div className="space-y-8">
-                {/* Stats Card */}
-                <Card className="overflow-hidden border-border bg-card">
-                    <CardContent className="p-6">
-                        <div className="mb-6 flex items-start justify-between">
-                            <div>
-                                <div className="text-3xl font-bold text-foreground">
-                                    {formatCompactNumber(overview.total)}
-                                </div>
-                            </div>
-                        </div>
-                        <div className="h-[150px] w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={timeSeries}>
-                                    <XAxis dataKey="minute" hide />
-                                    <Tooltip
-                                        content={({ active, payload }) => {
-                                            if (
-                                                active &&
-                                                payload &&
-                                                payload.length
-                                            ) {
-                                                return (
-                                                    <div className="rounded-lg border border-border bg-background/95 p-2 shadow-xl backdrop-blur-sm">
-                                                        <div className="mb-1.5 border-b border-border/50 pb-1 text-[9px] font-bold tracking-tight text-muted-foreground uppercase">
-                                                            {
-                                                                payload[0]
-                                                                    .payload
-                                                                    .minute
-                                                            }
-                                                        </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="h-2 w-2 rounded-full bg-red-500" />
-                                                            <span className="text-[10px] font-medium text-muted-foreground uppercase">
-                                                                Exceptions:
-                                                            </span>
-                                                            <span className="text-[10px] font-bold text-foreground">
-                                                                {formatCompactNumber(
-                                                                    payload[0]
-                                                                        .value,
-                                                                )}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            }
-
-                                            return null;
-                                        }}
-                                    />
-                                    <Bar
-                                        dataKey="server_error"
-                                        name="Exceptions"
-                                        fill="#ef4444"
-                                        radius={[2, 2, 0, 0]}
-                                    />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </CardContent>
-                </Card>
+                <ActivityCharts
+                    data={timeSeries}
+                    title="Exceptions"
+                    total={overview.total}
+                    series={[
+                        {
+                            key: 'total',
+                            name: 'Exceptions',
+                            color: seriesColor.warn,
+                        },
+                    ]}
+                />
 
                 {/* Table Section */}
                 <div className="space-y-4">

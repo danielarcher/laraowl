@@ -218,6 +218,11 @@ export function AppSidebar() {
                                 icon: LayoutGrid,
                             },
                             {
+                                title: 'Servers',
+                                href: `/${teamSlug}/servers`,
+                                icon: ServerIcon,
+                            },
+                            {
                                 title: 'Issues',
                                 href: withPeriod(
                                     `/${teamSlug}/${projectSlug}/issues`,
@@ -236,11 +241,6 @@ export function AppSidebar() {
 
                     <NavMain
                         items={[
-                            {
-                                title: 'Servers',
-                                href: `/${teamSlug}/servers`,
-                                icon: ServerIcon,
-                            },
                             {
                                 title: 'Settings',
                                 href: `/${teamSlug}/${projectSlug}/settings`,

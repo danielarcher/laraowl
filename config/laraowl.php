@@ -65,4 +65,26 @@ return [
         'offline_after_seconds' => (int) env('LARAOWL_SERVER_OFFLINE_AFTER', 180),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Raw Detail
+    |--------------------------------------------------------------------------
+    |
+    | Every record is counted in the rollups behind the charts and lists. The
+    | raw rows of queries, cache events and outgoing calls are kept only for
+    | requests and commands worth opening (slower than their threshold,
+    | failed, or with an exception), for this share of the rest as examples,
+    | and on their own when the query or call itself was slow. A sample rate
+    | of 1 keeps every raw row.
+    |
+    */
+
+    'raw_detail' => [
+        'sample_rate' => (float) env('LARAOWL_DETAIL_SAMPLE_RATE', 0.05),
+        'slow_request_ms' => (int) env('LARAOWL_DETAIL_SLOW_REQUEST_MS', 500),
+        'slow_task_ms' => (int) env('LARAOWL_DETAIL_SLOW_TASK_MS', 10000),
+        'slow_query_ms' => (int) env('LARAOWL_DETAIL_SLOW_QUERY_MS', 100),
+        'slow_outgoing_ms' => (int) env('LARAOWL_DETAIL_SLOW_OUTGOING_MS', 1000),
+    ],
+
 ];

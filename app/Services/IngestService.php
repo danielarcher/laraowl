@@ -25,11 +25,14 @@ class IngestService
      */
     protected ?array $thresholds = null;
 
-    public function __construct(AlertService $alertService, SecurityService $securityService, RollupWriter $rollupWriter)
+    protected DetailSampler $detailSampler;
+
+    public function __construct(AlertService $alertService, SecurityService $securityService, RollupWriter $rollupWriter, ?DetailSampler $detailSampler = null)
     {
         $this->alertService = $alertService;
         $this->securityService = $securityService;
         $this->rollupWriter = $rollupWriter;
+        $this->detailSampler = $detailSampler ?? new DetailSampler($rollupWriter);
     }
 
     /**
@@ -38,34 +41,52 @@ class IngestService
     public function ingest(Project $project, array $records): void
     {
         $this->thresholds = null;
+        $plan = $this->detailSampler->plan($records);
 
-        DB::transaction(function () use ($project, $records) {
+        DB::transaction(function () use ($project, $records, $plan) {
             $batch = [];
             $exceptions = 0;
+            $createdAt = now();
 
-            foreach ($records as $data) {
+            foreach ($records as $index => $data) {
                 $type = $data['t'] ?? null;
                 if (! $type) {
                     continue;
                 }
 
-                $record = $project->records()->create([
-                    'type' => $type,
-                    'payload' => $data,
-                    'fingerprint' => $this->calculateFingerprint($type, $data),
-                    'user_key' => $this->rollupWriter->rawUserKeyFor($data),
-                    'ip' => $this->rollupWriter->ipFor($data),
-                    'trace_id' => $this->rollupWriter->traceIdFor($data),
-                    'message' => $this->rollupWriter->messageFor($type, $data),
-                    'created_at' => now(),
-                ]);
+                $fingerprint = $this->calculateFingerprint($type, $data);
+                $traceId = $this->rollupWriter->traceIdFor($data);
 
+                // Every record is counted, whether or not its raw row is kept.
                 $batch[] = [
                     'type' => $type,
                     'payload' => $data,
-                    'fingerprint' => $record->fingerprint,
-                    'created_at' => $record->created_at,
+                    'fingerprint' => $fingerprint,
+                    'created_at' => $createdAt,
                 ];
+
+                if (! $plan['keep'][$index] && ! $this->thresholdFor($project, $type, $data)) {
+                    continue;
+                }
+
+                // A parent whose detail was thinned says how much, so its
+                // trace view can tell a fast request from a query-free one.
+                if ($dropped = $plan['dropped'][$traceId ?? ''] ?? null) {
+                    if (in_array($type, ['request', 'command', 'scheduled-task', 'job-attempt'], true)) {
+                        $data['_detail_dropped'] = $dropped;
+                    }
+                }
+
+                $record = $project->records()->create([
+                    'type' => $type,
+                    'payload' => $data,
+                    'fingerprint' => $fingerprint,
+                    'user_key' => $this->rollupWriter->rawUserKeyFor($data),
+                    'ip' => $this->rollupWriter->ipFor($data),
+                    'trace_id' => $traceId,
+                    'message' => $this->rollupWriter->messageFor($type, $data),
+                    'created_at' => $createdAt,
+                ]);
 
                 if ($type === 'exception') {
                     $exceptions++;
@@ -117,14 +138,27 @@ class IngestService
      */
     protected function checkThresholds(Project $project, Record $record): void
     {
-        $payload = $record->payload;
+        $threshold = $this->thresholdFor($project, $record->type, $record->payload);
+
+        if ($threshold) {
+            $this->handleSlowPerformance($project, $record, $threshold);
+        }
+    }
+
+    /**
+     * The enabled threshold this record's duration breaks, if any.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    protected function thresholdFor(Project $project, string $type, array $payload): ?Threshold
+    {
         $duration = $payload['duration'] ?? null;
 
         if ($duration === null) {
-            return;
+            return null;
         }
 
-        $thresholdType = match ($record->type) {
+        $thresholdType = match ($type) {
             'request' => 'route',
             'job-attempt', 'queued-job' => 'job',
             'command' => 'command',
@@ -134,7 +168,7 @@ class IngestService
         };
 
         if (! $thresholdType) {
-            return;
+            return null;
         }
 
         $key = match ($thresholdType) {
@@ -146,7 +180,7 @@ class IngestService
         };
 
         if (! $key) {
-            return;
+            return null;
         }
 
         $threshold = $this->enabledThresholds($project)[$thresholdType.'|'.$key] ?? null;
@@ -154,16 +188,9 @@ class IngestService
         // Durations arrive in microseconds; thresholds are authored in
         // milliseconds (the UI shows "{value}ms"). Without the conversion a
         // 500ms threshold fired at 500µs — a thousand times too eagerly.
-        if ($threshold && $duration > $threshold->value * 1000) {
-            $this->handleSlowPerformance($project, $record, $threshold);
-        }
+        return $threshold && $duration > $threshold->value * 1000 ? $threshold : null;
     }
 
-    /**
-     * The project's enabled thresholds, keyed by type and key.
-     *
-     * @return array<string, Threshold>
-     */
     protected function enabledThresholds(Project $project): array
     {
         return $this->thresholds ??= $project->thresholds()

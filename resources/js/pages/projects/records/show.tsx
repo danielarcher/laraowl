@@ -577,6 +577,27 @@ export default function RecordShow({
                                             </div>
                                         ))}
 
+                                        {payload._detail_dropped && (
+                                            <p className="ml-4 rounded-md border border-dashed border-border px-3 py-2 text-[11px] text-muted-foreground">
+                                                {Object.entries(
+                                                    payload._detail_dropped as Record<
+                                                        string,
+                                                        number
+                                                    >,
+                                                )
+                                                    .map(
+                                                        ([type, count]) =>
+                                                            `${count} ${type.replace('-', ' ')}${count === 1 ? '' : 's'}`,
+                                                    )
+                                                    .join(', ')}{' '}
+                                                not kept: this request was fast
+                                                and successful. Slow and failed
+                                                requests, and a sample of the
+                                                rest, keep their detail; the
+                                                charts count everything.
+                                            </p>
+                                        )}
+
                                         <div className="group flex items-center justify-between">
                                             <span className="text-[10px] font-bold tracking-tight text-muted-foreground/60 uppercase">
                                                 Controller

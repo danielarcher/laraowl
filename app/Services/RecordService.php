@@ -675,6 +675,12 @@ class RecordService
             return $query->paginate(50)->withQueryString();
         }
 
+        // Sampled types keep fewer raw rows than the rollups count, so their
+        // total has to come from the rows themselves.
+        if (in_array($type, DetailSampler::DETAIL_TYPES, true)) {
+            return $query->paginate(50)->withQueryString();
+        }
+
         return $this->paginateWithKnownTotal($query, $this->rollupCount($project, $type, $period, $from, $to));
     }
 

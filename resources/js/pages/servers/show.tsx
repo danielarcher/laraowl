@@ -8,6 +8,7 @@ import {
     HardDrive,
     MemoryStick,
 } from 'lucide-react';
+import { categoryColors, seriesColor } from '@/components/charts/format';
 import { ServerMetricChart } from '@/components/server-metric-chart';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -210,7 +211,7 @@ export default function ServerShow({
                 />
             </div>
 
-            <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
                 <ServerMetricChart
                     title="CPU"
                     icon={Cpu}
@@ -222,13 +223,13 @@ export default function ServerShow({
                         {
                             key: 'cpu',
                             label: 'Avg',
-                            color: '#3b82f6',
+                            color: seriesColor.avg,
                             kind: 'area',
                         },
                         {
                             key: 'cpu_max',
                             label: 'Peak',
-                            color: '#f59e0b',
+                            color: seriesColor.p95,
                             kind: 'line',
                             dashed: true,
                         },
@@ -245,13 +246,13 @@ export default function ServerShow({
                         {
                             key: 'memory',
                             label: 'RAM',
-                            color: '#8b5cf6',
+                            color: categoryColors[1],
                             kind: 'area',
                         },
                         {
                             key: 'swap',
                             label: 'Swap',
-                            color: '#ec4899',
+                            color: categoryColors[7],
                             kind: 'line',
                         },
                     ]}
@@ -271,19 +272,19 @@ export default function ServerShow({
                         {
                             key: 'load_1',
                             label: '1m',
-                            color: '#10b981',
+                            color: seriesColor.good,
                             kind: 'area',
                         },
                         {
                             key: 'load_5',
                             label: '5m',
-                            color: '#3b82f6',
+                            color: seriesColor.avg,
                             kind: 'line',
                         },
                         {
                             key: 'load_15',
                             label: '15m',
-                            color: '#6b7280',
+                            color: seriesColor.ok,
                             kind: 'line',
                             dashed: true,
                         },
@@ -300,7 +301,7 @@ export default function ServerShow({
                         {
                             key: 'disk',
                             label: 'Root',
-                            color: '#14b8a6',
+                            color: categoryColors[5],
                             kind: 'area',
                         },
                     ]}

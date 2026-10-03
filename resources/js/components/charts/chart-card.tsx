@@ -31,7 +31,7 @@ export function ChartCard({
     return (
         <section
             className={cn(
-                'flex flex-col rounded-lg border border-border bg-card',
+                'flex flex-col rounded-lg border border-border bg-card transition-colors duration-200 hover:border-foreground/15',
                 className,
             )}
         >
@@ -43,7 +43,7 @@ export function ChartCard({
                     {value !== undefined && (
                         <div className="mt-1 flex items-baseline gap-2">
                             <span className="text-2xl font-semibold tracking-tight text-foreground tabular-nums">
-                                {value}
+                                <Ticker value={value} />
                             </span>
                             {delta}
                         </div>
@@ -53,10 +53,10 @@ export function ChartCard({
                     {href && (
                         <Link
                             href={href}
-                            className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+                            className="group/link inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground"
                         >
                             {linkLabel}
-                            <ArrowRight className="size-3" />
+                            <ArrowRight className="size-3 transition-transform duration-200 group-hover/link:translate-x-0.5" />
                         </Link>
                     )}
                     {legend && (
@@ -68,6 +68,22 @@ export function ChartCard({
             </header>
             <div className="flex-1 px-2 pt-3 pb-2">{children}</div>
         </section>
+    );
+}
+
+/**
+ * A figure that slides into place when it changes (a new period, a live
+ * refresh), keyed on its formatted text.
+ */
+export function Ticker({ value }: { value: ReactNode }) {
+    if (typeof value !== 'string' && typeof value !== 'number') {
+        return <>{value}</>;
+    }
+
+    return (
+        <span key={String(value)} className="value-in">
+            {value}
+        </span>
     );
 }
 
@@ -169,7 +185,7 @@ export function Sparkline({
     const id = `spark-${dataKey}-${color.replace(/[^a-z0-9]/gi, '')}`;
 
     return (
-        <div style={{ height }} className="w-full">
+        <div style={{ height }} className="chart-reveal w-full">
             <ResponsiveContainer width="100%" height="100%">
                 <AreaChart
                     data={data}
@@ -232,7 +248,7 @@ export function StatCell({
                         tone === 'warn' && 'text-series-warn',
                     )}
                 >
-                    {value}
+                    <Ticker value={value} />
                 </span>
                 {delta}
             </div>

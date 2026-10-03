@@ -71,8 +71,6 @@ export default function LogsIndex({ records }: { records: any }) {
         <>
             <Head title="Logs" />
 
-            <div className="mb-8 space-y-4"></div>
-
             {data.length > 0 ? (
                 <>
                     <div className="overflow-hidden rounded-lg border border-border bg-card shadow-2xl">

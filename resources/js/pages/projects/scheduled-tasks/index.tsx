@@ -70,8 +70,6 @@ export default function ScheduledTasksIndex({
         <>
             <Head title="Scheduled Tasks" />
 
-            <div className="mb-8 space-y-4"></div>
-
             <div className="space-y-8">
                 <ActivityCharts
                     data={timeSeries}

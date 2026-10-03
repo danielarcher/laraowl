@@ -72,7 +72,7 @@ export function LatencyHistogram({
               );
 
     return (
-        <div style={{ height }} className="w-full">
+        <div style={{ height }} className="chart-reveal w-full">
             <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                     data={visible}

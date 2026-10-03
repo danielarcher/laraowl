@@ -76,7 +76,7 @@ export function TimeSeriesChart({
     series.forEach((s) => s.stack && lastInStack.set(s.stack, s.key));
 
     return (
-        <div style={{ height }} className="w-full">
+        <div style={{ height }} className="chart-reveal w-full">
             <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart
                     data={data}

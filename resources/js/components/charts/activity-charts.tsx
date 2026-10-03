@@ -64,7 +64,7 @@ export function ActivityCharts({
     return (
         <div
             className={cn(
-                'grid grid-cols-1 gap-4',
+                'enter-stagger grid grid-cols-1 gap-4',
                 panels === 2 && 'xl:grid-cols-2',
                 panels >= 3 && 'lg:grid-cols-2 2xl:grid-cols-3',
             )}

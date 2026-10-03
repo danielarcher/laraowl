@@ -163,7 +163,7 @@ function Trend({ app, slot }: { app: OverviewApp; slot: number }) {
     }
 
     return (
-        <div className="h-8 w-40">
+        <div className="chart-reveal h-8 w-40">
             <AreaChart
                 width={160}
                 height={32}
@@ -668,7 +668,7 @@ export default function Overview({
                         apps={groups.flatMap((group) => group.projects)}
                     />
 
-                    <div className="space-y-4">
+                    <div className="enter-stagger space-y-4">
                         {groups.map((group) => (
                             <Card
                                 key={group.server?.id ?? 'none'}

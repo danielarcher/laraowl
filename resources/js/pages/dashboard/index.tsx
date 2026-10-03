@@ -146,7 +146,7 @@ export default function Dashboard({
         <>
             <Head title={`Dashboard - ${project?.name}`} />
 
-            <div className="space-y-4">
+            <div className="enter-stagger space-y-4">
                 <ProjectHeader
                     name={project?.name}
                     url={uptime_status?.url ?? project?.url}

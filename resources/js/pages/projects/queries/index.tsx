@@ -56,8 +56,6 @@ export default function QueriesIndex({
     return (
         <>
             <Head title="Database Queries" />
-
-            <div className="mb-8 space-y-4"></div>
             <div className="mb-8">
                 <ActivityCharts
                     data={timeSeries}

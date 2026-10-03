@@ -56,8 +56,6 @@ export default function OutgoingRequestsIndex({
         <>
             <Head title="Outgoing Requests" />
 
-            <div className="mb-8 space-y-4"></div>
-
             <div className="space-y-8">
                 <ActivityCharts
                     data={timeSeries}

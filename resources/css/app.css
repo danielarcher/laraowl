@@ -280,7 +280,7 @@
 @layer utilities {
     .enter,
     .enter-stagger > * {
-        animation: enter 380ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+        animation: enter 380ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
     }
 
     .enter-stagger > :nth-child(2) {
@@ -308,12 +308,12 @@
     }
 
     .chart-reveal .recharts-surface {
-        animation: reveal-x 760ms cubic-bezier(0.2, 0.7, 0.2, 1) 80ms both;
+        animation: reveal-x 760ms cubic-bezier(0.2, 0.7, 0.2, 1) 80ms backwards;
     }
 
     .value-in {
         display: inline-block;
-        animation: value-in 260ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+        animation: value-in 260ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
     }
 
     /* A visit that takes a moment dims what is about to be replaced. */

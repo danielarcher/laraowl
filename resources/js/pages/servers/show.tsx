@@ -211,7 +211,7 @@ export default function ServerShow({
                 />
             </div>
 
-            <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+            <div className="enter-stagger grid grid-cols-1 gap-4 xl:grid-cols-2">
                 <ServerMetricChart
                     title="CPU"
                     icon={Cpu}

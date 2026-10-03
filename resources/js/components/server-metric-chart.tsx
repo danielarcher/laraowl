@@ -87,7 +87,7 @@ export function ServerMetricChart({
                 </div>
             </header>
             <div className="px-2 pt-3 pb-2">
-                <div className="h-[200px] w-full">
+                <div className="chart-reveal h-[200px] w-full">
                     {data.length === 0 ? (
                         <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
                             No samples in this period

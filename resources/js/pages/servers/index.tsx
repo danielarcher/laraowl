@@ -285,7 +285,7 @@ export default function ServersIndex({ servers, agentUrl }: ServersIndexProps) {
                     </div>
                 </Card>
             ) : (
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+                <div className="enter-stagger grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
                     {servers.map((server) => (
                         <ServerCard
                             key={server.id}

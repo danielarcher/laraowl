@@ -50,8 +50,6 @@ export default function MailIndex({
         <>
             <Head title="Mail" />
 
-            <div className="mb-8 space-y-4"></div>
-
             {/* Table Section */}
             <div className="space-y-4">
                 <div className="flex items-center justify-between">

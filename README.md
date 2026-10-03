@@ -1,15 +1,18 @@
 <p align="center">
-  <img src="art/banner.png" alt="LaraOwl: self-hosted monitoring for Laravel apps and the servers they run on" width="100%">
+  <img src="art/banner.png" alt="LaraOwl, Archer flavor: self-hosted monitoring for Laravel apps and the servers they run on" width="100%">
+</p>
+
+<h1 align="center">LaraOwl · Archer flavor</h1>
+
+<p align="center">
+  <b>The Archer flavor of <a href="https://github.com/laraowl/laraowl">LaraOwl</a>: self-hosted monitoring for Laravel apps and the servers they run on.</b><br>
+  Rebuilt to watch many apps on a few small servers: server metrics next to the apps, one overview for all of them,<br>
+  ingest that holds up on 1 vCPU, security alerts that stay quiet until they matter, and a sharper interface.
 </p>
 
 <p align="center">
-  <b>Self-hosted monitoring for Laravel apps and the servers they run on.</b><br>
-  Requests, exceptions, queries, jobs, uptime, security and server health for every app you run, on your own box.
-</p>
-
-<p align="center">
+  <a href="#what-the-archer-flavor-changes">What the Archer flavor changes</a> •
   <a href="#what-it-watches">What it watches</a> •
-  <a href="#whats-different-in-this-version">What's different</a> •
   <a href="#install">Install</a> •
   <a href="#connect-an-app">Connect an app</a> •
   <a href="#monitor-a-server">Monitor a server</a> •
@@ -39,6 +42,57 @@
   </tr>
 </table>
 
+## What the Archer flavor changes
+
+The Archer flavor started from LaraOwl on 3 October 2026 and runs in production for 14 apps on five servers. Everything below is new or reworked compared with the original.
+
+### Servers next to the apps
+
+- **Server monitoring.** A one-file bash agent reports CPU, memory, swap, every disk, load and uptime each minute. CPU is the average since the last run, not a one-second sample that catches the cron burst.
+- **Servers pages.** An overview of every machine, and a detail page with CPU, memory, load and disk over time. Each server has its own token.
+- **Apps know their server.** Apps are linked to the server their records come from, automatically. The app switcher groups apps by server, and each app's settings have a server picker.
+- **One overview for the whole team.** Every app on a single page, grouped by server, with live server load. It shows requests by app over time, error rate, p95, exceptions and failed jobs. Signing in lands there.
+
+### Ingest that holds up on a small box
+
+- **Answers at once.** The endpoint checks a cached token, appends the batch to a Redis buffer and returns `202`.
+- **Writes in bulk.** One queued job merges each app's batches into a single bulk write, with plain rows in one insert. In benchmarks on Postgres this was 5× faster, with 4.6× less PHP CPU and 5.8× fewer queries than storing each batch as it arrives.
+- **Survives trouble.**
+  - Backlog: if it grows, the endpoint returns `503` with `Retry-After`.
+  - Database: if it goes away, batches wait and are retried in order.
+  - Bad batch: one that fails on its own is set aside, and `laraowl:ingest:replay` puts it back in line.
+  - `laraowl:ingest:status` shows the backlog.
+- **Load-tested** on a 1 vCPU, 2 GB server: 2,000 batches at 40 per second, every one accepted and stored.
+- **Accurate timestamps.** Every record keeps the moment it arrived, so charts stay right even when processing runs behind.
+- **Raw detail only where it's useful.** Rollups count every record, so charts and totals stay exact. Raw query, cache and outgoing-call rows, most of what an app sends, are kept for the requests worth opening (slow, failed or with an exception) and for a fixed sample of the rest.
+- **Indexed lookups.** Top users and server linking use indexes instead of scanning JSON or the whole records table.
+
+### Security alerts that stay quiet until they matter
+
+- **One issue per IP address.** It escalates as the score rises, and reopens if the address comes back after being resolved. Ignored stays ignored.
+- **Quiet issues resolve themselves.** An address that has sent nothing suspicious for a day is resolved, with a note saying why.
+- **Stale pages aren't scans.** Missing scripts, styles and images from a stale page don't count as a directory scan.
+- **No false matches on your own URLs or headers.** An app's own URLs, and headers like a link-preview bot's user agent, are no longer read as remote file includes.
+- **Audits start from a baseline.** The first file audit records the baseline instead of raising an alarm.
+- **Scanner detection works.** Scanner user agents (sqlmap, nikto and others) are actually detected; the check never ran before.
+
+### A sharper interface
+
+- **New look.** A full redesign: Geist and Geist Mono, a tight corner scale, a compact sidebar and calmer type.
+- **One chart kit everywhere.**
+  - A shared crosshair, a finer grid, and time ticks in local time.
+  - p50/p95/max per point, and a latency histogram with the slow tail marked.
+  - Server charts match app charts.
+- **Legends switch series on and off.** Click to hide, alt-click to show only one; the headline and totals follow.
+- **Periods and dates.** The period selector slides and prefetches the next period. Custom ranges use a two-month calendar with presets. Dates read dd/mm/yyyy.
+- **Motion with restraint.** Panels and charts animate in, figures slide when they change, and pages dim while loading. All of it respects reduced-motion settings.
+
+### Operations
+
+- **Deploys on Laravel Forge that stay light.** [`deploy.sh`](deploy.sh) makes Forge's Deploy button do everything on the server. It reuses the last frontend build and `vendor/` when nothing they depend on changed, so most deploys take about 16 seconds. Everything runs under `nice`, and it reloads PHP-FPM so each release starts with a clean code cache. From a laptop, `./deploy.sh` tests, pushes, deploys and checks in one command.
+- **Uptime checks identify themselves as a bot**, so monitored apps don't count them as visitors.
+- **Updates come from this repository**, not the original project's releases, which would overwrite these changes.
+
 ## What it watches
 
 Add one Composer package to a Laravel app and LaraOwl records what it does:
@@ -58,28 +112,9 @@ Add one Composer package to a Laravel app and LaraOwl records what it does:
 
 Alerts go to Slack, Discord, Telegram, email or any webhook, for new exceptions, error spikes, slow routes, downtime and missed heartbeats. Several teams can share one instance, each with its own apps, servers and members. AI agents can query it over MCP.
 
-## What's different in this version
-
-This repository started from [LaraOwl](https://github.com/laraowl/laraowl) on 3 October 2026 and has gone its own way since, running in production for 14 apps on five servers. The main changes:
-
-- **Server monitoring.** A bash agent reports each machine's CPU, memory, swap, disk and load every minute. Servers get an overview and a detail page, and every app is linked to the server it runs on automatically.
-- **One overview for the whole team.** Every app on a single page, grouped by server, with requests by app over time, error rate, p95, exceptions and failed jobs.
-- **A redesigned interface.** Geist type, a tight corner scale and one shared chart kit: a crosshair across charts, p50/p95/max per point, latency histograms, legends that switch series on and off, a period selector that prefetches, and a two-month calendar for custom ranges.
-- **Ingest that answers at once.** The endpoint appends each batch to a Redis buffer and returns `202`. One queued job merges each app's batches into a single bulk write. If the backlog grows, the endpoint returns `503` with `Retry-After`; if the database goes away, batches wait and are retried; a batch that fails on its own is set aside to replay later. In benchmarks on Postgres this was 5× faster, with 4.6× less PHP CPU and 5.8× fewer queries than storing each batch as it arrives. On a 1 vCPU, 2 GB server it took 2,000 batches at 40 per second without losing one.
-- **Raw detail only where it's useful.** Rollups count every record, so charts and totals stay exact. Raw query, cache and outgoing-call rows, most of what an app sends, are kept for the requests worth opening (slow, failed or with an exception) and for a fixed sample of the rest.
-- **Security alerts that don't cry wolf.**
-  - One issue per IP address, which escalates as its score rises and reopens if the address comes back.
-  - Issues from addresses that stay quiet for a day resolve themselves.
-  - Missing scripts and images from a stale page don't count as a directory scan.
-  - An app's own URLs aren't treated as remote file includes.
-  - The first file audit sets the baseline instead of raising an alarm.
-  - Scanner user agents (sqlmap, nikto and others) are actually detected.
-- **Deploys on Laravel Forge that stay light.** [`deploy.sh`](deploy.sh) builds each zero-downtime release on the server, reusing the previous frontend build and `vendor/` when nothing they depend on changed: about 16 seconds for most deploys. It then reloads PHP-FPM, so each new release starts with a clean code cache.
-- **Uptime checks identify themselves as a bot**, so monitored apps don't count them as visitors.
-
 ## Install
 
-Requirements: PHP 8.3+, Composer, Node 20+, Redis (for the ingest buffer) and a database. Postgres is what this version runs in production; SQLite works for trying it out.
+Requirements: PHP 8.3+, Composer, Node 20+, Redis (for the ingest buffer) and a database. Postgres is what the Archer flavor runs in production; SQLite works for trying it out.
 
 ```bash
 git clone https://github.com/danielarcher/laraowl.git
@@ -107,7 +142,7 @@ Check the ingest buffer at any time with `php artisan laraowl:ingest:status`.
 <details>
 <summary>Docker</summary>
 
-The Docker setup comes from the original project: `docker-compose.yaml` runs the app, Horizon, Reverb, Caddy, the database and Redis. Copy `.env.prod` to `.env`, set `APP_URL`, `APP_HOSTNAME` and the `REVERB_*` keys, then run `docker compose up -d --build`. This version is developed and run on Laravel Forge, so that is the path covered below.
+The Docker setup comes from the original project: `docker-compose.yaml` runs the app, Horizon, Reverb, Caddy, the database and Redis. Copy `.env.prod` to `.env`, set `APP_URL`, `APP_HOSTNAME` and the `REVERB_*` keys, then run `docker compose up -d --build`. The Archer flavor is developed and run on Laravel Forge, so that is the path covered below.
 
 </details>
 
@@ -177,6 +212,6 @@ The scheduler queues a drain every minute in case a worker died mid-job. Batches
 
 ## Credits and license
 
-LaraOwl was created by Abdelmjid Saber and the contributors to [laraowl/laraowl](https://github.com/laraowl/laraowl). Its documentation at [laraowl.mintlify.site](https://laraowl.mintlify.site) covers the parts this version shares with it.
+LaraOwl was created by Abdelmjid Saber and the contributors to [laraowl/laraowl](https://github.com/laraowl/laraowl). Its documentation at [laraowl.mintlify.site](https://laraowl.mintlify.site) covers the parts the Archer flavor shares with it.
 
-This version is maintained by [Daniel Archer](https://github.com/danielarcher). It is licensed under the [Apache License 2.0](LICENSE), like the original. [NOTICE](NOTICE) records the attribution, and the git history records every change.
+The Archer flavor is maintained by [Daniel Archer](https://github.com/danielarcher). It is licensed under the [Apache License 2.0](LICENSE), like the original. [NOTICE](NOTICE) records the attribution, and the git history records every change.

@@ -87,6 +87,14 @@ class Team extends Model
     }
 
     /**
+     * @return HasMany<Server, $this>
+     */
+    public function servers(): HasMany
+    {
+        return $this->hasMany(Server::class);
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>

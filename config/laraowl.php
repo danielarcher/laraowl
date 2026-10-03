@@ -48,4 +48,21 @@ return [
         'npm' => env('LARAOWL_NPM_BINARY', 'npm'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Servers
+    |--------------------------------------------------------------------------
+    |
+    | Machines report CPU, memory, disk and load through the agent script
+    | (`/agent.sh`), normally once a minute from cron. Samples older than the
+    | retention window are pruned daily, and a server that hasn't reported
+    | within the offline threshold is shown as offline.
+    |
+    */
+
+    'servers' => [
+        'retention_days' => (int) env('LARAOWL_SERVER_RETENTION_DAYS', 30),
+        'offline_after_seconds' => (int) env('LARAOWL_SERVER_OFFLINE_AFTER', 180),
+    ],
+
 ];

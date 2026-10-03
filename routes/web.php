@@ -7,6 +7,7 @@ use App\Http\Controllers\Projects\IssueController;
 use App\Http\Controllers\Projects\ProjectController;
 use App\Http\Controllers\Projects\RecordController;
 use App\Http\Controllers\Projects\ThresholdController;
+use App\Http\Controllers\Servers\ServerController;
 use App\Http\Controllers\Teams\TeamController;
 use App\Http\Controllers\Teams\TeamInvitationController;
 use App\Http\Middleware\EnsureProjectExists;
@@ -38,6 +39,23 @@ Route::get('/', function () {
 })->name('home');
 
 require __DIR__.'/settings.php';
+
+// The server agent: public, holds no secrets (each server's token lives in its own config).
+Route::get('agent.sh', function () {
+    return response(file_get_contents(resource_path('agent/laraowl-agent.sh')), 200, [
+        'Content-Type' => 'text/plain; charset=UTF-8',
+    ]);
+})->name('servers.agent');
+
+// Servers belong to the team, not a project. Registered before the project
+// routes, with numeric ids only, so a project slugged "servers" still resolves.
+Route::prefix('{current_team}/servers')
+    ->middleware(['auth', 'verified', EnsureTeamMembership::class])
+    ->scopeBindings()
+    ->group(function () {
+        Route::get('/', [ServerController::class, 'index'])->name('servers.index');
+        Route::get('{server}', [ServerController::class, 'show'])->whereNumber('server')->name('servers.show');
+    });
 
 Route::prefix('{current_team}/{project}')
     ->middleware(['auth', 'verified', EnsureTeamMembership::class, EnsureProjectExists::class])

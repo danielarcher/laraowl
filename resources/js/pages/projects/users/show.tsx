@@ -86,7 +86,7 @@ export default function UserShow({
                             </div>
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between">
-                                    <span className="text-xs font-bold tracking-tighter text-muted-foreground uppercase">
+                                    <span className="text-xs font-bold tracking-tight text-muted-foreground uppercase">
                                         Last Seen
                                     </span>
                                     <span className="font-mono text-xs text-foreground">
@@ -98,7 +98,7 @@ export default function UserShow({
                                     </span>
                                 </div>
                                 <div className="flex items-center justify-between">
-                                    <span className="text-xs font-bold tracking-tighter text-muted-foreground uppercase">
+                                    <span className="text-xs font-bold tracking-tight text-muted-foreground uppercase">
                                         First Seen
                                     </span>
                                     <span className="font-mono text-xs text-foreground">
@@ -110,7 +110,7 @@ export default function UserShow({
                                     </span>
                                 </div>
                                 <div className="flex items-center justify-between">
-                                    <span className="text-xs font-bold tracking-tighter text-muted-foreground uppercase">
+                                    <span className="text-xs font-bold tracking-tight text-muted-foreground uppercase">
                                         Requests
                                     </span>
                                     <span className="font-bold text-foreground">

@@ -11,7 +11,7 @@ import {
 export function RecordTable({ records }: { records: any[] }) {
     if (records.length === 0) {
         return (
-            <div className="flex h-64 flex-col items-center justify-center rounded-xl border border-dashed text-muted-foreground">
+            <div className="flex h-64 flex-col items-center justify-center rounded-lg border border-dashed text-muted-foreground">
                 <p>No records found for this period.</p>
             </div>
         );

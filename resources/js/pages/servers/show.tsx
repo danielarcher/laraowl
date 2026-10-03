@@ -49,16 +49,16 @@ function StatTile({
     detail: string;
 }) {
     return (
-        <Card className="group relative gap-0 overflow-hidden border-border bg-card p-6 shadow-2xl">
+        <Card className="group relative gap-0 overflow-hidden border-border bg-card p-6">
             <div className="absolute top-0 right-0 p-4 opacity-5 transition-opacity group-hover:opacity-10">
                 <Icon className="size-20" />
             </div>
-            <div className="mb-2 text-[10px] font-black tracking-widest text-muted-foreground uppercase opacity-50">
+            <div className="mb-2 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase opacity-50">
                 {label}
             </div>
             <div
                 className={cn(
-                    'mb-1 text-3xl font-black tracking-tighter',
+                    'mb-1 text-3xl font-semibold tracking-tight',
                     tone ?? 'text-foreground',
                 )}
             >
@@ -100,18 +100,18 @@ export default function ServerShow({
                 <div>
                     <Link
                         href={`/${teamSlug}/servers`}
-                        className="mb-3 inline-flex items-center gap-1.5 text-[10px] font-black tracking-widest text-muted-foreground uppercase hover:text-foreground"
+                        className="mb-3 inline-flex items-center gap-1.5 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase hover:text-foreground"
                     >
                         <ArrowLeft className="size-3" />
                         All servers
                     </Link>
                     <div className="flex flex-wrap items-center gap-3">
-                        <h1 className="text-3xl font-black tracking-tighter text-foreground">
+                        <h1 className="text-3xl font-semibold tracking-tight text-foreground">
                             {server.name}
                         </h1>
                         <span
                             className={cn(
-                                'rounded-full px-2.5 py-0.5 text-[10px] font-black tracking-widest uppercase',
+                                'rounded-full px-2.5 py-0.5 text-[10px] font-semibold tracking-widest uppercase',
                                 status.className,
                             )}
                         >
@@ -132,7 +132,7 @@ export default function ServerShow({
                 </div>
                 {server.projects.length > 0 && (
                     <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="text-[10px] font-black tracking-widest text-muted-foreground uppercase">
+                        <span className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
                             Apps
                         </span>
                         {server.projects.map((project) => (
@@ -308,9 +308,9 @@ export default function ServerShow({
             </div>
 
             {latest && latest.disks.length > 0 && (
-                <Card className="gap-0 overflow-hidden border-border bg-card shadow-2xl">
+                <Card className="gap-0 overflow-hidden border-border bg-card">
                     <div className="flex items-center justify-between border-b border-border/50 px-6 py-4">
-                        <div className="flex items-center gap-2 text-xs font-black tracking-widest text-foreground uppercase">
+                        <div className="flex items-center gap-2 text-xs font-semibold tracking-widest text-foreground uppercase">
                             <HardDrive className="size-3.5 text-muted-foreground" />
                             Filesystems
                         </div>
@@ -339,7 +339,7 @@ export default function ServerShow({
                                         {formatBytes(disk.total)}{' '}
                                         <span
                                             className={cn(
-                                                'font-black',
+                                                'font-semibold',
                                                 tone.text,
                                             )}
                                         >

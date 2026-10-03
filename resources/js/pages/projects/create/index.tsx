@@ -22,7 +22,7 @@ export default function CreateProject() {
 
             <div className="w-full max-w-sm space-y-10">
                 <div className="space-y-2 text-center">
-                    <h1 className="text-3xl font-black tracking-tight">
+                    <h1 className="text-3xl font-semibold tracking-tight">
                         Create Project
                     </h1>
                     <p className="text-sm font-medium text-muted-foreground">
@@ -35,7 +35,7 @@ export default function CreateProject() {
                         {/* Icon Upload Area */}
                         <div className="flex flex-col items-center gap-4">
                             <div
-                                className="group relative flex h-24 w-24 cursor-pointer flex-col items-center justify-center gap-1 overflow-hidden rounded-3xl border-2 border-dashed border-border bg-muted/30 transition-all hover:border-primary/50 hover:bg-muted/50"
+                                className="group relative flex h-24 w-24 cursor-pointer flex-col items-center justify-center gap-1 overflow-hidden rounded-lg border-2 border-dashed border-border bg-muted/30 transition-all hover:border-primary/50 hover:bg-muted/50"
                                 onClick={() =>
                                     document
                                         .getElementById('logo-input')
@@ -81,7 +81,7 @@ export default function CreateProject() {
                         <div className="space-y-2">
                             <Label
                                 htmlFor="name"
-                                className="ml-1 text-[10px] font-black tracking-[0.2em] text-muted-foreground uppercase"
+                                className="ml-1 text-[10px] font-semibold tracking-[0.2em] text-muted-foreground uppercase"
                             >
                                 Project Name
                             </Label>
@@ -94,7 +94,7 @@ export default function CreateProject() {
                                 placeholder="e.g. Production API"
                                 required
                                 autoFocus
-                                className="h-12 rounded-xl border-border bg-card px-4 text-base shadow-sm focus:ring-1 focus:ring-primary"
+                                className="h-12 rounded-lg border-border bg-card px-4 text-base shadow-sm focus:ring-1 focus:ring-primary"
                             />
                             {errors.name && (
                                 <p className="ml-1 text-[10px] font-bold text-red-500">
@@ -107,7 +107,7 @@ export default function CreateProject() {
                     <div className="flex flex-col gap-3">
                         <Button
                             type="submit"
-                            className="h-12 w-full rounded-xl bg-primary text-[10px] font-black tracking-widest text-primary-foreground uppercase shadow-lg transition-all active:scale-[0.98]"
+                            className="h-12 w-full rounded-lg bg-primary text-[10px] font-semibold tracking-widest text-primary-foreground uppercase shadow-lg transition-all active:scale-[0.98]"
                             disabled={processing}
                         >
                             {processing && (

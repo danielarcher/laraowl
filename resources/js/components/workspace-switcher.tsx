@@ -207,7 +207,7 @@ export function WorkspaceSwitcher({
                 )}
             </DropdownMenuTrigger>
             <DropdownMenuContent
-                className="w-72 overflow-hidden rounded-xl border-border bg-card p-0 shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-xl"
+                className="w-72 overflow-hidden rounded-lg border-border bg-card p-0 shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-xl"
                 side={inHeader ? 'bottom' : isMobile ? 'bottom' : 'right'}
                 align={inHeader ? 'end' : 'start'}
                 sideOffset={inHeader ? 8 : 4}

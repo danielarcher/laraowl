@@ -64,7 +64,7 @@ export default function UsersIndex({
             <div className="space-y-8">
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                    <Card className="overflow-hidden border-border bg-card shadow-2xl">
+                    <Card className="overflow-hidden border-border bg-card">
                         <CardContent className="p-6">
                             <div className="mb-6 flex items-start justify-between">
                                 <div>
@@ -130,7 +130,7 @@ export default function UsersIndex({
                         </CardContent>
                     </Card>
 
-                    <Card className="overflow-hidden border-border bg-card shadow-2xl">
+                    <Card className="overflow-hidden border-border bg-card">
                         <CardContent className="p-6">
                             <div className="mb-6 flex items-start justify-between">
                                 <div>
@@ -144,7 +144,7 @@ export default function UsersIndex({
                                         )}
                                     </div>
                                 </div>
-                                <div className="flex gap-4 text-[10px] font-bold tracking-tighter uppercase">
+                                <div className="flex gap-4 text-[10px] font-bold tracking-tight uppercase">
                                     <div className="flex items-center gap-1.5">
                                         <span className="h-2 w-2 rounded-full bg-emerald-500"></span>{' '}
                                         Authenticated{' '}

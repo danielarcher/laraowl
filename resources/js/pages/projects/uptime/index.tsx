@@ -25,13 +25,13 @@ export default function UptimeIndex({ checks, uptime_stats, period }: any) {
             <>
                 <Head title={`Uptime - ${currentProject?.name}`} />
 
-                <Card className="border-border bg-card p-12 shadow-2xl">
+                <Card className="border-border bg-card p-12">
                     <div className="flex flex-col items-center justify-center gap-4 text-center">
                         <Globe className="size-12 text-muted-foreground/30" />
-                        <div className="text-2xl font-black tracking-tighter text-foreground">
+                        <div className="text-2xl font-semibold tracking-tight text-foreground">
                             Uptime Monitoring Disabled
                         </div>
-                        <p className="max-w-md text-[10px] font-black tracking-widest text-muted-foreground uppercase opacity-50">
+                        <p className="max-w-md text-[10px] font-semibold tracking-widest text-muted-foreground uppercase opacity-50">
                             Enable it under the project's general settings to
                             start checking availability again.
                         </p>
@@ -47,52 +47,52 @@ export default function UptimeIndex({ checks, uptime_stats, period }: any) {
 
             {/* Stats Overview */}
             <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                <Card className="group relative overflow-hidden border-border bg-card p-8 shadow-2xl">
+                <Card className="group relative overflow-hidden border-border bg-card p-8">
                     <div className="absolute top-0 right-0 p-4 opacity-5 transition-opacity group-hover:opacity-10">
                         <CheckCircle2 className="size-24 text-emerald-500" />
                     </div>
-                    <div className="mb-2 text-[10px] font-black tracking-widest text-muted-foreground uppercase opacity-50">
+                    <div className="mb-2 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase opacity-50">
                         Availability
                     </div>
-                    <div className="mb-2 text-4xl font-black tracking-tighter text-foreground">
+                    <div className="mb-2 text-4xl font-semibold tracking-tight text-foreground">
                         {uptime_stats.uptime_percentage}%
                     </div>
                     <div className="flex items-center gap-2">
                         <div
                             className={`size-2 rounded-full ${uptime_stats.uptime_percentage > 99 ? 'animate-pulse bg-emerald-500' : 'bg-orange-500'}`}
                         ></div>
-                        <span className="text-[10px] font-black tracking-widest text-muted-foreground uppercase">
+                        <span className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
                             System Operational
                         </span>
                     </div>
                 </Card>
 
-                <Card className="group relative overflow-hidden border-border bg-card p-8 shadow-2xl">
+                <Card className="group relative overflow-hidden border-border bg-card p-8">
                     <div className="absolute top-0 right-0 p-4 opacity-5 transition-opacity group-hover:opacity-10">
                         <Timer className="size-24 text-blue-500" />
                     </div>
-                    <div className="mb-2 text-[10px] font-black tracking-widest text-muted-foreground uppercase opacity-50">
+                    <div className="mb-2 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase opacity-50">
                         Avg Response Time
                     </div>
-                    <div className="mb-2 text-4xl font-black tracking-tighter text-foreground">
+                    <div className="mb-2 text-4xl font-semibold tracking-tight text-foreground">
                         {Math.round(uptime_stats.avg_response_time)}ms
                     </div>
                     <div className="flex items-center gap-2">
                         <Clock className="size-3 text-muted-foreground/50" />
-                        <span className="text-[10px] font-black tracking-widest text-muted-foreground uppercase">
+                        <span className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
                             Last {period}
                         </span>
                     </div>
                 </Card>
 
-                <Card className="group relative overflow-hidden border-border bg-card p-8 shadow-2xl">
+                <Card className="group relative overflow-hidden border-border bg-card p-8">
                     <div className="absolute top-0 right-0 p-4 opacity-5 transition-opacity group-hover:opacity-10">
                         <RefreshCw className="size-24 text-primary" />
                     </div>
-                    <div className="mb-2 text-[10px] font-black tracking-widest text-muted-foreground uppercase opacity-50">
+                    <div className="mb-2 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase opacity-50">
                         Last Check
                     </div>
-                    <div className="mb-2 text-xl font-black tracking-tight text-foreground">
+                    <div className="mb-2 text-xl font-semibold tracking-tight text-foreground">
                         {uptime_stats.last_check
                             ? new Date(
                                   uptime_stats.last_check.checked_at,
@@ -101,7 +101,7 @@ export default function UptimeIndex({ checks, uptime_stats, period }: any) {
                     </div>
                     <div className="flex items-center gap-2">
                         <Globe className="size-3 text-muted-foreground/50" />
-                        <span className="text-[10px] font-black tracking-widest text-muted-foreground uppercase">
+                        <span className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
                             Global Node
                         </span>
                     </div>
@@ -109,9 +109,9 @@ export default function UptimeIndex({ checks, uptime_stats, period }: any) {
             </div>
 
             {/* History Chart */}
-            <Card className="overflow-hidden border-border bg-card shadow-2xl">
+            <Card className="overflow-hidden border-border bg-card">
                 <div className="border-b border-border/50 p-8">
-                    <div className="flex items-center gap-2 text-xs font-black tracking-widest text-foreground uppercase">
+                    <div className="flex items-center gap-2 text-xs font-semibold tracking-widest text-foreground uppercase">
                         <ActivityIcon className="size-3.5 text-muted-foreground" />
                         Response Time History
                     </div>
@@ -189,26 +189,26 @@ export default function UptimeIndex({ checks, uptime_stats, period }: any) {
 
             {/* Detailed Checks Table */}
             <div className="space-y-4">
-                <div className="flex items-center gap-2 px-2 text-xs font-black tracking-widest text-foreground uppercase">
+                <div className="flex items-center gap-2 px-2 text-xs font-semibold tracking-widest text-foreground uppercase">
                     <History className="size-3.5 text-muted-foreground" />
                     Check History
                 </div>
 
-                <Card className="overflow-hidden border-border bg-card shadow-2xl">
+                <Card className="overflow-hidden border-border bg-card">
                     <div className="overflow-x-auto">
                         <table className="w-full border-collapse text-left">
                             <thead>
                                 <tr className="border-b border-border/50 bg-muted/30">
-                                    <th className="px-6 py-4 text-[10px] font-black tracking-widest text-muted-foreground uppercase">
+                                    <th className="px-6 py-4 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
                                         Status
                                     </th>
-                                    <th className="px-6 py-4 text-[10px] font-black tracking-widest text-muted-foreground uppercase">
+                                    <th className="px-6 py-4 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
                                         Response Time
                                     </th>
-                                    <th className="px-6 py-4 text-[10px] font-black tracking-widest text-muted-foreground uppercase">
+                                    <th className="px-6 py-4 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
                                         Status Code
                                     </th>
-                                    <th className="px-6 py-4 text-[10px] font-black tracking-widest text-muted-foreground uppercase">
+                                    <th className="px-6 py-4 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
                                         Checked At
                                     </th>
                                 </tr>
@@ -222,18 +222,18 @@ export default function UptimeIndex({ checks, uptime_stats, period }: any) {
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-2">
                                                 {check.status === 'up' ? (
-                                                    <Badge className="border-emerald-500/20 bg-emerald-500/10 text-[9px] font-black tracking-widest text-emerald-500 uppercase">
+                                                    <Badge className="border-emerald-500/20 bg-emerald-500/10 text-[9px] font-semibold tracking-widest text-emerald-500 uppercase">
                                                         UP
                                                     </Badge>
                                                 ) : (
-                                                    <Badge className="border-red-500/20 bg-red-500/10 text-[9px] font-black tracking-widest text-red-500 uppercase">
+                                                    <Badge className="border-red-500/20 bg-red-500/10 text-[9px] font-semibold tracking-widest text-red-500 uppercase">
                                                         DOWN
                                                     </Badge>
                                                 )}
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className="text-sm font-black text-foreground">
+                                            <span className="text-sm font-semibold text-foreground">
                                                 {check.response_time}ms
                                             </span>
                                         </td>

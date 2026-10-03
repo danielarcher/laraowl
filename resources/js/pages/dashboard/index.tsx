@@ -72,7 +72,7 @@ export default function Dashboard({
                 {/* Section: Health & Setup */}
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
                     {/* Uptime Status */}
-                    <Card className="relative overflow-hidden border-border bg-card shadow-2xl lg:col-span-4">
+                    <Card className="relative overflow-hidden border-border bg-card lg:col-span-4">
                         <div
                             className={`absolute top-0 right-0 h-24 w-24 translate-x-8 -translate-y-8 rounded-full opacity-20 blur-3xl ${
                                 !uptimeEnabled
@@ -84,11 +84,11 @@ export default function Dashboard({
                         />
                         <CardContent className="p-8">
                             <div className="mb-6 flex items-center justify-between">
-                                <div className="text-[10px] font-black tracking-widest text-muted-foreground uppercase opacity-50">
+                                <div className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase opacity-50">
                                     Availability
                                 </div>
                                 <Badge
-                                    className={`h-5 gap-1.5 border-none px-2 text-[9px] font-black uppercase ${
+                                    className={`h-5 gap-1.5 border-none px-2 text-[9px] font-semibold uppercase ${
                                         !uptimeEnabled
                                             ? 'bg-muted text-muted-foreground'
                                             : uptime_status?.current === 'up'
@@ -115,7 +115,7 @@ export default function Dashboard({
                                           'Monitoring...'}
                                 </Badge>
                             </div>
-                            <div className="mb-2 text-3xl font-black tracking-tighter text-foreground">
+                            <div className="mb-2 text-3xl font-semibold tracking-tight text-foreground">
                                 {!uptimeEnabled
                                     ? 'Monitoring Disabled'
                                     : uptime_status?.current === 'up'
@@ -136,14 +136,14 @@ export default function Dashboard({
 
                     {/* Dynamic Guide or Insights */}
                     {total_requests === 0 ? (
-                        <Card className="overflow-hidden border-border bg-card/40 shadow-2xl lg:col-span-8">
+                        <Card className="overflow-hidden border-border bg-card/40 lg:col-span-8">
                             <CardContent className="flex flex-col items-stretch p-0 md:flex-row">
                                 <div className="flex-1 space-y-4 p-8">
-                                    <div className="text-[10px] font-black tracking-widest text-muted-foreground uppercase opacity-50">
+                                    <div className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase opacity-50">
                                         Quick Integration
                                     </div>
                                     <div className="space-y-1">
-                                        <h3 className="text-sm font-black tracking-tight text-foreground uppercase">
+                                        <h3 className="text-sm font-semibold tracking-tight text-foreground uppercase">
                                             Connect your Laravel app
                                         </h3>
                                         <p className="text-[10px] leading-relaxed text-muted-foreground">
@@ -171,7 +171,7 @@ export default function Dashboard({
                                 </div>
                                 <div className="flex flex-col justify-center gap-4 border-l border-border/50 bg-muted/30 p-8 md:w-64">
                                     <div className="space-y-1">
-                                        <div className="text-[9px] font-black text-muted-foreground uppercase">
+                                        <div className="text-[9px] font-semibold text-muted-foreground uppercase">
                                             Your API Token
                                         </div>
                                         <div className="flex items-center gap-2">
@@ -183,7 +183,7 @@ export default function Dashboard({
                                     <Button
                                         size="sm"
                                         variant="secondary"
-                                        className="h-7 rounded-md text-[9px] font-black tracking-widest uppercase"
+                                        className="h-7 rounded-md text-[9px] font-semibold tracking-widest uppercase"
                                         asChild
                                     >
                                         <Link
@@ -196,10 +196,10 @@ export default function Dashboard({
                             </CardContent>
                         </Card>
                     ) : (
-                        <Card className="overflow-hidden border-border bg-card/40 shadow-2xl lg:col-span-8">
+                        <Card className="overflow-hidden border-border bg-card/40 lg:col-span-8">
                             <CardContent className="grid grid-cols-1 gap-8 p-8 md:grid-cols-2">
                                 <div className="space-y-2">
-                                    <div className="text-[10px] font-black tracking-widest text-muted-foreground uppercase opacity-50">
+                                    <div className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase opacity-50">
                                         Integration Status
                                     </div>
                                     <div className="flex items-center gap-2.5">
@@ -207,7 +207,7 @@ export default function Dashboard({
                                             <div className="size-2 animate-pulse rounded-full bg-emerald-500" />
                                         </div>
                                         <div className="space-y-0.5">
-                                            <div className="text-xs font-black tracking-tight text-foreground uppercase">
+                                            <div className="text-xs font-semibold tracking-tight text-foreground uppercase">
                                                 Active & Connected
                                             </div>
                                             <div className="text-[9px] font-bold tracking-widest text-muted-foreground uppercase">
@@ -221,7 +221,7 @@ export default function Dashboard({
                                     </p>
                                 </div>
                                 <div className="space-y-2">
-                                    <div className="text-[10px] font-black tracking-widest text-muted-foreground uppercase opacity-50">
+                                    <div className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase opacity-50">
                                         Performance Health
                                     </div>
                                     <div className="flex items-center gap-2.5">
@@ -229,7 +229,7 @@ export default function Dashboard({
                                             <ActivityIcon className="size-4 text-primary" />
                                         </div>
                                         <div className="space-y-0.5">
-                                            <div className="text-xs font-black tracking-tight text-foreground uppercase">
+                                            <div className="text-xs font-semibold tracking-tight text-foreground uppercase">
                                                 {duration_stats?.avg < 500
                                                     ? 'System Optimized'
                                                     : 'Latency Detected'}
@@ -261,7 +261,7 @@ export default function Dashboard({
                 {/* Section: Activity */}
                 <section className="space-y-4">
                     <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-xs font-black tracking-widest text-foreground uppercase">
+                        <div className="flex items-center gap-2 text-xs font-semibold tracking-widest text-foreground uppercase">
                             <div className="rounded-md border border-border bg-muted p-1.5">
                                 <ActivityIcon className="size-3.5 text-muted-foreground" />
                             </div>
@@ -271,7 +271,7 @@ export default function Dashboard({
                             asChild
                             variant="ghost"
                             size="sm"
-                            className="h-8 gap-2 bg-muted text-[10px] font-black tracking-widest uppercase hover:bg-muted/80"
+                            className="h-8 gap-2 bg-muted text-[10px] font-semibold tracking-widest uppercase hover:bg-muted/80"
                         >
                             <Link href={monitoringHref('requests')}>
                                 Requests <ArrowUpRight className="size-3" />
@@ -281,14 +281,14 @@ export default function Dashboard({
 
                     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                         {/* Requests Card */}
-                        <Card className="group overflow-hidden border-border bg-card shadow-2xl">
+                        <Card className="group overflow-hidden border-border bg-card">
                             <CardContent className="p-8">
                                 <div className="mb-8 flex items-start justify-between">
                                     <div>
-                                        <div className="mb-1 text-[10px] font-black tracking-widest text-muted-foreground uppercase opacity-50">
+                                        <div className="mb-1 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase opacity-50">
                                             Requests
                                         </div>
-                                        <div className="text-4xl font-black tracking-tighter text-foreground">
+                                        <div className="text-4xl font-semibold tracking-tight text-foreground">
                                             {formatCompactNumber(
                                                 total_requests,
                                             )}
@@ -298,11 +298,11 @@ export default function Dashboard({
                                         <div className="text-right">
                                             <div className="flex items-center justify-end gap-1.5">
                                                 <span className="h-2 w-2 rounded-full bg-muted-foreground/30"></span>{' '}
-                                                <span className="text-[10px] font-black tracking-tighter text-muted-foreground uppercase">
+                                                <span className="text-[10px] font-semibold tracking-tight text-muted-foreground uppercase">
                                                     1/2/3xx
                                                 </span>
                                             </div>
-                                            <div className="text-lg font-black text-foreground">
+                                            <div className="text-lg font-semibold text-foreground">
                                                 {formatCompactNumber(
                                                     request_breakdown?.ok || 0,
                                                 )}
@@ -311,11 +311,11 @@ export default function Dashboard({
                                         <div className="text-right">
                                             <div className="flex items-center justify-end gap-1.5">
                                                 <span className="h-2 w-2 rounded-full bg-orange-500"></span>{' '}
-                                                <span className="text-[10px] font-black tracking-tighter text-muted-foreground uppercase">
+                                                <span className="text-[10px] font-semibold tracking-tight text-muted-foreground uppercase">
                                                     4xx
                                                 </span>
                                             </div>
-                                            <div className="text-lg font-black text-foreground">
+                                            <div className="text-lg font-semibold text-foreground">
                                                 {formatCompactNumber(
                                                     request_breakdown?.client_error ||
                                                         0,
@@ -325,11 +325,11 @@ export default function Dashboard({
                                         <div className="text-right">
                                             <div className="flex items-center justify-end gap-1.5">
                                                 <span className="h-2 w-2 rounded-full bg-red-500"></span>{' '}
-                                                <span className="text-[10px] font-black tracking-tighter text-muted-foreground uppercase">
+                                                <span className="text-[10px] font-semibold tracking-tight text-muted-foreground uppercase">
                                                     5xx
                                                 </span>
                                             </div>
-                                            <div className="text-lg font-black text-foreground">
+                                            <div className="text-lg font-semibold text-foreground">
                                                 {formatCompactNumber(
                                                     request_breakdown?.server_error ||
                                                         0,
@@ -434,14 +434,14 @@ export default function Dashboard({
                         </Card>
 
                         {/* Duration Card */}
-                        <Card className="group overflow-hidden border-border bg-card shadow-2xl">
+                        <Card className="group overflow-hidden border-border bg-card">
                             <CardContent className="p-8">
                                 <div className="mb-8 flex items-start justify-between">
                                     <div>
-                                        <div className="mb-1 text-[10px] font-black tracking-widest text-muted-foreground uppercase opacity-50">
+                                        <div className="mb-1 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase opacity-50">
                                             Duration
                                         </div>
-                                        <div className="text-4xl font-black tracking-tighter text-foreground">
+                                        <div className="text-4xl font-semibold tracking-tight text-foreground">
                                             {formatMicroSeconds(
                                                 duration_stats?.min,
                                             )}{' '}
@@ -455,11 +455,11 @@ export default function Dashboard({
                                         <div className="text-right">
                                             <div className="flex items-center justify-end gap-1.5">
                                                 <span className="h-2 w-2 rounded-full bg-muted-foreground/30"></span>{' '}
-                                                <span className="text-[10px] font-black tracking-tighter text-muted-foreground uppercase">
+                                                <span className="text-[10px] font-semibold tracking-tight text-muted-foreground uppercase">
                                                     Avg
                                                 </span>
                                             </div>
-                                            <div className="text-lg font-black text-foreground">
+                                            <div className="text-lg font-semibold text-foreground">
                                                 {formatMicroSeconds(
                                                     duration_stats?.avg,
                                                 )}
@@ -468,11 +468,11 @@ export default function Dashboard({
                                         <div className="text-right">
                                             <div className="flex items-center justify-end gap-1.5">
                                                 <span className="h-2 w-2 rounded-full bg-orange-500"></span>{' '}
-                                                <span className="text-[10px] font-black tracking-tighter text-muted-foreground uppercase">
+                                                <span className="text-[10px] font-semibold tracking-tight text-muted-foreground uppercase">
                                                     P95
                                                 </span>
                                             </div>
-                                            <div className="text-lg font-black text-foreground">
+                                            <div className="text-lg font-semibold text-foreground">
                                                 {formatMicroSeconds(
                                                     duration_stats?.max,
                                                 )}
@@ -565,7 +565,7 @@ export default function Dashboard({
                 {/* Section: Application */}
                 <section className="space-y-4">
                     <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-xs font-black tracking-widest text-foreground uppercase">
+                        <div className="flex items-center gap-2 text-xs font-semibold tracking-widest text-foreground uppercase">
                             <div className="rounded-md border border-border bg-muted p-1.5">
                                 <LayoutGrid className="size-3.5 text-muted-foreground" />
                             </div>
@@ -575,7 +575,7 @@ export default function Dashboard({
                             asChild
                             variant="ghost"
                             size="sm"
-                            className="h-8 gap-2 bg-muted text-[10px] font-black tracking-widest uppercase hover:bg-muted/80"
+                            className="h-8 gap-2 bg-muted text-[10px] font-semibold tracking-widest uppercase hover:bg-muted/80"
                         >
                             <Link href={monitoringHref('jobs')}>
                                 Jobs <ArrowUpRight className="size-3" />
@@ -585,11 +585,11 @@ export default function Dashboard({
 
                     <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
                         {/* Exceptions Overview */}
-                        <Card className="relative flex flex-col overflow-hidden border-border bg-card p-6 shadow-2xl lg:col-span-4">
-                            <Badge className="mb-6 w-fit border-border bg-muted text-[9px] font-black tracking-widest text-muted-foreground">
+                        <Card className="relative flex flex-col overflow-hidden border-border bg-card p-6 lg:col-span-4">
+                            <Badge className="mb-6 w-fit border-border bg-muted text-[9px] font-semibold tracking-widest text-muted-foreground">
                                 EXCEPTIONS
                             </Badge>
-                            <h3 className="mb-2 text-xl leading-tight font-black tracking-tight text-foreground">
+                            <h3 className="mb-2 text-xl leading-tight font-semibold tracking-tight text-foreground">
                                 {total_exceptions} exceptions reported in the
                                 last {period}.
                             </h3>
@@ -620,7 +620,7 @@ export default function Dashboard({
                                         ),
                                     )}
                                 </div>
-                                <div className="mb-6 flex items-center gap-4 text-[9px] font-black tracking-widest text-muted-foreground/60 uppercase">
+                                <div className="mb-6 flex items-center gap-4 text-[9px] font-semibold tracking-widest text-muted-foreground/60 uppercase">
                                     <div className="flex items-center gap-1.5">
                                         <span className="size-1.5 rounded-full bg-muted-foreground/20"></span>{' '}
                                         {total_exceptions > 0
@@ -635,7 +635,7 @@ export default function Dashboard({
                                 <Button
                                     asChild
                                     variant="outline"
-                                    className="ml-auto h-8 w-fit self-end border-border bg-muted px-4 text-[10px] font-black tracking-widest uppercase hover:bg-muted/50"
+                                    className="ml-auto h-8 w-fit self-end border-border bg-muted px-4 text-[10px] font-semibold tracking-widest uppercase hover:bg-muted/50"
                                 >
                                     <Link href={monitoringHref('exceptions')}>
                                         View
@@ -645,30 +645,30 @@ export default function Dashboard({
                         </Card>
 
                         {/* Setup Thresholds */}
-                        <Card className="group flex cursor-pointer flex-col items-center justify-center border-dashed border-border bg-card p-6 text-center shadow-2xl transition-all hover:border-primary/50 lg:col-span-4">
-                            <div className="mb-6 flex size-12 items-center justify-center rounded-xl border border-border bg-muted transition-transform group-hover:scale-110">
+                        <Card className="group flex cursor-pointer flex-col items-center justify-center border-dashed border-border bg-card p-6 text-center transition-all hover:border-primary/50 lg:col-span-4">
+                            <div className="mb-6 flex size-12 items-center justify-center rounded-lg border border-border bg-muted transition-transform group-hover:scale-110">
                                 <Settings2 className="size-6 text-muted-foreground" />
                             </div>
-                            <h3 className="mb-2 text-xl font-black tracking-tight text-foreground">
+                            <h3 className="mb-2 text-xl font-semibold tracking-tight text-foreground">
                                 Setup thresholds
                             </h3>
                             <p className="mb-8 max-w-[200px] text-xs leading-relaxed text-muted-foreground">
                                 Configure your performance thresholds to start
                                 monitoring.
                             </p>
-                            <Button className="h-9 gap-2 rounded-lg bg-primary px-6 text-[10px] font-black tracking-widest text-primary-foreground uppercase">
+                            <Button className="h-9 gap-2 rounded-lg bg-primary px-6 text-[10px] font-semibold tracking-widest text-primary-foreground uppercase">
                                 <Plus className="size-3.5" /> Add Threshold
                             </Button>
                         </Card>
 
                         {/* Jobs & Durations */}
-                        <Card className="flex flex-col divide-y divide-border border-border bg-card shadow-2xl lg:col-span-4">
+                        <Card className="flex flex-col divide-y divide-border border-border bg-card lg:col-span-4">
                             <div className="flex-1 p-6">
                                 <div className="mb-6 flex items-center justify-between">
-                                    <div className="text-[10px] font-black tracking-widest text-muted-foreground uppercase opacity-50">
+                                    <div className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase opacity-50">
                                         Jobs
                                     </div>
-                                    <div className="flex flex-wrap justify-end gap-x-4 gap-y-2 text-[9px] font-black tracking-widest uppercase">
+                                    <div className="flex flex-wrap justify-end gap-x-4 gap-y-2 text-[9px] font-semibold tracking-widest uppercase">
                                         <div className="flex items-center gap-1.5">
                                             <span className="size-1.5 rounded-full bg-red-500"></span>{' '}
                                             Failed{' '}
@@ -685,16 +685,16 @@ export default function Dashboard({
                                         </div>
                                     </div>
                                 </div>
-                                <div className="text-3xl font-black tracking-tighter text-foreground">
+                                <div className="text-3xl font-semibold tracking-tight text-foreground">
                                     {job_stats?.total || 0}
                                 </div>
                             </div>
                             <div className="flex-1 p-6">
                                 <div className="mb-6 flex items-center justify-between">
-                                    <div className="text-[10px] font-black tracking-widest text-muted-foreground uppercase opacity-50">
+                                    <div className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase opacity-50">
                                         Job Duration
                                     </div>
-                                    <div className="flex gap-4 text-[9px] font-black tracking-widest uppercase">
+                                    <div className="flex gap-4 text-[9px] font-semibold tracking-widest uppercase">
                                         <div className="flex items-center gap-1.5">
                                             <span className="size-1.5 rounded-full bg-muted-foreground/30"></span>{' '}
                                             Avg{' '}
@@ -707,7 +707,7 @@ export default function Dashboard({
                                         </div>
                                     </div>
                                 </div>
-                                <div className="text-3xl font-black tracking-tighter text-foreground">
+                                <div className="text-3xl font-semibold tracking-tight text-foreground">
                                     {formatMicroSeconds(
                                         (job_stats?.avg_duration || 0) * 1000,
                                     )}
@@ -720,7 +720,7 @@ export default function Dashboard({
                 {/* Section: Users */}
                 <section className="space-y-4">
                     <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-xs font-black tracking-widest text-foreground uppercase">
+                        <div className="flex items-center gap-2 text-xs font-semibold tracking-widest text-foreground uppercase">
                             <div className="rounded-md border border-border bg-muted p-1.5">
                                 <UsersIcon className="size-3.5 text-muted-foreground" />
                             </div>
@@ -730,7 +730,7 @@ export default function Dashboard({
                             asChild
                             variant="ghost"
                             size="sm"
-                            className="h-8 gap-2 bg-muted text-[10px] font-black tracking-widest uppercase hover:bg-muted/80"
+                            className="h-8 gap-2 bg-muted text-[10px] font-semibold tracking-widest uppercase hover:bg-muted/80"
                         >
                             <Link href={monitoringHref('users')}>
                                 Users <ArrowUpRight className="size-3" />
@@ -740,11 +740,11 @@ export default function Dashboard({
 
                     <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
                         {/* Impacted by Exceptions */}
-                        <Card className="flex flex-col border-border bg-card p-6 shadow-2xl lg:col-span-4">
-                            <Badge className="mb-6 w-fit border-border bg-muted text-[9px] font-black tracking-widest text-muted-foreground">
+                        <Card className="flex flex-col border-border bg-card p-6 lg:col-span-4">
+                            <Badge className="mb-6 w-fit border-border bg-muted text-[9px] font-semibold tracking-widest text-muted-foreground">
                                 EXCEPTIONS
                             </Badge>
-                            <h3 className="mb-8 text-xl leading-tight font-black tracking-tight text-foreground">
+                            <h3 className="mb-8 text-xl leading-tight font-semibold tracking-tight text-foreground">
                                 {impacted_users?.length || 0} user impacted by
                                 exceptions in the last {period}.
                             </h3>
@@ -755,17 +755,17 @@ export default function Dashboard({
                                     .map((u: any, i: number) => (
                                         <div
                                             key={i}
-                                            className="group flex items-center justify-between rounded-xl border border-border bg-muted/30 p-3 transition-all hover:border-primary/30"
+                                            className="group flex items-center justify-between rounded-lg border border-border bg-muted/30 p-3 transition-all hover:border-primary/30"
                                         >
                                             <div className="flex items-center gap-3">
-                                                <div className="flex size-10 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 text-xs font-black text-foreground uppercase shadow-lg">
+                                                <div className="flex size-10 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 text-xs font-semibold text-foreground uppercase shadow-lg">
                                                     {u.user_identifier.substring(
                                                         0,
                                                         1,
                                                     )}
                                                 </div>
                                                 <div className="min-w-0">
-                                                    <div className="truncate text-sm font-black text-foreground">
+                                                    <div className="truncate text-sm font-semibold text-foreground">
                                                         {u.user_identifier}
                                                     </div>
                                                     <div className="truncate text-[10px] text-muted-foreground opacity-60">
@@ -775,7 +775,7 @@ export default function Dashboard({
                                                     </div>
                                                 </div>
                                             </div>
-                                            <Badge className="h-5 animate-pulse gap-1 border-none bg-red-500 px-1.5 text-[10px] font-black text-foreground">
+                                            <Badge className="h-5 animate-pulse gap-1 border-none bg-red-500 px-1.5 text-[10px] font-semibold text-foreground">
                                                 <AlertCircle className="size-2.5" />{' '}
                                                 {u.error_count}
                                             </Badge>
@@ -786,18 +786,18 @@ export default function Dashboard({
                             <Button
                                 asChild
                                 variant="outline"
-                                className="mt-auto ml-auto h-8 w-fit border-border bg-muted px-4 text-[10px] font-black tracking-widest uppercase hover:bg-muted/50"
+                                className="mt-auto ml-auto h-8 w-fit border-border bg-muted px-4 text-[10px] font-semibold tracking-widest uppercase hover:bg-muted/50"
                             >
                                 <Link href={monitoringHref('users')}>View</Link>
                             </Button>
                         </Card>
 
                         {/* Most Active Users */}
-                        <Card className="flex flex-col border-border bg-card p-6 shadow-2xl lg:col-span-4">
-                            <Badge className="mb-6 w-fit border-border bg-muted text-[9px] font-black tracking-widest text-muted-foreground">
+                        <Card className="flex flex-col border-border bg-card p-6 lg:col-span-4">
+                            <Badge className="mb-6 w-fit border-border bg-muted text-[9px] font-semibold tracking-widest text-muted-foreground">
                                 REQUESTS
                             </Badge>
-                            <h3 className="mb-8 text-xl leading-tight font-black tracking-tight text-foreground">
+                            <h3 className="mb-8 text-xl leading-tight font-semibold tracking-tight text-foreground">
                                 Most active users in the last {period}.
                             </h3>
 
@@ -807,10 +807,10 @@ export default function Dashboard({
                                     .map((u: any, i: number) => (
                                         <div
                                             key={i}
-                                            className="flex items-center justify-between rounded-xl border-b border-border/50 p-3 transition-all last:border-none hover:bg-muted/30"
+                                            className="flex items-center justify-between rounded-lg border-b border-border/50 p-3 transition-all last:border-none hover:bg-muted/30"
                                         >
                                             <div className="min-w-0">
-                                                <div className="truncate text-sm font-black text-foreground">
+                                                <div className="truncate text-sm font-semibold text-foreground">
                                                     {u.user_identifier}
                                                 </div>
                                                 <div className="truncate text-[10px] text-muted-foreground opacity-60">
@@ -819,7 +819,7 @@ export default function Dashboard({
                                                             `ID: ${u.user_id}`)}
                                                 </div>
                                             </div>
-                                            <div className="text-xs font-black text-foreground/80">
+                                            <div className="text-xs font-semibold text-foreground/80">
                                                 {u.request_count}
                                             </div>
                                         </div>
@@ -829,7 +829,7 @@ export default function Dashboard({
                             <Button
                                 asChild
                                 variant="outline"
-                                className="mt-auto ml-auto h-8 w-fit border-border bg-muted px-4 text-[10px] font-black tracking-widest uppercase hover:bg-muted/50"
+                                className="mt-auto ml-auto h-8 w-fit border-border bg-muted px-4 text-[10px] font-semibold tracking-widest uppercase hover:bg-muted/50"
                             >
                                 <Link href={monitoringHref('users')}>View</Link>
                             </Button>
@@ -837,13 +837,13 @@ export default function Dashboard({
 
                         {/* Auth vs Guest Charts */}
                         <div className="space-y-6 lg:col-span-4">
-                            <Card className="border-border bg-card p-6 shadow-2xl">
+                            <Card className="border-border bg-card p-6">
                                 <div className="mb-6 flex items-start justify-between">
                                     <div>
-                                        <div className="mb-1 text-[9px] font-black tracking-widest text-muted-foreground uppercase opacity-50">
+                                        <div className="mb-1 text-[9px] font-semibold tracking-widest text-muted-foreground uppercase opacity-50">
                                             Authenticated Users
                                         </div>
-                                        <div className="text-2xl font-black tracking-tighter text-foreground">
+                                        <div className="text-2xl font-semibold tracking-tight text-foreground">
                                             {formatCompactNumber(
                                                 auth_users_count,
                                             )}
@@ -905,19 +905,19 @@ export default function Dashboard({
                                 </div>
                             </Card>
 
-                            <Card className="border-border bg-card p-6 shadow-2xl">
+                            <Card className="border-border bg-card p-6">
                                 <div className="mb-6 flex items-start justify-between">
                                     <div>
-                                        <div className="mb-1 text-[9px] font-black tracking-widest text-muted-foreground uppercase opacity-50">
+                                        <div className="mb-1 text-[9px] font-semibold tracking-widest text-muted-foreground uppercase opacity-50">
                                             Requests
                                         </div>
-                                        <div className="text-2xl font-black tracking-tighter text-foreground">
+                                        <div className="text-2xl font-semibold tracking-tight text-foreground">
                                             {formatCompactNumber(
                                                 total_requests,
                                             )}
                                         </div>
                                     </div>
-                                    <div className="flex gap-4 text-[8px] font-black tracking-widest uppercase">
+                                    <div className="flex gap-4 text-[8px] font-semibold tracking-widest uppercase">
                                         <div className="flex items-center gap-1">
                                             <span className="size-1.5 rounded-full bg-emerald-500"></span>{' '}
                                             Auth{' '}

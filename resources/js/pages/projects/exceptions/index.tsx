@@ -62,7 +62,7 @@ export default function ExceptionsIndex({
 
             <div className="space-y-8">
                 {/* Stats Card */}
-                <Card className="overflow-hidden border-border bg-card shadow-2xl">
+                <Card className="overflow-hidden border-border bg-card">
                     <CardContent className="p-6">
                         <div className="mb-6 flex items-start justify-between">
                             <div>

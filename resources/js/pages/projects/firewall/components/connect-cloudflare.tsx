@@ -19,13 +19,13 @@ export function ConnectCloudflare() {
     return (
         <div className="flex min-h-[50vh] animate-in flex-col items-center justify-center px-4 py-12 duration-700 fade-in slide-in-from-bottom-4">
             <div className="mb-8">
-                <div className="flex h-20 w-20 items-center justify-center rounded-2xl border border-primary/20 bg-primary/5 shadow-sm">
+                <div className="flex h-20 w-20 items-center justify-center rounded-lg border border-primary/20 bg-primary/5 shadow-sm">
                     <Shield className="h-10 w-10 text-primary" />
                 </div>
             </div>
 
             <div className="mb-10 max-w-lg space-y-4 text-center">
-                <h2 className="text-2xl font-black tracking-tight text-foreground uppercase">
+                <h2 className="text-2xl font-semibold tracking-tight text-foreground uppercase">
                     Activate Edge Security
                 </h2>
                 <p className="text-sm leading-relaxed font-medium text-muted-foreground">
@@ -55,10 +55,10 @@ export function ConnectCloudflare() {
                 ].map((feature, i) => (
                     <div
                         key={i}
-                        className="flex flex-col items-center rounded-xl border border-border bg-card/30 p-4 text-center"
+                        className="flex flex-col items-center rounded-lg border border-border bg-card/30 p-4 text-center"
                     >
                         <feature.icon className="mb-3 h-4 w-4 text-primary" />
-                        <h3 className="mb-1 text-[10px] font-black tracking-widest uppercase">
+                        <h3 className="mb-1 text-[10px] font-semibold tracking-widest uppercase">
                             {feature.title}
                         </h3>
                         <p className="text-[9px] text-muted-foreground">
@@ -72,7 +72,7 @@ export function ConnectCloudflare() {
                 <Link href={`/${teamSlug}/${projectSlug}/settings#cloudflare`}>
                     <Button
                         size="lg"
-                        className="h-12 gap-2 rounded-xl bg-primary px-10 text-xs font-black tracking-widest uppercase shadow-lg shadow-primary/20 hover:bg-primary/90"
+                        className="h-12 gap-2 rounded-lg bg-primary px-10 text-xs font-semibold tracking-widest uppercase shadow-lg shadow-primary/20 hover:bg-primary/90"
                     >
                         Configure Cloudflare
                         <ArrowUpRight className="size-4" />
@@ -81,7 +81,7 @@ export function ConnectCloudflare() {
                 <Button
                     variant="outline"
                     size="lg"
-                    className="h-12 gap-2 rounded-xl border-border px-8 text-xs font-black tracking-widest uppercase"
+                    className="h-12 gap-2 rounded-lg border-border px-8 text-xs font-semibold tracking-widest uppercase"
                     asChild
                 >
                     <a

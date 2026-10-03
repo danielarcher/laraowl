@@ -45,9 +45,9 @@ export function ServerMetricChart({
     const chartId = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 
     return (
-        <Card className="overflow-hidden border-border bg-card shadow-2xl">
+        <Card className="overflow-hidden border-border bg-card">
             <div className="flex items-center justify-between border-b border-border/50 px-6 py-4">
-                <div className="flex items-center gap-2 text-xs font-black tracking-widest text-foreground uppercase">
+                <div className="flex items-center gap-2 text-xs font-semibold tracking-widest text-foreground uppercase">
                     <Icon className="size-3.5 text-muted-foreground" />
                     {title}
                 </div>
@@ -65,7 +65,7 @@ export function ServerMetricChart({
                         </div>
                     ))}
                     {summary && (
-                        <span className="text-xs font-black text-foreground">
+                        <span className="text-xs font-semibold text-foreground">
                             {summary}
                         </span>
                     )}
@@ -74,7 +74,7 @@ export function ServerMetricChart({
             <CardContent className="p-4 pt-6">
                 <div className="h-[220px] w-full">
                     {data.length === 0 ? (
-                        <div className="flex h-full items-center justify-center text-[10px] font-black tracking-widest text-muted-foreground uppercase opacity-50">
+                        <div className="flex h-full items-center justify-center text-[10px] font-semibold tracking-widest text-muted-foreground uppercase opacity-50">
                             No samples in this period
                         </div>
                     ) : (

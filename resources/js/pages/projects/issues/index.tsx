@@ -143,7 +143,7 @@ export default function Issues({
 
             <div className="flex flex-col gap-6">
                 {view === 'exceptions' ? (
-                    <div className="overflow-hidden rounded-xl border border-border bg-card shadow-2xl">
+                    <div className="overflow-hidden rounded-lg border border-border bg-card shadow-2xl">
                         {data.length > 0 ? (
                             <IssueTable
                                 issues={issues}
@@ -226,7 +226,7 @@ export default function Issues({
                             </Card>
                         </div>
 
-                        <Card className="overflow-hidden border-border bg-card shadow-2xl">
+                        <Card className="overflow-hidden border-border bg-card">
                             <CardHeader className="p-6 pb-0">
                                 <CardTitle className="flex items-center gap-2 text-sm font-bold tracking-widest text-foreground uppercase">
                                     <TrendingUp className="h-4 w-4 text-muted-foreground" />

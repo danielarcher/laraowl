@@ -71,7 +71,7 @@ export default function CreateProjectModal({ children }: PropsWithChildren) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>{children}</DialogTrigger>
-            <DialogContent className="overflow-hidden rounded-2xl border border-border bg-[#09090b] p-0 text-foreground shadow-2xl sm:max-w-[440px]">
+            <DialogContent className="overflow-hidden rounded-lg border border-border bg-[#09090b] p-0 text-foreground shadow-2xl sm:max-w-[440px]">
                 <form onSubmit={handleSubmit}>
                     <div className="space-y-6 p-6">
                         <DialogHeader>
@@ -92,7 +92,7 @@ export default function CreateProjectModal({ children }: PropsWithChildren) {
                                         fileInputRef.current?.click()
                                     }
                                 >
-                                    <div className="flex size-14 items-center justify-center overflow-hidden rounded-xl border border-border bg-muted transition-all hover:border-border">
+                                    <div className="flex size-14 items-center justify-center overflow-hidden rounded-lg border border-border bg-muted transition-all hover:border-border">
                                         {previewUrl ? (
                                             <img
                                                 src={previewUrl}

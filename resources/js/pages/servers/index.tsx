@@ -41,7 +41,7 @@ function UsageRow({
 
     return (
         <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-[10px] font-black tracking-widest uppercase">
+            <div className="flex items-center justify-between text-[10px] font-semibold tracking-widest uppercase">
                 <span className="flex items-center gap-1.5 text-muted-foreground">
                     <Icon className="size-3" />
                     {label}
@@ -99,12 +99,12 @@ function ServerCard({
             prefetch
             className="group block"
         >
-            <Card className="h-full gap-0 border-border bg-card p-6 shadow-2xl transition-colors group-hover:border-foreground/20">
+            <Card className="h-full gap-0 border-border bg-card p-6 transition-colors group-hover:border-foreground/20">
                 <div className="mb-5 flex items-start justify-between gap-4">
                     <div className="min-w-0">
                         <div className="flex items-center gap-2.5">
                             <StatusDot server={server} />
-                            <h3 className="truncate text-lg font-black tracking-tight text-foreground">
+                            <h3 className="truncate text-lg font-semibold tracking-tight text-foreground">
                                 {server.name}
                             </h3>
                         </div>
@@ -117,13 +117,13 @@ function ServerCard({
                     <div className="text-right">
                         <div
                             className={cn(
-                                'text-3xl font-black tracking-tighter',
+                                'text-3xl font-semibold tracking-tight',
                                 cpuTone.text,
                             )}
                         >
                             {latest ? `${Math.round(latest.cpu)}%` : '—'}
                         </div>
-                        <div className="text-[9px] font-black tracking-widest text-muted-foreground uppercase">
+                        <div className="text-[9px] font-semibold tracking-widest text-muted-foreground uppercase">
                             CPU
                             {server.cpu_count
                                 ? ` · ${server.cpu_count} vCPU`
@@ -168,7 +168,7 @@ function ServerCard({
                             </AreaChart>
                         </ResponsiveContainer>
                     ) : (
-                        <div className="flex h-full items-center justify-center text-[9px] font-black tracking-widest text-muted-foreground uppercase opacity-40">
+                        <div className="flex h-full items-center justify-center text-[9px] font-semibold tracking-widest text-muted-foreground uppercase opacity-40">
                             CPU sparkline fills in over the first hour
                         </div>
                     )}
@@ -196,7 +196,7 @@ function ServerCard({
                                 detail={`${formatBytes(latest.swap_used)} / ${formatBytes(latest.swap_total)}`}
                             />
                         )}
-                        <div className="flex items-center justify-between pt-1 text-[10px] font-black tracking-widest text-muted-foreground uppercase">
+                        <div className="flex items-center justify-between pt-1 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
                             <span className="flex items-center gap-1.5">
                                 <Gauge className="size-3" />
                                 Load{' '}
@@ -213,7 +213,7 @@ function ServerCard({
                         </div>
                     </div>
                 ) : (
-                    <div className="rounded-lg border border-dashed border-border p-4 text-center text-[10px] font-black tracking-widest text-muted-foreground uppercase">
+                    <div className="rounded-lg border border-dashed border-border p-4 text-center text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
                         No samples yet
                     </div>
                 )}
@@ -258,10 +258,10 @@ export default function ServersIndex({ servers, agentUrl }: ServersIndexProps) {
 
             <div className="flex flex-wrap items-end justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-black tracking-tighter text-foreground">
+                    <h1 className="text-3xl font-semibold tracking-tight text-foreground">
                         Servers
                     </h1>
-                    <p className="mt-1 text-[10px] font-black tracking-widest text-muted-foreground uppercase">
+                    <p className="mt-1 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
                         {servers.length} server{servers.length === 1 ? '' : 's'}{' '}
                         · {online} online · refreshes every minute
                     </p>
@@ -269,10 +269,10 @@ export default function ServersIndex({ servers, agentUrl }: ServersIndexProps) {
             </div>
 
             {servers.length === 0 ? (
-                <Card className="border-border bg-card p-10 shadow-2xl">
+                <Card className="border-border bg-card p-10">
                     <div className="mx-auto flex max-w-2xl flex-col items-center gap-4 text-center">
                         <ServerIcon className="size-12 text-muted-foreground/30" />
-                        <div className="text-2xl font-black tracking-tighter text-foreground">
+                        <div className="text-2xl font-semibold tracking-tight text-foreground">
                             No servers yet
                         </div>
                         <p className="text-sm text-muted-foreground">

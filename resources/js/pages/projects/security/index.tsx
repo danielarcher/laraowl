@@ -40,7 +40,7 @@ export default function SecurityIndex({
 
             {/* Section: Overview Cards */}
             <section className="space-y-4">
-                <div className="flex items-center gap-2 text-[10px] font-black tracking-[0.2em] text-muted-foreground uppercase">
+                <div className="flex items-center gap-2 text-[10px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
                     <Shield className="size-3 text-primary" />
                     Threat Intelligence
                 </div>
@@ -76,11 +76,11 @@ export default function SecurityIndex({
                                         <p className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
                                             {card.title}
                                         </p>
-                                        <p className="text-3xl font-black tracking-tighter text-foreground">
+                                        <p className="text-3xl font-semibold tracking-tight text-foreground">
                                             {card.value}
                                         </p>
                                     </div>
-                                    <div className="rounded-xl border border-primary/10 bg-primary/5 p-2.5">
+                                    <div className="rounded-lg border border-primary/10 bg-primary/5 p-2.5">
                                         <card.icon
                                             className={`size-5 ${card.color}`}
                                         />
@@ -94,7 +94,7 @@ export default function SecurityIndex({
 
             {/* Section: Authentication Monitoring */}
             <section className="space-y-4">
-                <div className="flex items-center gap-2 text-[10px] font-black tracking-[0.2em] text-muted-foreground uppercase">
+                <div className="flex items-center gap-2 text-[10px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
                     <Lock className="size-3 text-primary" />
                     Authentication Guard
                 </div>
@@ -115,7 +115,7 @@ export default function SecurityIndex({
                                     all accounts.
                                 </p>
                                 <div className="flex items-baseline gap-2 pt-6">
-                                    <span className="text-5xl font-black tracking-tighter text-primary">
+                                    <span className="text-5xl font-semibold tracking-tight text-primary">
                                         {overview.failed_logins ?? 0}
                                     </span>
                                     <span className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
@@ -129,7 +129,7 @@ export default function SecurityIndex({
                     {/* Recent Auth Incidents */}
                     <Card className="overflow-hidden border-border bg-card/30 shadow-sm">
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-[10px] font-black tracking-[0.1em] text-muted-foreground uppercase">
+                            <CardTitle className="flex items-center gap-2 text-[10px] font-semibold tracking-[0.1em] text-muted-foreground uppercase">
                                 <Activity className="size-3 text-primary" />
                                 Suspicious Activity
                             </CardTitle>
@@ -149,7 +149,7 @@ export default function SecurityIndex({
                                                         {event.user ||
                                                             'Unknown User'}
                                                     </span>
-                                                    <span className="text-[9px] tracking-tighter text-muted-foreground uppercase">
+                                                    <span className="text-[9px] tracking-tight text-muted-foreground uppercase">
                                                         {event.ip} •{' '}
                                                         {event.location ||
                                                             'Unknown Location'}
@@ -157,7 +157,7 @@ export default function SecurityIndex({
                                                 </div>
                                                 <Badge
                                                     variant="outline"
-                                                    className="border-primary/20 bg-primary/5 py-0 text-[8px] font-black text-primary uppercase"
+                                                    className="border-primary/20 bg-primary/5 py-0 text-[8px] font-semibold text-primary uppercase"
                                                 >
                                                     {event.type}
                                                 </Badge>
@@ -178,7 +178,7 @@ export default function SecurityIndex({
             {/* Section: Threats List */}
             <section className="space-y-4">
                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-[10px] font-black tracking-[0.2em] text-muted-foreground uppercase">
+                    <div className="flex items-center gap-2 text-[10px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
                         <Shield className="size-3 text-primary" />
                         Security Incident Log
                     </div>

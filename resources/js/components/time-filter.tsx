@@ -146,12 +146,12 @@ export function TimeFilter() {
                 >
                     <div className="space-y-4 sm:space-y-5">
                         <div className="space-y-3">
-                            <h4 className="text-[10px] font-black tracking-widest text-muted-foreground/60 uppercase">
+                            <h4 className="text-[10px] font-semibold tracking-widest text-muted-foreground/60 uppercase">
                                 Time Range Selection
                             </h4>
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 <div className="space-y-1.5">
-                                    <label className="text-[9px] font-black tracking-tighter text-muted-foreground uppercase">
+                                    <label className="text-[9px] font-semibold tracking-tight text-muted-foreground uppercase">
                                         Start Date
                                     </label>
                                     <input
@@ -164,7 +164,7 @@ export function TimeFilter() {
                                     />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label className="text-[9px] font-black tracking-tighter text-muted-foreground uppercase">
+                                    <label className="text-[9px] font-semibold tracking-tight text-muted-foreground uppercase">
                                         End Date
                                     </label>
                                     <input
@@ -179,7 +179,7 @@ export function TimeFilter() {
                             </div>
                         </div>
                         <Button
-                            className="h-9 w-full bg-primary text-[10px] font-black tracking-widest text-primary-foreground uppercase transition-all hover:bg-primary/90 sm:h-10 sm:text-[11px]"
+                            className="h-9 w-full bg-primary text-[10px] font-semibold tracking-widest text-primary-foreground uppercase transition-all hover:bg-primary/90 sm:h-10 sm:text-[11px]"
                             onClick={handleCustomSubmit}
                         >
                             Apply Filter

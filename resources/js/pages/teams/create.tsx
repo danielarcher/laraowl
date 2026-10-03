@@ -27,11 +27,11 @@ export default function CreateTeam() {
 
             <div className="w-full max-w-md space-y-8">
                 <div className="flex flex-col items-center space-y-3 text-center">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-border bg-card shadow-sm">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-lg border border-border bg-card shadow-sm">
                         <Users className="h-7 w-7 text-primary" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-black tracking-tighter text-foreground uppercase">
+                        <h1 className="text-2xl font-semibold tracking-tight text-foreground uppercase">
                             Laraowl
                         </h1>
                         <p className="text-xs font-bold tracking-widest text-muted-foreground uppercase opacity-60">
@@ -40,7 +40,7 @@ export default function CreateTeam() {
                     </div>
                 </div>
 
-                <Card className="rounded-3xl border-border bg-card shadow-xl">
+                <Card className="rounded-lg border-border bg-card shadow-xl">
                     <CardHeader className="space-y-1 pb-4">
                         <CardTitle className="text-xl font-bold text-foreground">
                             Create a Team
@@ -54,7 +54,7 @@ export default function CreateTeam() {
                             <div className="space-y-2">
                                 <Label
                                     htmlFor="name"
-                                    className="ml-1 text-[10px] font-black tracking-widest text-muted-foreground uppercase"
+                                    className="ml-1 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase"
                                 >
                                     Team Name
                                 </Label>
@@ -67,7 +67,7 @@ export default function CreateTeam() {
                                     placeholder="e.g. Acme Corp"
                                     required
                                     autoFocus
-                                    className="h-12 rounded-xl border-border bg-muted/50 px-4 transition-all focus:border-primary focus:ring-primary/20"
+                                    className="h-12 rounded-lg border-border bg-muted/50 px-4 transition-all focus:border-primary focus:ring-primary/20"
                                 />
                                 {errors.name && (
                                     <p className="mt-1 text-[10px] font-bold text-red-500">
@@ -79,7 +79,7 @@ export default function CreateTeam() {
                             <div className="space-y-4 pt-2">
                                 <Button
                                     type="submit"
-                                    className="h-12 w-full rounded-xl bg-primary text-[11px] font-black tracking-widest text-primary-foreground uppercase shadow-lg transition-all active:scale-[0.98]"
+                                    className="h-12 w-full rounded-lg bg-primary text-[11px] font-semibold tracking-widest text-primary-foreground uppercase shadow-lg transition-all active:scale-[0.98]"
                                     disabled={processing}
                                 >
                                     {processing ? (
@@ -90,7 +90,7 @@ export default function CreateTeam() {
 
                                 <Link
                                     href="/"
-                                    className="flex items-center justify-center gap-2 text-[10px] font-black tracking-widest text-muted-foreground uppercase transition-colors hover:text-foreground"
+                                    className="flex items-center justify-center gap-2 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase transition-colors hover:text-foreground"
                                 >
                                     <ArrowLeft className="h-3 w-3" />
                                     Back

@@ -48,9 +48,9 @@ const StatCard = ({
     color?: string;
     onBlock?: (ip: string) => void;
 }) => (
-    <Card className="overflow-hidden border-border bg-card shadow-2xl">
+    <Card className="overflow-hidden border-border bg-card">
         <CardHeader className="border-b border-border/50 p-4">
-            <CardTitle className="flex items-center gap-2 text-[10px] font-black tracking-widest text-muted-foreground uppercase">
+            <CardTitle className="flex items-center gap-2 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
                 <Icon iconNode={icon} className="size-3.5" />
                 {title}
             </CardTitle>
@@ -72,7 +72,7 @@ const StatCard = ({
                                 </span>
                             </div>
                             <div className="flex items-center gap-4">
-                                <span className="text-[11px] font-black text-foreground">
+                                <span className="text-[11px] font-semibold text-foreground">
                                     {item.count.toLocaleString()}
                                 </span>
                                 <Sparkline data={item.trend} color={color} />

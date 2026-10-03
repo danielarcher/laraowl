@@ -97,14 +97,14 @@ export default function IssueShow({
             {/* Top Header Section */}
             <div className="flex flex-col justify-between gap-4 border-b border-border/50 pb-6 md:flex-row md:items-center">
                 <div className="flex-1 space-y-2">
-                    <div className="flex items-center gap-2 text-[10px] font-black tracking-widest text-muted-foreground uppercase">
+                    <div className="flex items-center gap-2 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
                         <span className="rounded border border-primary/10 bg-primary/5 px-1.5 py-0.5 text-primary">
                             Issue #{issue.id}
                         </span>
                         <ChevronRight className="size-3" />
                         <span>{issue.type}</span>
                     </div>
-                    <h1 className="text-2xl leading-tight font-black tracking-tight break-all whitespace-normal text-foreground uppercase">
+                    <h1 className="text-2xl leading-tight font-semibold tracking-tight break-all whitespace-normal text-foreground uppercase">
                         {issue.title}
                     </h1>
                     <div className="flex items-center gap-3">
@@ -141,19 +141,19 @@ export default function IssueShow({
                 <div className="space-y-8 lg:col-span-8">
                     <div className="mb-4 flex items-center justify-between overflow-x-auto">
                         {stackTrace.length > 0 ? (
-                            <div className="flex items-center gap-2 text-[10px] font-black tracking-widest text-muted-foreground uppercase">
+                            <div className="flex items-center gap-2 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
                                 <FileCode className="size-3 text-primary" />
                                 Stack Trace
                             </div>
                         ) : (
-                            <div className="flex items-center gap-2 text-[10px] font-black tracking-widest text-muted-foreground uppercase">
+                            <div className="flex items-center gap-2 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
                                 <Database className="size-3 text-primary" />
                                 Raw Payload
                             </div>
                         )}
 
                         <div className="hidden items-center gap-2 sm:flex">
-                            <div className="flex items-center gap-1.5 rounded-full border border-border/50 bg-muted/20 px-3 py-1 text-[9px] font-black text-muted-foreground uppercase">
+                            <div className="flex items-center gap-1.5 rounded-full border border-border/50 bg-muted/20 px-3 py-1 text-[9px] font-semibold text-muted-foreground uppercase">
                                 <Cpu className="size-3" /> PHP{' '}
                                 {payload.php_version ||
                                     payload.system?.php_version ||
@@ -162,7 +162,7 @@ export default function IssueShow({
                                     payload.server?.php_version ||
                                     'Unknown'}
                             </div>
-                            <div className="flex items-center gap-1.5 rounded-full border border-border/50 bg-muted/20 px-3 py-1 text-[9px] font-black text-muted-foreground uppercase">
+                            <div className="flex items-center gap-1.5 rounded-full border border-border/50 bg-muted/20 px-3 py-1 text-[9px] font-semibold text-muted-foreground uppercase">
                                 <Database className="size-3" /> Laravel{' '}
                                 {payload.laravel_version ||
                                     payload.system?.laravel_version ||
@@ -187,7 +187,7 @@ export default function IssueShow({
                                         >
                                             <div className="flex items-center justify-between border-b border-border/50 bg-muted/30 px-4 py-2">
                                                 <div className="flex items-center gap-2 truncate">
-                                                    <span className="text-[10px] font-black text-primary/40">
+                                                    <span className="text-[10px] font-semibold text-primary/40">
                                                         #{stackTrace.length - i}
                                                     </span>
                                                     <code className="truncate text-[10px] font-bold text-foreground">
@@ -195,7 +195,7 @@ export default function IssueShow({
                                                         {frame.line}
                                                     </code>
                                                 </div>
-                                                <span className="text-[9px] font-black text-muted-foreground uppercase opacity-0 transition-opacity group-hover:opacity-100">
+                                                <span className="text-[9px] font-semibold text-muted-foreground uppercase opacity-0 transition-opacity group-hover:opacity-100">
                                                     {frame.class || 'global'}::
                                                     {frame.function}
                                                 </span>
@@ -250,7 +250,7 @@ export default function IssueShow({
 
                     {/* JSON View */}
                     <section>
-                        <Card className="overflow-hidden border-border bg-black shadow-2xl">
+                        <Card className="overflow-hidden border-border bg-black">
                             <CardContent className="p-0">
                                 <CodeBlock
                                     language="json"
@@ -271,7 +271,7 @@ export default function IssueShow({
 
                     {/* Activity Feed */}
                     <section className="space-y-4 border-t border-border/50 pt-8">
-                        <div className="flex items-center gap-2 text-[10px] font-black tracking-widest text-muted-foreground uppercase">
+                        <div className="flex items-center gap-2 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
                             <History className="size-3 text-primary" />
                             Collaboration & Logs
                         </div>
@@ -301,7 +301,7 @@ export default function IssueShow({
                                             </span>
                                         </div>
                                         {activity.type === 'comment' ? (
-                                            <div className="max-w-[600px] rounded-xl border border-border/50 bg-muted/20 p-3 text-xs text-muted-foreground">
+                                            <div className="max-w-[600px] rounded-lg border border-border/50 bg-muted/20 p-3 text-xs text-muted-foreground">
                                                 {activity.content}
                                             </div>
                                         ) : (
@@ -338,7 +338,7 @@ export default function IssueShow({
                                                     processing ||
                                                     !data.comment.trim()
                                                 }
-                                                className="h-8 gap-2 rounded-lg px-4 text-[10px] font-black tracking-widest uppercase"
+                                                className="h-8 gap-2 rounded-lg px-4 text-[10px] font-semibold tracking-widest uppercase"
                                             >
                                                 Post Comment
                                                 <Send className="size-3" />
@@ -355,7 +355,7 @@ export default function IssueShow({
                 <div className="space-y-6 lg:col-span-4">
                     <Card className="sticky top-6 border-border bg-card/50 shadow-sm">
                         <CardHeader className="border-b border-border/50 bg-muted/10">
-                            <CardTitle className="text-[10px] font-black tracking-widest text-muted-foreground uppercase">
+                            <CardTitle className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
                                 Management
                             </CardTitle>
                         </CardHeader>
@@ -371,7 +371,7 @@ export default function IssueShow({
                                             updateIssue('status', v)
                                         }
                                     >
-                                        <SelectTrigger className="h-10 rounded-xl border-border/50 bg-background">
+                                        <SelectTrigger className="h-10 rounded-lg border-border/50 bg-background">
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -399,7 +399,7 @@ export default function IssueShow({
                                             updateIssue('priority', v)
                                         }
                                     >
-                                        <SelectTrigger className="h-10 rounded-xl border-border/50 bg-background">
+                                        <SelectTrigger className="h-10 rounded-lg border-border/50 bg-background">
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -435,7 +435,7 @@ export default function IssueShow({
                                             updateIssue('assigned_to', v)
                                         }
                                     >
-                                        <SelectTrigger className="h-10 rounded-xl border-border/50 bg-background">
+                                        <SelectTrigger className="h-10 rounded-lg border-border/50 bg-background">
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -489,7 +489,7 @@ export default function IssueShow({
                                     </span>
                                     <Badge
                                         variant="secondary"
-                                        className="px-2 py-0 font-black"
+                                        className="px-2 py-0 font-semibold"
                                     >
                                         {issue.occurrences_count}
                                     </Badge>

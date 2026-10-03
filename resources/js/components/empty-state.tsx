@@ -21,10 +21,10 @@ export function EmptyState({
     action,
 }: EmptyStateProps) {
     return (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-border bg-card p-12 text-center backdrop-blur-sm">
+        <div className="flex flex-col items-center justify-center rounded-lg border border-border bg-card p-12 text-center backdrop-blur-sm">
             <div className="relative mb-6">
                 <div className="absolute inset-0 rounded-full bg-muted blur-2xl" />
-                <div className="relative flex size-16 items-center justify-center rounded-2xl border border-border bg-muted shadow-2xl">
+                <div className="relative flex size-16 items-center justify-center rounded-lg border border-border bg-muted shadow-2xl">
                     <Icon
                         iconNode={icon}
                         className="size-8 text-muted-foreground"

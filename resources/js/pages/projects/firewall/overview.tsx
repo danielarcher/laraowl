@@ -69,7 +69,7 @@ const SecurityScore = ({ score }: { score: number }) => {
                 />
             </svg>
             <div className="absolute flex flex-col items-center justify-center">
-                <span className={`text-2xl font-black ${getColor(score)}`}>
+                <span className={`text-2xl font-semibold ${getColor(score)}`}>
                     {score}%
                 </span>
                 <span className="text-[8px] font-bold tracking-widest text-muted-foreground uppercase">
@@ -187,12 +187,12 @@ export default function FirewallOverview({
                         {/* Hero Section */}
                         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
                             {/* Security Score Card */}
-                            <Card className="group relative overflow-hidden border-border bg-card shadow-2xl lg:col-span-4">
+                            <Card className="group relative overflow-hidden border-border bg-card lg:col-span-4">
                                 <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-50" />
                                 <CardContent className="relative flex flex-col items-center justify-center space-y-6 p-8 text-center">
                                     <SecurityScore score={securityScore} />
                                     <div>
-                                        <h2 className="flex items-center justify-center gap-2 text-xl font-black tracking-tight text-foreground">
+                                        <h2 className="flex items-center justify-center gap-2 text-xl font-semibold tracking-tight text-foreground">
                                             {securityScore > 80 ? (
                                                 <ShieldCheck className="size-5 text-emerald-500" />
                                             ) : (
@@ -216,7 +216,7 @@ export default function FirewallOverview({
                                                     ? 'destructive'
                                                     : 'outline'
                                             }
-                                            className="group h-10 w-full text-[10px] font-black tracking-widest uppercase"
+                                            className="group h-10 w-full text-[10px] font-semibold tracking-widest uppercase"
                                         >
                                             <Zap
                                                 className={`mr-2 size-3.5 ${settings.attack_mode ? 'fill-current' : ''}`}
@@ -231,14 +231,14 @@ export default function FirewallOverview({
 
                             {/* Stats Grid */}
                             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:col-span-8">
-                                <Card className="group relative overflow-hidden border-border bg-card shadow-2xl">
+                                <Card className="group relative overflow-hidden border-border bg-card">
                                     <CardContent className="p-6">
                                         <div className="flex items-start justify-between">
                                             <div className="space-y-2">
-                                                <span className="block text-[10px] font-black tracking-widest text-muted-foreground uppercase">
+                                                <span className="block text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
                                                     Allowed Requests
                                                 </span>
-                                                <div className="text-3xl font-black">
+                                                <div className="text-3xl font-semibold">
                                                     {formatCompactNumber(
                                                         stats.allowed,
                                                     )}
@@ -250,7 +250,7 @@ export default function FirewallOverview({
                                                     </span>
                                                 </div>
                                             </div>
-                                            <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-blue-500/20 bg-blue-500/10 text-blue-500">
+                                            <div className="flex h-12 w-12 items-center justify-center rounded-lg border border-blue-500/20 bg-blue-500/10 text-blue-500">
                                                 <Globe className="size-6" />
                                             </div>
                                         </div>
@@ -276,14 +276,14 @@ export default function FirewallOverview({
                                     </CardContent>
                                 </Card>
 
-                                <Card className="group relative overflow-hidden border-border bg-card shadow-2xl">
+                                <Card className="group relative overflow-hidden border-border bg-card">
                                     <CardContent className="p-6">
                                         <div className="flex items-start justify-between">
                                             <div className="space-y-2">
-                                                <span className="block text-[10px] font-black tracking-widest text-muted-foreground uppercase">
+                                                <span className="block text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
                                                     Blocked Threats
                                                 </span>
-                                                <div className="text-3xl font-black text-red-500">
+                                                <div className="text-3xl font-semibold text-red-500">
                                                     {formatCompactNumber(
                                                         stats.denied +
                                                             stats.challenged,
@@ -294,7 +294,7 @@ export default function FirewallOverview({
                                                     <span>Fully Mitigated</span>
                                                 </div>
                                             </div>
-                                            <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-500">
+                                            <div className="flex h-12 w-12 items-center justify-center rounded-lg border border-red-500/20 bg-red-500/10 text-red-500">
                                                 <Shield className="size-6" />
                                             </div>
                                         </div>
@@ -324,10 +324,10 @@ export default function FirewallOverview({
 
                         {/* Middle Section: Chart & Alerts */}
                         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-                            <Card className="overflow-hidden border-border bg-card shadow-2xl lg:col-span-8">
+                            <Card className="overflow-hidden border-border bg-card lg:col-span-8">
                                 <CardHeader className="flex flex-row items-center justify-between">
                                     <div className="space-y-1">
-                                        <CardTitle className="flex items-center gap-2 text-[10px] font-black tracking-widest text-muted-foreground uppercase">
+                                        <CardTitle className="flex items-center gap-2 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
                                             <Activity className="size-3.5 text-primary" />
                                             Security Traffic Analysis
                                         </CardTitle>
@@ -469,8 +469,8 @@ export default function FirewallOverview({
                                                         payload.length
                                                     ) {
                                                         return (
-                                                            <div className="animate-in rounded-xl border border-white/10 bg-[#09090b] p-4 shadow-2xl backdrop-blur-xl duration-200 fade-in zoom-in">
-                                                                <p className="mb-3 border-b border-white/5 pb-2 text-[10px] font-black tracking-widest text-muted-foreground uppercase">
+                                                            <div className="animate-in rounded-lg border border-white/10 bg-[#09090b] p-4 shadow-2xl backdrop-blur-xl duration-200 fade-in zoom-in">
+                                                                <p className="mb-3 border-b border-white/5 pb-2 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
                                                                     {label
                                                                         ? new Date(
                                                                               label,
@@ -503,7 +503,7 @@ export default function FirewallOverview({
                                                                                         }
                                                                                     </span>
                                                                                 </div>
-                                                                                <span className="text-[11px] font-black text-foreground">
+                                                                                <span className="text-[11px] font-semibold text-foreground">
                                                                                     {entry.value.toLocaleString()}
                                                                                 </span>
                                                                             </div>
@@ -564,9 +564,9 @@ export default function FirewallOverview({
                                 </CardContent>
                             </Card>
 
-                            <Card className="border-border bg-card shadow-2xl lg:col-span-4">
+                            <Card className="border-border bg-card lg:col-span-4">
                                 <CardHeader>
-                                    <CardTitle className="flex items-center gap-2 text-[10px] font-black tracking-widest text-muted-foreground uppercase">
+                                    <CardTitle className="flex items-center gap-2 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
                                         <AlertTriangle className="size-3.5 text-orange-500" />
                                         Recent Threats
                                     </CardTitle>
@@ -618,7 +618,7 @@ export default function FirewallOverview({
                                     <div className="border-t border-border/50 bg-muted/20 p-4">
                                         <Link
                                             href={`/${teamSlug}/${projectSlug}/firewall/audit`}
-                                            className="flex items-center justify-center gap-1 text-[9px] font-black tracking-widest text-primary uppercase hover:underline"
+                                            className="flex items-center justify-center gap-1 text-[9px] font-semibold tracking-widest text-primary uppercase hover:underline"
                                         >
                                             View Full Audit Log{' '}
                                             <ArrowDownRight className="size-3" />
@@ -656,19 +656,19 @@ export default function FirewallOverview({
                                 >
                                     <CardContent className="flex items-start gap-4 p-6">
                                         <div
-                                            className={`flex h-10 w-10 items-center justify-center rounded-xl ${item.status ? 'border border-emerald-500/20 bg-emerald-500/10 text-emerald-500' : 'border border-border bg-muted text-muted-foreground'}`}
+                                            className={`flex h-10 w-10 items-center justify-center rounded-lg ${item.status ? 'border border-emerald-500/20 bg-emerald-500/10 text-emerald-500' : 'border border-border bg-muted text-muted-foreground'}`}
                                         >
                                             <item.icon className="size-5" />
                                         </div>
                                         <div className="space-y-1">
-                                            <h3 className="text-xs font-black tracking-tight uppercase">
+                                            <h3 className="text-xs font-semibold tracking-tight uppercase">
                                                 {item.title}
                                             </h3>
                                             <p className="text-[10px] font-medium text-muted-foreground">
                                                 {item.desc}
                                             </p>
                                             <Badge
-                                                className={`h-4 border-none px-1.5 text-[8px] font-black ${item.status ? 'bg-emerald-500' : 'bg-muted text-muted-foreground'}`}
+                                                className={`h-4 border-none px-1.5 text-[8px] font-semibold ${item.status ? 'bg-emerald-500' : 'bg-muted text-muted-foreground'}`}
                                             >
                                                 {item.status ? 'ACTIVE' : 'OFF'}
                                             </Badge>

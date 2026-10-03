@@ -67,7 +67,7 @@ export function ProjectSwitcher() {
                         <span className="truncate font-bold tracking-tight text-foreground/90">
                             {currentProject?.name ?? 'Select project'}
                         </span>
-                        <span className="mt-0.5 text-[10px] leading-none font-black tracking-widest text-foreground/40 uppercase">
+                        <span className="mt-0.5 text-[10px] leading-none font-semibold tracking-widest text-foreground/40 uppercase">
                             Project
                         </span>
                     </div>

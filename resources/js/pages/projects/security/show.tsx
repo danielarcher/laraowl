@@ -54,17 +54,17 @@ export default function SecurityDetails({
                 {/* Header */}
                 <div className="flex flex-col gap-6">
                     <div className="flex items-center gap-4">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-500/10 shadow-lg ring-1 ring-red-500/20">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-red-500/10 shadow-lg ring-1 ring-red-500/20">
                             <Shield className="h-6 w-6 text-red-500" />
                         </div>
                         <div>
                             <div className="flex items-center gap-2">
-                                <h1 className="text-3xl font-black tracking-tight text-foreground">
+                                <h1 className="text-3xl font-semibold tracking-tight text-foreground">
                                     {title}
                                 </h1>
                                 <Badge
                                     variant="destructive"
-                                    className="h-5 px-1.5 text-[9px] font-black tracking-widest uppercase"
+                                    className="h-5 px-1.5 text-[9px] font-semibold tracking-widest uppercase"
                                 >
                                     Critical
                                 </Badge>
@@ -84,7 +84,7 @@ export default function SecurityDetails({
                         </div>
                     </div>
 
-                    <Card className="border-border bg-card shadow-2xl">
+                    <Card className="border-border bg-card">
                         <CardContent className="p-8">
                             <div className="rounded-lg border border-border/50 bg-black/20 p-4 font-mono text-sm leading-relaxed font-medium text-foreground/90">
                                 {message}
@@ -96,7 +96,7 @@ export default function SecurityDetails({
                 {/* Section: Occurrences */}
                 <section className="space-y-4">
                     <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-xs font-black tracking-widest text-foreground uppercase">
+                        <div className="flex items-center gap-2 text-xs font-semibold tracking-widest text-foreground uppercase">
                             <div className="rounded-md border border-border bg-muted p-1.5">
                                 <AlertTriangle className="size-3.5 text-red-500" />
                             </div>
@@ -105,14 +105,14 @@ export default function SecurityDetails({
                         </div>
                     </div>
 
-                    <Card className="overflow-hidden border-border bg-card shadow-2xl">
+                    <Card className="overflow-hidden border-border bg-card">
                         <Table>
                             <TableHeader className="bg-muted/50">
                                 <TableRow className="border-border hover:bg-transparent">
-                                    <TableHead className="px-6 py-4 text-[10px] font-black tracking-widest text-muted-foreground uppercase">
+                                    <TableHead className="px-6 py-4 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
                                         Timestamp
                                     </TableHead>
-                                    <TableHead className="py-4 text-[10px] font-black tracking-widest text-muted-foreground uppercase">
+                                    <TableHead className="py-4 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
                                         Source & Details
                                     </TableHead>
                                     <TableHead className="w-[50px] px-6"></TableHead>
@@ -125,7 +125,7 @@ export default function SecurityDetails({
                                         className="group border-border transition-colors hover:bg-muted/30"
                                     >
                                         <TableCell className="px-6 py-5 align-top">
-                                            <div className="text-[11px] font-black text-foreground">
+                                            <div className="text-[11px] font-semibold text-foreground">
                                                 {new Date(
                                                     record.created_at,
                                                 ).toLocaleDateString()}
@@ -141,7 +141,7 @@ export default function SecurityDetails({
                                                 <div className="flex items-center gap-2">
                                                     <Badge
                                                         variant="outline"
-                                                        className="h-5 gap-1 border-border bg-muted/50 px-2 text-[10px] font-black text-foreground uppercase"
+                                                        className="h-5 gap-1 border-border bg-muted/50 px-2 text-[10px] font-semibold text-foreground uppercase"
                                                     >
                                                         <Globe className="h-2.5 w-2.5" />
                                                         {record.payload.ip ||
@@ -151,7 +151,7 @@ export default function SecurityDetails({
                                                         ._security_risk && (
                                                         <Badge
                                                             variant="outline"
-                                                            className={`h-5 px-2 text-[9px] font-black uppercase ${
+                                                            className={`h-5 px-2 text-[9px] font-semibold uppercase ${
                                                                 record.payload
                                                                     ._security_risk ===
                                                                 'critical'
@@ -199,7 +199,7 @@ export default function SecurityDetails({
                                                                 <Badge
                                                                     key={i}
                                                                     variant="outline"
-                                                                    className="border-red-500/30 bg-red-500/5 px-2 py-0.5 text-[9px] font-black text-red-500 uppercase"
+                                                                    className="border-red-500/30 bg-red-500/5 px-2 py-0.5 text-[9px] font-semibold text-red-500 uppercase"
                                                                 >
                                                                     {t.type}{' '}
                                                                     {t.detail
@@ -225,7 +225,7 @@ export default function SecurityDetails({
                                                                     className="flex items-center gap-3 font-mono text-[10px]"
                                                                 >
                                                                     <span
-                                                                        className={`font-black uppercase ${
+                                                                        className={`font-semibold uppercase ${
                                                                             c.type ===
                                                                             'modified'
                                                                                 ? 'text-orange-400'
@@ -264,7 +264,7 @@ export default function SecurityDetails({
                                                                     <div className="mb-2 flex items-center gap-2">
                                                                         <Badge
                                                                             variant="outline"
-                                                                            className={`px-2 py-0.5 text-[9px] font-black uppercase ${
+                                                                            className={`px-2 py-0.5 text-[9px] font-semibold uppercase ${
                                                                                 issue.priority ===
                                                                                 'critical'
                                                                                     ? 'border-red-500 bg-red-500/10 text-red-500'
@@ -299,7 +299,7 @@ export default function SecurityDetails({
                                                                                     >
                                                                                         {d.type && (
                                                                                             <span
-                                                                                                className={`font-black uppercase ${
+                                                                                                className={`font-semibold uppercase ${
                                                                                                     d.type ===
                                                                                                     'modified'
                                                                                                         ? 'text-orange-400'

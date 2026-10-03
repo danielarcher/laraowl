@@ -128,7 +128,7 @@ export default function RequestsIndex({
             <div className="space-y-8">
                 {/* Statistics Cards */}
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                    <Card className="group overflow-hidden border-border bg-card shadow-2xl">
+                    <Card className="group overflow-hidden border-border bg-card">
                         <CardContent className="p-6">
                             <div className="mb-6 flex items-start justify-between">
                                 <div>
@@ -139,7 +139,7 @@ export default function RequestsIndex({
                                         {formatCompactNumber(stats.requests)}
                                     </div>
                                 </div>
-                                <div className="flex gap-4 text-[10px] font-bold tracking-tighter uppercase">
+                                <div className="flex gap-4 text-[10px] font-bold tracking-tight uppercase">
                                     <div className="flex items-center gap-1.5">
                                         <span className="h-2 w-2 rounded-full bg-white/40"></span>{' '}
                                         1/2/3xx{' '}
@@ -258,7 +258,7 @@ export default function RequestsIndex({
                         </CardContent>
                     </Card>
 
-                    <Card className="group overflow-hidden border-border bg-card shadow-2xl">
+                    <Card className="group overflow-hidden border-border bg-card">
                         <CardContent className="p-6">
                             <div className="mb-6 flex items-start justify-between">
                                 <div>
@@ -275,7 +275,7 @@ export default function RequestsIndex({
                                         )}
                                     </div>
                                 </div>
-                                <div className="flex gap-4 text-[10px] font-bold tracking-tighter uppercase">
+                                <div className="flex gap-4 text-[10px] font-bold tracking-tight uppercase">
                                     <div className="flex items-center gap-1.5">
                                         <span className="h-2 w-2 rounded-full bg-blue-500"></span>{' '}
                                         Avg{' '}

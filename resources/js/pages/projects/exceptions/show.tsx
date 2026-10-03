@@ -76,7 +76,7 @@ export default function ExceptionDetails({
 
                 {/* Info Card & Small Chart */}
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                    <Card className="border-border bg-card p-6 shadow-2xl lg:col-span-2">
+                    <Card className="border-border bg-card p-6 lg:col-span-2">
                         <div className="grid grid-cols-1 gap-x-12 gap-y-4 text-sm md:grid-cols-2">
                             <div className="flex items-center justify-between border-b border-border py-2">
                                 <span className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
@@ -97,7 +97,7 @@ export default function ExceptionDetails({
                         </div>
                     </Card>
 
-                    <Card className="relative flex flex-col items-center justify-center overflow-hidden border-border bg-card p-6 shadow-2xl">
+                    <Card className="relative flex flex-col items-center justify-center overflow-hidden border-border bg-card p-6">
                         <Badge className="mb-4 rounded-sm border-none bg-red-500 px-1.5 py-0 text-[10px] font-bold text-foreground uppercase">
                             UNHANDLED
                         </Badge>
@@ -112,7 +112,7 @@ export default function ExceptionDetails({
 
                 {/* Code Preview Section */}
                 {firstFrame.file && (
-                    <Card className="overflow-hidden border-border bg-card font-mono shadow-2xl">
+                    <Card className="overflow-hidden border-border bg-card font-mono">
                         <div className="flex items-center justify-between border-b border-border bg-white/[0.03] px-4 py-2">
                             <div className="flex items-center gap-2">
                                 <div className="h-2 w-2 rounded-full bg-blue-500"></div>

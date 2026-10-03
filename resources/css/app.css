@@ -2,11 +2,11 @@
 
 @import 'tw-animate-css';
 
-@import 'tw-animate-css';
-
 @import 'shadcn/tailwind.css';
 
-@import '@fontsource-variable/nunito-sans';
+@import '@fontsource-variable/geist';
+
+@import '@fontsource-variable/geist-mono';
 
 @source '../views';
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
@@ -57,6 +57,14 @@
     --color-chart-4: var(--chart-4);
     --color-chart-5: var(--chart-5);
 
+    --color-series-ok: var(--series-ok);
+    --color-series-warn: var(--series-warn);
+    --color-series-error: var(--series-error);
+    --color-series-avg: var(--series-avg);
+    --color-series-p95: var(--series-p95);
+    --color-series-good: var(--series-good);
+    --color-series-muted: var(--series-muted);
+
     --color-sidebar: var(--sidebar);
     --color-sidebar-foreground: var(--sidebar-foreground);
     --color-sidebar-primary: var(--sidebar-primary);
@@ -92,7 +100,7 @@
     --chart-3: oklch(0.511 0.262 276.966);
     --chart-4: oklch(0.457 0.24 277.023);
     --chart-5: oklch(0.398 0.195 277.366);
-    --radius: 0.875rem;
+    --radius: 0.5rem;
     --sidebar: oklch(0.985 0 0);
     --sidebar-foreground: oklch(0.145 0 0);
     --sidebar-primary: oklch(0.205 0 0);
@@ -101,6 +109,16 @@
     --sidebar-accent-foreground: oklch(0.205 0 0);
     --sidebar-border: oklch(0.922 0 0);
     --sidebar-ring: oklch(0.708 0 0);
+
+    --series-ok: oklch(0.145 0 0 / 22%);
+    --series-warn: oklch(0.769 0.165 70.08);
+    --series-error: oklch(0.637 0.237 25.331);
+    --series-avg: oklch(0.623 0.214 259.815);
+    --series-p95: oklch(0.705 0.191 47.604);
+    --series-good: oklch(0.696 0.17 162.48);
+    --series-muted: oklch(0.145 0 0 / 10%);
+    --chart-grid: oklch(0.145 0 0 / 7%);
+    --chart-axis: oklch(0.556 0 0);
 }
 
 .dark {
@@ -136,6 +154,16 @@
     --sidebar-accent-foreground: oklch(0.985 0 0);
     --sidebar-border: oklch(1 0 0 / 10%);
     --sidebar-ring: oklch(0.556 0 0);
+
+    --series-ok: oklch(1 0 0 / 26%);
+    --series-warn: oklch(0.828 0.189 84.429);
+    --series-error: oklch(0.704 0.191 22.216);
+    --series-avg: oklch(0.746 0.16 232.661);
+    --series-p95: oklch(0.75 0.183 55.934);
+    --series-good: oklch(0.765 0.177 163.223);
+    --series-muted: oklch(1 0 0 / 9%);
+    --chart-grid: oklch(1 0 0 / 6%);
+    --chart-axis: oklch(0.6 0 0);
 }
 
 @layer base {
@@ -168,13 +196,14 @@
         cursor: pointer;
     }
     html {
-        @apply font-sans;
+        @apply font-sans antialiased;
     }
 }
 
 @theme inline {
     --font-heading: var(--font-sans);
-    --font-sans: 'Nunito Sans Variable', sans-serif;
+    --font-sans: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
+    --font-mono: 'Geist Mono Variable', ui-monospace, monospace;
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -206,11 +235,14 @@
     --color-card: var(--card);
     --color-foreground: var(--foreground);
     --color-background: var(--background);
-    --radius-sm: calc(var(--radius) * 0.6);
-    --radius-md: calc(var(--radius) * 0.8);
+    /* A tight scale: 4px controls inside menus, 6px buttons and inputs, 8px
+       cards. The larger steps stay modest so nothing reads as a bubble. */
+    --radius-xs: 2px;
+    --radius-sm: 4px;
+    --radius-md: 6px;
     --radius-lg: var(--radius);
-    --radius-xl: calc(var(--radius) * 1.4);
-    --radius-2xl: calc(var(--radius) * 1.8);
-    --radius-3xl: calc(var(--radius) * 2.2);
-    --radius-4xl: calc(var(--radius) * 2.6);
+    --radius-xl: 10px;
+    --radius-2xl: 12px;
+    --radius-3xl: 14px;
+    --radius-4xl: 16px;
 }

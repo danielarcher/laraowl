@@ -166,7 +166,7 @@ export default function RecordShow({
 
             <div className="max-w-7xl space-y-6">
                 {/* Main Info Card */}
-                <Card className="border-border bg-card p-8 shadow-2xl">
+                <Card className="border-border bg-card p-8">
                     <div className="space-y-6">
                         <div className="flex items-center gap-3 font-mono text-sm text-emerald-400">
                             <Globe className="h-4 w-4" />
@@ -345,7 +345,7 @@ export default function RecordShow({
                 </Card>
 
                 {/* Headers Card */}
-                <Card className="border-border bg-card shadow-2xl">
+                <Card className="border-border bg-card">
                     <Collapsible
                         open={expandedHeaders}
                         onOpenChange={setExpandedHeaders}
@@ -426,7 +426,7 @@ export default function RecordShow({
                     }
 
                     return (
-                        <Card className="border-border bg-card shadow-2xl">
+                        <Card className="border-border bg-card">
                             <Collapsible
                                 open={expandedPayload}
                                 onOpenChange={setExpandedPayload}
@@ -470,7 +470,7 @@ export default function RecordShow({
                 })()}
 
                 {/* Timeline Card */}
-                <Card className="border-border bg-card p-8 shadow-2xl">
+                <Card className="border-border bg-card p-8">
                     <div className="mb-8 flex items-center justify-between">
                         <h3 className="text-xs font-bold text-foreground uppercase">
                             Timeline
@@ -518,7 +518,7 @@ export default function RecordShow({
                                 {isRequest && (
                                     <>
                                         <div className="group flex items-center justify-between">
-                                            <span className="text-[10px] font-bold tracking-tighter text-muted-foreground/60 uppercase">
+                                            <span className="text-[10px] font-bold tracking-tight text-muted-foreground/60 uppercase">
                                                 Bootstrap
                                             </span>
                                             <div className="flex h-6 w-[70%] items-center justify-between rounded border border-border bg-muted px-3">
@@ -545,7 +545,7 @@ export default function RecordShow({
                                                         className={`h-1.5 w-1.5 rounded-full border ${sub.type === 'query' ? 'border-blue-500/50' : 'border-red-500/50'}`}
                                                     ></div>
                                                     <span
-                                                        className={`text-[10px] font-bold tracking-tighter uppercase ${sub.type === 'query' ? 'text-blue-500' : 'text-red-500'}`}
+                                                        className={`text-[10px] font-bold tracking-tight uppercase ${sub.type === 'query' ? 'text-blue-500' : 'text-red-500'}`}
                                                     >
                                                         {sub.type}
                                                     </span>
@@ -578,7 +578,7 @@ export default function RecordShow({
                                         ))}
 
                                         <div className="group flex items-center justify-between">
-                                            <span className="text-[10px] font-bold tracking-tighter text-muted-foreground/60 uppercase">
+                                            <span className="text-[10px] font-bold tracking-tight text-muted-foreground/60 uppercase">
                                                 Controller
                                             </span>
                                             <div className="flex h-6 w-[40%] items-center justify-between rounded border border-border bg-muted px-3">

@@ -31,16 +31,16 @@ const RuleRow = ({
     badge?: string;
     onToggle?: (checked: boolean) => void;
 }) => (
-    <div className="group flex items-center justify-between rounded-xl border border-border bg-card p-6 shadow-sm transition-all hover:shadow-md">
+    <div className="group flex items-center justify-between rounded-lg border border-border bg-card p-6 shadow-sm transition-all hover:shadow-md">
         <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
-                <span className="text-sm font-black text-foreground">
+                <span className="text-sm font-semibold text-foreground">
                     {name}
                 </span>
                 {badge && (
                     <Badge
                         variant="outline"
-                        className="h-4 border-primary/20 bg-primary/10 px-1.5 text-[8px] font-black text-primary uppercase"
+                        className="h-4 border-primary/20 bg-primary/10 px-1.5 text-[8px] font-semibold text-primary uppercase"
                     >
                         {badge}
                     </Badge>
@@ -188,9 +188,9 @@ export default function FirewallRules({
                         {/* Add Rule Overlay */}
                         {(isAddingIp || isAddingBypass) && (
                             <div className="fixed inset-0 z-50 flex animate-in items-center justify-center bg-background/80 backdrop-blur-sm duration-200 fade-in">
-                                <Card className="w-full max-w-md border-border bg-card shadow-2xl">
+                                <Card className="w-full max-w-md border-border bg-card">
                                     <CardHeader className="flex flex-row items-center justify-between border-b border-border/50 p-6">
-                                        <CardTitle className="text-sm font-black tracking-widest uppercase">
+                                        <CardTitle className="text-sm font-semibold tracking-widest uppercase">
                                             {isAddingBypass
                                                 ? 'Add Bypass Rule'
                                                 : 'Add IP Block Rule'}
@@ -220,7 +220,7 @@ export default function FirewallRules({
                                             className="space-y-4"
                                         >
                                             <div className="space-y-2">
-                                                <label className="text-[10px] font-black tracking-widest text-muted-foreground uppercase">
+                                                <label className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
                                                     IP Address or CIDR
                                                 </label>
                                                 <Input
@@ -234,7 +234,7 @@ export default function FirewallRules({
                                                 />
                                             </div>
                                             <div className="space-y-2">
-                                                <label className="text-[10px] font-black tracking-widest text-muted-foreground uppercase">
+                                                <label className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
                                                     Note (Optional)
                                                 </label>
                                                 <Input
@@ -258,14 +258,14 @@ export default function FirewallRules({
                                                             false,
                                                         );
                                                     }}
-                                                    className="flex-1 text-[10px] font-black tracking-widest uppercase"
+                                                    className="flex-1 text-[10px] font-semibold tracking-widest uppercase"
                                                 >
                                                     Cancel
                                                 </Button>
                                                 <Button
                                                     type="submit"
                                                     disabled={isSubmitting}
-                                                    className={`flex-1 text-[10px] font-black tracking-widest uppercase ${isAddingBypass ? 'bg-emerald-600 hover:bg-emerald-700' : ''}`}
+                                                    className={`flex-1 text-[10px] font-semibold tracking-widest uppercase ${isAddingBypass ? 'bg-emerald-600 hover:bg-emerald-700' : ''}`}
                                                 >
                                                     {isSubmitting
                                                         ? 'Syncing...'
@@ -282,7 +282,7 @@ export default function FirewallRules({
                         <section className="space-y-6">
                             <div className="flex items-center justify-between">
                                 <div className="flex flex-col gap-1">
-                                    <h3 className="text-lg font-black tracking-tight text-foreground">
+                                    <h3 className="text-lg font-semibold tracking-tight text-foreground">
                                         System Bypass Rules
                                     </h3>
                                     <p className="text-xs text-muted-foreground">
@@ -295,7 +295,7 @@ export default function FirewallRules({
                                     size="sm"
                                     variant="outline"
                                     onClick={() => setIsAddingBypass(true)}
-                                    className="gap-2 border-border text-[10px] font-black tracking-widest uppercase"
+                                    className="gap-2 border-border text-[10px] font-semibold tracking-widest uppercase"
                                 >
                                     <Plus className="size-3.5" /> Add Bypass
                                 </Button>
@@ -307,7 +307,7 @@ export default function FirewallRules({
                                         (rule: any, index: number) => (
                                             <div
                                                 key={index}
-                                                className="flex items-center justify-between rounded-xl border border-border bg-card p-4"
+                                                className="flex items-center justify-between rounded-lg border border-border bg-card p-4"
                                             >
                                                 <div className="flex items-center gap-4">
                                                     <Badge
@@ -349,7 +349,7 @@ export default function FirewallRules({
                                                 onClick={() =>
                                                     setIsAddingBypass(true)
                                                 }
-                                                className="gap-2 border-border text-[10px] font-black tracking-widest uppercase"
+                                                className="gap-2 border-border text-[10px] font-semibold tracking-widest uppercase"
                                             >
                                                 <Plus className="size-3.5" />{' '}
                                                 Add Bypass Rule
@@ -364,7 +364,7 @@ export default function FirewallRules({
                         <section className="space-y-6">
                             <div className="flex items-center justify-between">
                                 <div className="flex flex-col gap-1">
-                                    <h3 className="text-lg font-black tracking-tight text-foreground">
+                                    <h3 className="text-lg font-semibold tracking-tight text-foreground">
                                         IP Blocking
                                     </h3>
                                     <p className="text-xs text-muted-foreground">
@@ -375,7 +375,7 @@ export default function FirewallRules({
                                 <Button
                                     size="sm"
                                     onClick={() => setIsAddingIp(true)}
-                                    className="gap-2 text-[10px] font-black tracking-widest uppercase"
+                                    className="gap-2 text-[10px] font-semibold tracking-widest uppercase"
                                 >
                                     <Plus className="size-3.5" /> Add IP
                                 </Button>
@@ -387,7 +387,7 @@ export default function FirewallRules({
                                         (rule: any, index: number) => (
                                             <div
                                                 key={index}
-                                                className="flex items-center justify-between rounded-xl border border-border bg-card p-4"
+                                                className="flex items-center justify-between rounded-lg border border-border bg-card p-4"
                                             >
                                                 <div className="flex items-center gap-4">
                                                     <Badge
@@ -418,7 +418,7 @@ export default function FirewallRules({
                                         ),
                                     )
                                 ) : (
-                                    <div className="rounded-xl border border-dashed bg-muted/30 p-12 text-center">
+                                    <div className="rounded-lg border border-dashed bg-muted/30 p-12 text-center">
                                         <p className="text-xs text-muted-foreground">
                                             No IP blocking rules configured.
                                         </p>
@@ -430,7 +430,7 @@ export default function FirewallRules({
                         {/* Security Features */}
                         <section className="space-y-6">
                             <div className="flex flex-col gap-1">
-                                <h3 className="text-lg font-black tracking-tight text-foreground">
+                                <h3 className="text-lg font-semibold tracking-tight text-foreground">
                                     Security Features
                                 </h3>
                                 <p className="text-xs text-muted-foreground">
@@ -471,7 +471,7 @@ export default function FirewallRules({
                         {/* Danger Zone */}
                         <section className="space-y-6 pt-12">
                             <div className="flex flex-col gap-1">
-                                <h3 className="text-lg font-black tracking-tight text-red-500">
+                                <h3 className="text-lg font-semibold tracking-tight text-red-500">
                                     Danger Zone
                                 </h3>
                             </div>
@@ -480,7 +480,7 @@ export default function FirewallRules({
                                 <CardContent className="divide-y divide-red-500/10 p-0">
                                     <div className="flex items-center justify-between p-6">
                                         <div className="flex flex-col gap-1">
-                                            <span className="text-sm font-black tracking-widest text-red-500 uppercase">
+                                            <span className="text-sm font-semibold tracking-widest text-red-500 uppercase">
                                                 Attack Mode
                                             </span>
                                             <p className="text-xs text-red-400/80">

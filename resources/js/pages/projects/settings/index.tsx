@@ -290,7 +290,7 @@ export default function ProjectSettings({
 
             <div className="animate-in space-y-8 duration-700 fade-in">
                 <div>
-                    <h1 className="text-3xl font-black tracking-tight text-foreground">
+                    <h1 className="text-3xl font-semibold tracking-tight text-foreground">
                         Project Settings
                     </h1>
                     <p className="mt-1 text-muted-foreground">
@@ -304,7 +304,7 @@ export default function ProjectSettings({
                     onValueChange={setActiveTab}
                     className="w-full"
                 >
-                    <TabsList className="mb-8 rounded-xl bg-muted p-1">
+                    <TabsList className="mb-8 rounded-lg bg-muted p-1">
                         <TabsTrigger
                             value="general"
                             className="rounded-lg px-6"
@@ -340,11 +340,11 @@ export default function ProjectSettings({
 
                     {/* Thresholds */}
                     <TabsContent value="thresholds" className="space-y-6">
-                        <Card className="border-border bg-card p-8 shadow-2xl">
-                            <Badge className="mb-6 w-fit border-border bg-muted text-[9px] font-black tracking-widest text-muted-foreground uppercase">
+                        <Card className="border-border bg-card p-8">
+                            <Badge className="mb-6 w-fit border-border bg-muted text-[9px] font-semibold tracking-widest text-muted-foreground uppercase">
                                 Setting up thresholds
                             </Badge>
-                            <h3 className="mb-2 text-xl font-black tracking-tight text-foreground">
+                            <h3 className="mb-2 text-xl font-semibold tracking-tight text-foreground">
                                 Setting up thresholds
                             </h3>
                             <p className="max-w-2xl text-xs leading-relaxed text-muted-foreground">
@@ -356,7 +356,7 @@ export default function ProjectSettings({
                         </Card>
 
                         {/* Routes Thresholds */}
-                        <Card className="border-border bg-card shadow-2xl">
+                        <Card className="border-border bg-card">
                             <CardHeader>
                                 <CardTitle className="text-lg font-bold text-foreground">
                                     Routes
@@ -368,7 +368,7 @@ export default function ProjectSettings({
                                     .map((t: any) => (
                                         <div
                                             key={t.id}
-                                            className="flex items-center justify-between rounded-xl border border-border bg-muted/30 p-4"
+                                            className="flex items-center justify-between rounded-lg border border-border bg-muted/30 p-4"
                                         >
                                             <div className="flex items-center gap-3">
                                                 <Globe className="h-4 w-4 text-blue-400" />
@@ -376,7 +376,7 @@ export default function ProjectSettings({
                                                     <div className="text-sm font-bold text-foreground">
                                                         {t.key}
                                                     </div>
-                                                    <div className="text-[10px] font-black tracking-widest text-muted-foreground uppercase">
+                                                    <div className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
                                                         Threshold: {t.value}ms
                                                     </div>
                                                 </div>
@@ -434,7 +434,7 @@ export default function ProjectSettings({
                         </Card>
 
                         {/* Jobs Thresholds */}
-                        <Card className="border-border bg-card shadow-2xl">
+                        <Card className="border-border bg-card">
                             <CardHeader className="flex flex-row items-center justify-between">
                                 <CardTitle className="text-lg font-bold text-foreground">
                                     Jobs
@@ -446,7 +446,7 @@ export default function ProjectSettings({
                                     .map((t: any) => (
                                         <div
                                             key={t.id}
-                                            className="flex items-center justify-between rounded-xl border border-border bg-muted/30 p-4"
+                                            className="flex items-center justify-between rounded-lg border border-border bg-muted/30 p-4"
                                         >
                                             <div className="flex items-center gap-3">
                                                 <Zap className="h-4 w-4 text-emerald-400" />
@@ -454,7 +454,7 @@ export default function ProjectSettings({
                                                     <div className="text-sm font-bold text-foreground">
                                                         {t.key}
                                                     </div>
-                                                    <div className="text-[10px] font-black tracking-widest text-muted-foreground uppercase">
+                                                    <div className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
                                                         Threshold: {t.value}ms
                                                     </div>
                                                 </div>
@@ -512,7 +512,7 @@ export default function ProjectSettings({
                         </Card>
 
                         {/* Commands Thresholds */}
-                        <Card className="border-border bg-card shadow-2xl">
+                        <Card className="border-border bg-card">
                             <CardHeader>
                                 <CardTitle className="text-lg font-bold text-foreground">
                                     Commands
@@ -524,7 +524,7 @@ export default function ProjectSettings({
                                     .map((t: any) => (
                                         <div
                                             key={t.id}
-                                            className="flex items-center justify-between rounded-xl border border-border bg-muted/30 p-4"
+                                            className="flex items-center justify-between rounded-lg border border-border bg-muted/30 p-4"
                                         >
                                             <div className="flex items-center gap-3">
                                                 <Terminal className="h-4 w-4 text-orange-400" />
@@ -532,7 +532,7 @@ export default function ProjectSettings({
                                                     <div className="text-sm font-bold text-foreground">
                                                         {t.key}
                                                     </div>
-                                                    <div className="text-[10px] font-black tracking-widest text-muted-foreground uppercase">
+                                                    <div className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
                                                         Threshold: {t.value}ms
                                                     </div>
                                                 </div>
@@ -590,7 +590,7 @@ export default function ProjectSettings({
                         </Card>
 
                         {/* Scheduled Tasks Thresholds */}
-                        <Card className="border-border bg-card shadow-2xl">
+                        <Card className="border-border bg-card">
                             <CardHeader>
                                 <CardTitle className="text-lg font-bold text-foreground">
                                     Scheduled Tasks
@@ -604,7 +604,7 @@ export default function ProjectSettings({
                                     .map((t: any) => (
                                         <div
                                             key={t.id}
-                                            className="flex items-center justify-between rounded-xl border border-border bg-muted/30 p-4"
+                                            className="flex items-center justify-between rounded-lg border border-border bg-muted/30 p-4"
                                         >
                                             <div className="flex items-center gap-3">
                                                 <Clock className="h-4 w-4 text-purple-400" />
@@ -612,7 +612,7 @@ export default function ProjectSettings({
                                                     <div className="text-sm font-bold text-foreground">
                                                         {t.key}
                                                     </div>
-                                                    <div className="text-[10px] font-black tracking-widest text-muted-foreground uppercase">
+                                                    <div className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
                                                         Threshold: {t.value}ms
                                                     </div>
                                                 </div>
@@ -670,7 +670,7 @@ export default function ProjectSettings({
                         </Card>
 
                         {/* Queries Thresholds */}
-                        <Card className="border-border bg-card shadow-2xl">
+                        <Card className="border-border bg-card">
                             <CardHeader>
                                 <CardTitle className="text-lg font-bold text-foreground">
                                     Database Queries
@@ -682,7 +682,7 @@ export default function ProjectSettings({
                                     .map((t: any) => (
                                         <div
                                             key={t.id}
-                                            className="flex items-center justify-between rounded-xl border border-border bg-muted/30 p-4"
+                                            className="flex items-center justify-between rounded-lg border border-border bg-muted/30 p-4"
                                         >
                                             <div className="flex items-center gap-3">
                                                 <Globe className="h-4 w-4 text-cyan-400" />
@@ -690,7 +690,7 @@ export default function ProjectSettings({
                                                     <div className="max-w-md truncate text-sm font-bold text-foreground">
                                                         {t.key}
                                                     </div>
-                                                    <div className="text-[10px] font-black tracking-widest text-muted-foreground uppercase">
+                                                    <div className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
                                                         Threshold: {t.value}ms
                                                     </div>
                                                 </div>
@@ -753,7 +753,7 @@ export default function ProjectSettings({
                     {/* General Settings */}
                     <TabsContent value="general">
                         <div className="space-y-6">
-                            <Card className="border-border bg-card shadow-2xl">
+                            <Card className="border-border bg-card">
                                 <CardHeader>
                                     <CardTitle className="text-foreground">
                                         General Information
@@ -771,7 +771,7 @@ export default function ProjectSettings({
                                             {/* Logo Upload */}
                                             <div className="flex flex-col items-center gap-4">
                                                 <div className="group relative">
-                                                    <div className="flex h-32 w-32 items-center justify-center overflow-hidden rounded-3xl border-2 border-dashed border-border bg-muted ring-primary ring-offset-background transition-all group-hover:ring-2">
+                                                    <div className="flex h-32 w-32 items-center justify-center overflow-hidden rounded-lg border-2 border-dashed border-border bg-muted ring-primary ring-offset-background transition-all group-hover:ring-2">
                                                         {project.logo_url ||
                                                         generalForm.data
                                                             .logo ? (
@@ -825,7 +825,7 @@ export default function ProjectSettings({
                                                         }}
                                                     />
                                                 </div>
-                                                <p className="text-[10px] font-black tracking-widest text-muted-foreground uppercase">
+                                                <p className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
                                                     Project Icon
                                                 </p>
                                                 {generalForm.errors.logo && (
@@ -852,7 +852,7 @@ export default function ProjectSettings({
                                                                 e.target.value,
                                                             )
                                                         }
-                                                        className="h-11 rounded-xl border-border bg-muted"
+                                                        className="h-11 rounded-lg border-border bg-muted"
                                                         placeholder="My Awesome App"
                                                     />
                                                 </div>
@@ -868,7 +868,7 @@ export default function ProjectSettings({
                                                                 e.target.value,
                                                             )
                                                         }
-                                                        className="h-11 rounded-xl border-border bg-muted"
+                                                        className="h-11 rounded-lg border-border bg-muted"
                                                         placeholder="https://example.com"
                                                     />
                                                 </div>
@@ -896,7 +896,7 @@ export default function ProjectSettings({
                                                             )
                                                         }
                                                     >
-                                                        <SelectTrigger className="h-11 rounded-xl border-border bg-muted">
+                                                        <SelectTrigger className="h-11 rounded-lg border-border bg-muted">
                                                             <SelectValue placeholder="Select server" />
                                                         </SelectTrigger>
                                                         <SelectContent className="border-border bg-popover">
@@ -945,7 +945,7 @@ export default function ProjectSettings({
                                                             }
                                                         </p>
                                                     )}
-                                                    <p className="text-[10px] font-black tracking-widest text-muted-foreground uppercase opacity-50">
+                                                    <p className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase opacity-50">
                                                         Groups the app in the
                                                         switcher. Apps that send
                                                         data are linked to the
@@ -953,7 +953,7 @@ export default function ProjectSettings({
                                                         automatically.
                                                     </p>
                                                 </div>
-                                                <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-muted px-4 py-3">
+                                                <div className="flex items-center justify-between gap-4 rounded-lg border border-border bg-muted px-4 py-3">
                                                     <Label>
                                                         Uptime Monitoring
                                                     </Label>
@@ -995,7 +995,7 @@ export default function ProjectSettings({
                                                                 )
                                                             }
                                                         >
-                                                            <SelectTrigger className="h-11 rounded-xl border-border bg-muted">
+                                                            <SelectTrigger className="h-11 rounded-lg border-border bg-muted">
                                                                 <SelectValue placeholder="Select interval" />
                                                             </SelectTrigger>
                                                             <SelectContent className="border-border bg-popover">
@@ -1029,7 +1029,7 @@ export default function ProjectSettings({
                                                                 </SelectItem>
                                                             </SelectContent>
                                                         </Select>
-                                                        <p className="text-[10px] font-black tracking-widest text-muted-foreground uppercase opacity-50">
+                                                        <p className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase opacity-50">
                                                             Frequency of
                                                             availability checks.
                                                         </p>
@@ -1052,7 +1052,7 @@ export default function ProjectSettings({
                                                             )
                                                         }
                                                     >
-                                                        <SelectTrigger className="h-11 rounded-xl border-border bg-muted">
+                                                        <SelectTrigger className="h-11 rounded-lg border-border bg-muted">
                                                             <SelectValue placeholder="Select retention period" />
                                                         </SelectTrigger>
                                                         <SelectContent className="border-border bg-popover">
@@ -1084,7 +1084,7 @@ export default function ProjectSettings({
                                                             </SelectItem>
                                                         </SelectContent>
                                                     </Select>
-                                                    <p className="text-[10px] font-black tracking-widest text-muted-foreground uppercase opacity-50">
+                                                    <p className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase opacity-50">
                                                         Records older than this
                                                         will be permanently
                                                         deleted.
@@ -1098,7 +1098,7 @@ export default function ProjectSettings({
                                                 disabled={
                                                     generalForm.processing
                                                 }
-                                                className="h-10 rounded-xl bg-primary px-8 text-[10px] font-black tracking-widest text-primary-foreground uppercase shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95"
+                                                className="h-10 rounded-lg bg-primary px-8 text-[10px] font-semibold tracking-widest text-primary-foreground uppercase shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95"
                                             >
                                                 {generalForm.processing ? (
                                                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -1128,7 +1128,7 @@ export default function ProjectSettings({
                                         <DialogTrigger asChild>
                                             <Button
                                                 variant="destructive"
-                                                className="h-10 rounded-xl bg-red-500/10 px-8 text-[10px] font-black tracking-widest text-red-500 uppercase transition-all hover:bg-red-500 hover:text-white"
+                                                className="h-10 rounded-lg bg-red-500/10 px-8 text-[10px] font-semibold tracking-widest text-red-500 uppercase transition-all hover:bg-red-500 hover:text-white"
                                             >
                                                 Delete Project
                                             </Button>
@@ -1165,7 +1165,7 @@ export default function ProjectSettings({
                                                 />
                                                 <Button
                                                     variant="destructive"
-                                                    className="h-11 w-full text-[10px] font-black tracking-widest uppercase"
+                                                    className="h-11 w-full text-[10px] font-semibold tracking-widest uppercase"
                                                     disabled={
                                                         deleteConfirm !==
                                                         project.slug
@@ -1201,7 +1201,7 @@ export default function ProjectSettings({
                             <Tabs defaultValue="marketplace" className="w-full">
                                 <div className="mb-8 flex items-center justify-between">
                                     <div>
-                                        <h2 className="text-2xl font-black tracking-tight text-foreground">
+                                        <h2 className="text-2xl font-semibold tracking-tight text-foreground">
                                             Integrations
                                         </h2>
                                         <p className="mt-1 text-xs font-medium text-muted-foreground">
@@ -1209,16 +1209,16 @@ export default function ProjectSettings({
                                             receive instant alerts.
                                         </p>
                                     </div>
-                                    <TabsList className="rounded-xl border border-border bg-muted p-1">
+                                    <TabsList className="rounded-lg border border-border bg-muted p-1">
                                         <TabsTrigger
                                             value="marketplace"
-                                            className="h-9 rounded-lg px-6 text-[10px] font-black tracking-widest uppercase"
+                                            className="h-9 rounded-lg px-6 text-[10px] font-semibold tracking-widest uppercase"
                                         >
                                             Marketplace
                                         </TabsTrigger>
                                         <TabsTrigger
                                             value="configurations"
-                                            className="h-9 rounded-lg px-6 text-[10px] font-black tracking-widest uppercase"
+                                            className="h-9 rounded-lg px-6 text-[10px] font-semibold tracking-widest uppercase"
                                         >
                                             Configurations
                                             {(integrations?.length || 0) >
@@ -1279,7 +1279,7 @@ export default function ProjectSettings({
                                             return (
                                                 <Card
                                                     key={item.id}
-                                                    className="group relative overflow-hidden border-border bg-card shadow-2xl transition-all duration-500 hover:border-primary/50"
+                                                    className="group relative overflow-hidden border-border bg-card transition-all duration-500 hover:border-primary/50"
                                                 >
                                                     {/* Glow Effect */}
                                                     <div
@@ -1288,12 +1288,12 @@ export default function ProjectSettings({
 
                                                     <CardContent className="relative z-10 p-8">
                                                         <div className="mb-6 flex items-start justify-between">
-                                                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-border bg-muted shadow-inner transition-transform duration-500 group-hover:scale-110">
+                                                            <div className="flex h-14 w-14 items-center justify-center rounded-lg border border-border bg-muted shadow-inner transition-transform duration-500 group-hover:scale-110">
                                                                 <item.icon className="h-7 w-7 text-primary" />
                                                             </div>
                                                             <Button
                                                                 variant="outline"
-                                                                className="h-8 rounded-lg border-border text-[10px] font-black tracking-widest uppercase transition-all hover:bg-primary hover:text-primary-foreground"
+                                                                className="h-8 rounded-lg border-border text-[10px] font-semibold tracking-widest uppercase transition-all hover:bg-primary hover:text-primary-foreground"
                                                                 onClick={() => {
                                                                     const type: any =
                                                                         available_types?.find(
@@ -1336,7 +1336,7 @@ export default function ProjectSettings({
                                                             </Button>
                                                         </div>
                                                         <div>
-                                                            <h3 className="mb-2 text-xl font-black text-foreground">
+                                                            <h3 className="mb-2 text-xl font-semibold text-foreground">
                                                                 {item.name}
                                                             </h3>
                                                             <p className="text-xs leading-relaxed font-medium text-muted-foreground">
@@ -1364,7 +1364,7 @@ export default function ProjectSettings({
                                                     >
                                                         <CardContent className="p-5">
                                                             <div className="mb-4 flex items-center gap-3">
-                                                                <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-muted">
+                                                                <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-muted">
                                                                     <Icon className="h-5 w-5 text-primary" />
                                                                 </div>
                                                                 <div className="min-w-0 flex-1">
@@ -1389,7 +1389,7 @@ export default function ProjectSettings({
                                                                             </TooltipProvider>
                                                                         )}
                                                                     </div>
-                                                                    <p className="text-[10px] font-black tracking-widest text-muted-foreground uppercase">
+                                                                    <p className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
                                                                         {
                                                                             int.type
                                                                         }
@@ -1426,7 +1426,7 @@ export default function ProjectSettings({
                                                                             int.id,
                                                                         )
                                                                     }
-                                                                    className={`h-8 flex-1 gap-1.5 rounded-lg border border-border/50 text-[10px] font-black tracking-widest uppercase transition-all ${testingId === int.id ? 'bg-primary/10 text-primary' : 'bg-muted hover:text-emerald-400'}`}
+                                                                    className={`h-8 flex-1 gap-1.5 rounded-lg border border-border/50 text-[10px] font-semibold tracking-widest uppercase transition-all ${testingId === int.id ? 'bg-primary/10 text-primary' : 'bg-muted hover:text-emerald-400'}`}
                                                                 >
                                                                     {testingId ===
                                                                     int.id ? (
@@ -1470,11 +1470,11 @@ export default function ProjectSettings({
                                             })}
                                         </div>
                                     ) : (
-                                        <div className="rounded-3xl border border-dashed border-border bg-card py-24 text-center">
+                                        <div className="rounded-lg border border-dashed border-border bg-card py-24 text-center">
                                             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
                                                 <Settings2 className="h-8 w-8 text-muted-foreground opacity-20" />
                                             </div>
-                                            <h3 className="text-lg font-black text-foreground">
+                                            <h3 className="text-lg font-semibold text-foreground">
                                                 No active connections
                                             </h3>
                                             <p className="mx-auto mt-2 max-w-xs text-xs text-muted-foreground">
@@ -1608,7 +1608,7 @@ export default function ProjectSettings({
                                 <DialogTrigger asChild>
                                     <Button
                                         size="sm"
-                                        className="gap-2 rounded-xl bg-white/10 font-bold text-foreground hover:bg-white/20"
+                                        className="gap-2 rounded-lg bg-white/10 font-bold text-foreground hover:bg-white/20"
                                     >
                                         <Plus className="h-4 w-4" /> Create Rule
                                     </Button>
@@ -1682,13 +1682,13 @@ export default function ProjectSettings({
                                         <div className="space-y-4 border-t border-border pt-4">
                                             <div className="mb-2 flex items-center gap-2">
                                                 <Zap className="h-4 w-4 text-blue-500" />
-                                                <h4 className="text-xs font-black tracking-widest uppercase">
+                                                <h4 className="text-xs font-semibold tracking-widest uppercase">
                                                     Throttling
                                                 </h4>
                                             </div>
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div className="space-y-2">
-                                                    <Label className="text-[10px] font-black tracking-wider uppercase opacity-60">
+                                                    <Label className="text-[10px] font-semibold tracking-wider uppercase opacity-60">
                                                         Occurrence Threshold
                                                     </Label>
                                                     <Input
@@ -1723,7 +1723,7 @@ export default function ProjectSettings({
                                                     </p>
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <Label className="text-[10px] font-black tracking-wider uppercase opacity-60">
+                                                    <Label className="text-[10px] font-semibold tracking-wider uppercase opacity-60">
                                                         Time Window (Mins)
                                                     </Label>
                                                     <Input
@@ -1758,7 +1758,7 @@ export default function ProjectSettings({
                                                 </div>
                                             </div>
                                             <div className="space-y-2">
-                                                <Label className="text-[10px] font-black tracking-wider uppercase opacity-60">
+                                                <Label className="text-[10px] font-semibold tracking-wider uppercase opacity-60">
                                                     Throttle Period (Seconds)
                                                 </Label>
                                                 <Select
@@ -1882,7 +1882,7 @@ export default function ProjectSettings({
                                         </div>
                                         <Button
                                             disabled={ruleForm.processing}
-                                            className="mt-4 h-10 w-full bg-primary text-[10px] font-black tracking-widest text-primary-foreground uppercase"
+                                            className="mt-4 h-10 w-full bg-primary text-[10px] font-semibold tracking-widest text-primary-foreground uppercase"
                                         >
                                             {ruleForm.processing ? (
                                                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -1906,7 +1906,7 @@ export default function ProjectSettings({
                                     >
                                         <CardContent className="p-5">
                                             <div className="mb-4 flex items-start justify-between">
-                                                <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-muted">
+                                                <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-muted">
                                                     <Bell className="h-5 w-5 text-primary" />
                                                 </div>
                                                 <div className="flex gap-2">
@@ -1945,7 +1945,7 @@ export default function ProjectSettings({
                                                     </Button>
                                                 </div>
                                             </div>
-                                            <h3 className="text-lg font-black text-foreground">
+                                            <h3 className="text-lg font-semibold text-foreground">
                                                 {rule.name}
                                             </h3>
                                             <p className="mb-4 text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
@@ -1971,11 +1971,11 @@ export default function ProjectSettings({
                                     </Card>
                                 ))
                             ) : (
-                                <div className="col-span-full rounded-3xl border border-dashed border-border bg-card py-24 text-center">
+                                <div className="col-span-full rounded-lg border border-dashed border-border bg-card py-24 text-center">
                                     <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
                                         <Bell className="h-8 w-8 text-muted-foreground opacity-20" />
                                     </div>
-                                    <h3 className="text-lg font-black text-foreground">
+                                    <h3 className="text-lg font-semibold text-foreground">
                                         No alert rules defined
                                     </h3>
                                     <p className="mx-auto mt-2 max-w-xs text-xs text-muted-foreground">
@@ -1990,7 +1990,7 @@ export default function ProjectSettings({
 
                     {/* API Keys */}
                     <TabsContent value="api">
-                        <Card className="border-border bg-card shadow-2xl">
+                        <Card className="border-border bg-card">
                             <CardHeader>
                                 <CardTitle className="text-foreground">
                                     API Configuration
@@ -2012,7 +2012,7 @@ export default function ProjectSettings({
                                         <Button
                                             variant="ghost"
                                             size="icon"
-                                            className="h-10 w-10 rounded-xl bg-muted hover:bg-white/10"
+                                            className="h-10 w-10 rounded-lg bg-muted hover:bg-white/10"
                                             onClick={() => {
                                                 navigator.clipboard.writeText(
                                                     project.api_token,
@@ -2035,14 +2035,14 @@ export default function ProjectSettings({
                     {/* Cloudflare Settings */}
                     <TabsContent value="cloudflare">
                         <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
-                            <Card className="overflow-hidden shadow-2xl lg:col-span-7">
+                            <Card className="overflow-hidden lg:col-span-7">
                                 <CardHeader>
                                     <div className="flex items-center gap-3">
-                                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 shadow-lg">
+                                        <div className="flex h-12 w-12 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 shadow-lg">
                                             <ShieldAlert className="h-7 w-7 text-primary" />
                                         </div>
                                         <div>
-                                            <CardTitle className="text-lg font-black tracking-tight text-foreground">
+                                            <CardTitle className="text-lg font-semibold tracking-tight text-foreground">
                                                 Cloudflare Integration
                                             </CardTitle>
                                             <CardDescription className="text-xs">
@@ -2062,7 +2062,7 @@ export default function ProjectSettings({
                                             <div className="space-y-3">
                                                 <Label
                                                     htmlFor="api_token"
-                                                    className="text-[10px] font-black tracking-widest text-muted-foreground uppercase"
+                                                    className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase"
                                                 >
                                                     API Token
                                                 </Label>
@@ -2093,8 +2093,8 @@ export default function ProjectSettings({
                                                     </p>
                                                 )}
 
-                                                <div className="space-y-3 rounded-xl border border-border bg-muted/30 p-4">
-                                                    <div className="flex items-center gap-2 text-[10px] font-black tracking-widest text-foreground uppercase">
+                                                <div className="space-y-3 rounded-lg border border-border bg-muted/30 p-4">
+                                                    <div className="flex items-center gap-2 text-[10px] font-semibold tracking-widest text-foreground uppercase">
                                                         <Lock className="size-3 text-primary" />
                                                         Required Token
                                                         Permissions
@@ -2132,7 +2132,7 @@ export default function ProjectSettings({
                                                                     </code>
                                                                     <Badge
                                                                         variant="outline"
-                                                                        className="h-3.5 bg-primary/5 px-1 text-[8px] font-black"
+                                                                        className="h-3.5 bg-primary/5 px-1 text-[8px] font-semibold"
                                                                     >
                                                                         {perm.l}
                                                                     </Badge>
@@ -2149,7 +2149,7 @@ export default function ProjectSettings({
                                             <div className="space-y-3">
                                                 <Label
                                                     htmlFor="zone_id"
-                                                    className="text-[10px] font-black tracking-widest text-muted-foreground uppercase"
+                                                    className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase"
                                                 >
                                                     Zone ID
                                                 </Label>
@@ -2185,7 +2185,7 @@ export default function ProjectSettings({
                                                 disabled={
                                                     cloudflareForm.processing
                                                 }
-                                                className="h-11 rounded-xl px-8 text-xs font-black tracking-widest uppercase shadow-xl shadow-primary/10 transition-all hover:shadow-primary/20"
+                                                className="h-11 rounded-lg px-8 text-xs font-semibold tracking-widest uppercase shadow-xl shadow-primary/10 transition-all hover:shadow-primary/20"
                                             >
                                                 {cloudflareForm.processing ? (
                                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -2205,7 +2205,7 @@ export default function ProjectSettings({
                                         <div className="rounded-lg border border-primary/20 bg-primary/10 p-1.5 text-primary">
                                             <Info className="h-4 w-4" />
                                         </div>
-                                        <h4 className="text-xs font-black tracking-wider text-foreground uppercase">
+                                        <h4 className="text-xs font-semibold tracking-wider text-foreground uppercase">
                                             Setup Instructions
                                         </h4>
                                     </div>
@@ -2247,7 +2247,7 @@ export default function ProjectSettings({
                                                     key={i}
                                                     className="flex gap-4"
                                                 >
-                                                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-primary/20 bg-primary/10 text-[10px] font-black text-primary">
+                                                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-primary/20 bg-primary/10 text-[10px] font-semibold text-primary">
                                                         {item.step}
                                                     </div>
                                                     <p className="pt-0.5 text-[11px] leading-relaxed font-medium text-muted-foreground">
@@ -2257,10 +2257,10 @@ export default function ProjectSettings({
                                             ))}
                                         </div>
 
-                                        <div className="rounded-xl border border-border bg-muted/30 p-4">
+                                        <div className="rounded-lg border border-border bg-muted/30 p-4">
                                             <div className="mb-2 flex items-center gap-2">
                                                 <AlertCircle className="size-3 text-primary" />
-                                                <span className="text-[9px] font-black tracking-widest text-primary uppercase">
+                                                <span className="text-[9px] font-semibold tracking-widest text-primary uppercase">
                                                     Important Note
                                                 </span>
                                             </div>
@@ -2376,7 +2376,7 @@ function ThresholdForm({
             </div>
             <Button
                 disabled={form.processing}
-                className="h-10 w-full bg-primary text-[10px] font-black tracking-widest text-primary-foreground uppercase"
+                className="h-10 w-full bg-primary text-[10px] font-semibold tracking-widest text-primary-foreground uppercase"
             >
                 {form.processing ? (
                     <Loader2 className="h-4 w-4 animate-spin" />

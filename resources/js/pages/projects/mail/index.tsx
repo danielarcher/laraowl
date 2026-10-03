@@ -100,7 +100,7 @@ export default function MailIndex({
                                                                 mail.mailable_class
                                                             }
                                                         </span>
-                                                        <span className="text-[10px] tracking-tighter text-muted-foreground uppercase">
+                                                        <span className="text-[10px] tracking-tight text-muted-foreground uppercase">
                                                             APP\MAIL
                                                         </span>
                                                     </div>

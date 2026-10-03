@@ -9,8 +9,10 @@ use App\Models\RecordGroupUserBucket;
 use App\Models\RecordIpBucket;
 use App\Models\RecordRollup;
 use App\Models\RecordUserBucket;
+use App\Support\TimeSlots;
 use Carbon\Carbon;
 use Cron\CronExpression;
+use Illuminate\Contracts\Database\Query\Expression;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -81,6 +83,8 @@ class RecordService
                 'avg_duration' => round($this->avgDuration($overview), 2),
                 'max_duration' => round((float) ($overview->max_duration ?? 0), 2),
                 'min_duration' => round((float) ($overview->min_duration ?? 0), 2),
+                'latency' => $this->latencySummary($overview),
+                'histogram' => $this->latencyHistogram($overview),
             ],
             'sort' => $sort,
             'direction' => $direction,
@@ -109,15 +113,14 @@ class RecordService
                 'client_error' => (int) $requestStats->client_error,
                 'server_error' => (int) $requestStats->server_error,
             ],
-            'duration_stats' => [
-                'avg' => round($this->avgDuration($requestStats), 2),
-                'max' => round((float) ($requestStats->max_duration ?? 0), 2),
-                'min' => round((float) ($requestStats->min_duration ?? 0), 2),
-            ],
+            'duration_stats' => $this->latencySummary($requestStats),
+            'latency_histogram' => $this->latencyHistogram($requestStats),
+            'previous' => $this->previousDashboardTotals($project, $period, $from, $to),
             'total_exceptions' => (int) $exceptionStats->total,
             'recent_issues' => $project->issues()->where('status', 'open')->latest('last_seen_at')->limit(5)->get(),
             'timeSeries' => $this->getDetailedTimeSeries($project, 'request', $period, $from, $to),
             'exceptionTimeSeries' => $this->getDetailedTimeSeries($project, 'exception', $period, $from, $to),
+            'jobTimeSeries' => $this->getDetailedTimeSeries($project, 'job-attempt', $period, $from, $to),
             'job_stats' => [
                 'total' => (int) $jobStats->total,
                 'processed' => (int) $jobStats->ok,
@@ -136,6 +139,27 @@ class RecordService
                 'last_check' => $project->last_uptime_check_at ? $project->last_uptime_check_at->toIso8601String() : null,
                 'url' => $project->url,
             ],
+        ];
+    }
+
+    /**
+     * The headline figures over the window before the period.
+     *
+     * @return array{requests: int, server_error: int, p95: float, exceptions: int, jobs: int, failed_jobs: int}
+     */
+    protected function previousDashboardTotals(Project $project, ?string $period, ?string $from, ?string $to): array
+    {
+        $requests = $this->previousRollupTotals($project, 'request', $period, $from, $to);
+        $exceptions = $this->previousRollupTotals($project, 'exception', $period, $from, $to);
+        $jobs = $this->previousRollupTotals($project, ['job-attempt', 'queued-job'], $period, $from, $to);
+
+        return [
+            'requests' => (int) $requests->total,
+            'server_error' => (int) $requests->server_error,
+            'p95' => round($this->latencyQuantile($requests, 0.95), 2),
+            'exceptions' => (int) $exceptions->total,
+            'jobs' => (int) $jobs->total,
+            'failed_jobs' => (int) $jobs->server_error,
         ];
     }
 
@@ -746,139 +770,93 @@ class RecordService
     }
 
     /**
-     * Time series aggregation for dashboards
+     * One chart point per slot of the period's grid (see TimeSlots), gap
+     * filled so every chart keeps its shape. Each point carries its start as
+     * unix seconds (`t`) for the browser to label in local time, the status
+     * split, and the latency picture: mean, estimated p50/p95 and the max.
+     *
+     * @return list<array<string, int|float|string>>
      */
     protected function getDetailedTimeSeries(Project $project, string $type, ?string $period = null, ?string $from = null, ?string $to = null): array
     {
         $period = $period ?: '1h';
+        $grid = TimeSlots::for($period, $from, $to);
+        $slotSql = TimeSlots::sql($grid->slot, $this->col('bucket'));
 
-        $groupsByMinute = ! in_array($period, ['7d', '14d', '30d', 'custom'], true);
-        $bucket = $groupsByMinute ? $this->col('bucket') : $this->timeBucketSql($period, 'bucket');
+        $sum = fn (string $column, string $alias) => DB::raw('SUM('.$this->col($column).') as '.$this->col($alias));
 
-        $sum = fn (string $column, string $alias) => DB::raw('SUM('.$this->col($column).') as '.$alias);
+        $columns = [
+            DB::raw("{$slotSql} as slot_index"),
+            $sum('count', 'total'),
+            $sum('ok_count', 'ok'),
+            $sum('client_error_count', 'client_error'),
+            $sum('server_error_count', 'server_error'),
+            $sum('hits', 'hits'),
+            $sum('misses', 'misses'),
+            $sum('writes', 'writes'),
+            $sum('authed_count', 'authed'),
+            $sum('sum_duration', 'sum_duration'),
+            $sum('count_duration', 'count_duration'),
+            DB::raw('MAX('.$this->col('max_duration').') as max_duration'),
+            DB::raw('MIN('.$this->col('min_duration').') as min_duration'),
+        ];
 
-        $results = RecordRollup::query()
+        foreach (RollupWriter::latencyColumns() as $column) {
+            $columns[] = $sum($column, $column);
+        }
+
+        $rows = RecordRollup::query()
             ->where('project_id', $project->id)
             ->where('type', $type)
             ->forPeriod($period, $from, $to)
-            ->select([
-                DB::raw("{$bucket} as minute"),
-                $sum('count', 'total'),
-                $sum('ok_count', 'ok'),
-                $sum('client_error_count', 'client_error'),
-                $sum('server_error_count', 'server_error'),
-                $sum('hits', 'hits'),
-                $sum('misses', 'misses'),
-                $sum('writes', 'writes'),
-                $sum('authed_count', 'authed'),
-                DB::raw('SUM('.$this->col('sum_duration').') / NULLIF(SUM('.$this->col('count_duration').'), 0) as avg_duration'),
-            ])
-            ->groupBy('minute')
-            ->get();
+            ->select($columns)
+            ->groupBy('slot_index')
+            ->get()
+            ->keyBy(fn ($row) => (int) $row->slot_index);
 
-        $userBucket = $groupsByMinute ? $this->col('bucket') : $bucket;
-
+        // User buckets are hourly, so a grid finer than an hour shows each
+        // point the distinct users of the hour it falls in.
+        $userSlot = max($grid->slot, 3600);
         $activeUsers = RecordUserBucket::query()
             ->where('project_id', $project->id)
             ->where('type', $type)
             ->forPeriod($period, $from, $to)
             ->select([
-                DB::raw("{$userBucket} as slot"),
+                DB::raw(TimeSlots::sql($userSlot, $this->col('bucket')).' as slot_index'),
                 DB::raw('COUNT(DISTINCT '.$this->col('user_key').') as active_users'),
             ])
-            ->groupBy('slot')
-            ->get()
-            ->mapWithKeys(fn ($row) => [
-                $groupsByMinute ? Carbon::parse($row->slot)->format('Y-m-d H') : $row->slot => (int) $row->active_users,
-            ]);
+            ->groupBy('slot_index')
+            ->pluck('active_users', 'slot_index')
+            ->mapWithKeys(fn ($count, $index) => [(int) $index => (int) $count]);
 
-        $results = $results->mapWithKeys(function ($row) use ($activeUsers, $groupsByMinute) {
-            $key = $this->seriesKey($row->minute, $groupsByMinute);
-            $userSlot = $groupsByMinute ? Carbon::parse($row->minute)->format('Y-m-d H') : $row->minute;
-            $authed = (int) $row->authed;
+        $labelFormat = $grid->withinADay() ? 'H:i' : 'd/m H:i';
 
-            return [$key => [
-                'minute' => $key,
-                'total' => (int) $row->total,
-                'ok' => (int) $row->ok,
-                'client_error' => (int) $row->client_error,
-                'server_error' => (int) $row->server_error,
-                'avg_duration' => round((float) $row->avg_duration, 2),
-                'hits' => (int) $row->hits,
-                'misses' => (int) $row->misses,
-                'writes' => (int) $row->writes,
-                'active_users' => $activeUsers[$userSlot] ?? 0,
-                'total_requests' => (int) $row->total,
+        return array_map(function (int $index) use ($grid, $rows, $activeUsers, $userSlot, $labelFormat) {
+            $start = $index * $grid->slot;
+            $row = $rows->get($index);
+            $total = (int) ($row->total ?? 0);
+            $authed = (int) ($row->authed ?? 0);
+
+            return [
+                't' => $start,
+                'minute' => Carbon::createFromTimestamp($start, config('app.timezone'))->format($labelFormat),
+                'total' => $total,
+                'ok' => (int) ($row->ok ?? 0),
+                'client_error' => (int) ($row->client_error ?? 0),
+                'server_error' => (int) ($row->server_error ?? 0),
+                'avg_duration' => $row ? round($this->avgDuration($row), 2) : 0,
+                'p50_duration' => $row ? round($this->latencyQuantile($row, 0.5), 2) : 0,
+                'p95_duration' => $row ? round($this->latencyQuantile($row, 0.95), 2) : 0,
+                'max_duration' => round((float) ($row->max_duration ?? 0), 2),
+                'hits' => (int) ($row->hits ?? 0),
+                'misses' => (int) ($row->misses ?? 0),
+                'writes' => (int) ($row->writes ?? 0),
+                'active_users' => $activeUsers[intdiv($start, $userSlot)] ?? 0,
+                'total_requests' => $total,
                 'authed' => $authed,
-                'guest' => max((int) $row->total - $authed, 0),
-            ]];
-        });
-
-        return $this->fillTimeSeriesGaps($results, $period, $from, $to);
-    }
-
-    /**
-     * The chart key a grouped row belongs to.
-     */
-    private function seriesKey(string $value, bool $groupedByMinute): string
-    {
-        return $groupedByMinute ? Carbon::parse($value)->format('H:i') : $value;
-    }
-
-    /**
-     * Fill missing time slots with zeroed data.
-     */
-    protected function fillTimeSeriesGaps($results, string $period, ?string $from = null, ?string $to = null): array
-    {
-        $data = [];
-        $now = now();
-
-        $iterations = match ($period) {
-            '1h' => 60,
-            '24h' => 1440,
-            '7d' => 7,
-            '14d' => 14,
-            '30d' => 30,
-            default => 60,
-        };
-
-        $unit = match ($period) {
-            '7d', '14d', '30d' => 'day',
-            default => 'minute',
-        };
-
-        $dateFormat = match ($period) {
-            '7d', '14d', '30d' => 'm-d',
-            '24h' => 'H:i',
-            default => 'H:i',
-        };
-
-        for ($i = $iterations - 1; $i >= 0; $i--) {
-            $time = (clone $now)->sub($unit, $i);
-            $key = $time->format($dateFormat);
-
-            if ($results->has($key)) {
-                $data[] = $results->get($key);
-            } else {
-                $data[] = [
-                    'minute' => $key,
-                    'total' => 0,
-                    'ok' => 0,
-                    'client_error' => 0,
-                    'server_error' => 0,
-                    'avg_duration' => 0,
-                    'hits' => 0,
-                    'misses' => 0,
-                    'writes' => 0,
-                    'active_users' => 0,
-                    'total_requests' => 0,
-                    'authed' => 0,
-                    'guest' => 0,
-                ];
-            }
-        }
-
-        return $data;
+                'guest' => max($total - $authed, 0),
+            ];
+        }, $grid->indexes());
     }
 
     private function enrichUserPaginator(Project $project, LengthAwarePaginator $paginator): LengthAwarePaginator
@@ -1103,23 +1081,6 @@ class RecordService
         return 'CAST('.$this->jsonValue($path).' AS CHAR)';
     }
 
-    private function timeBucketSql(string $period, string $column = 'created_at'): string
-    {
-        if ($this->isPgsql()) {
-            return match ($period) {
-                '7d', '14d', '30d' => "to_char({$column}, 'MM-DD')",
-                'custom' => "to_char(date_trunc('hour', {$column}), 'YYYY-MM-DD HH24:00')",
-                default => "to_char({$column}, 'HH24:MI')",
-            };
-        }
-
-        return match ($period) {
-            '7d', '14d', '30d' => "DATE_FORMAT({$column}, '%m-%d')",
-            'custom' => "DATE_FORMAT({$column}, '%Y-%m-%d %H:00')",
-            default => "DATE_FORMAT({$column}, '%H:%i')",
-        };
-    }
-
     /**
      * Quote an identifier for the active driver.
      */
@@ -1181,6 +1142,62 @@ class RecordService
      */
     protected function rollupTotals(Project $project, string|array $types, ?string $period = null, ?string $from = null, ?string $to = null): object
     {
+        return RecordRollup::query()
+            ->where('project_id', $project->id)
+            ->whereIn('type', (array) $types)
+            ->forPeriod($period, $from, $to)
+            ->select($this->rollupTotalColumns())
+            ->first();
+    }
+
+    /**
+     * The same counters for the window just before the period, as long as it,
+     * so a figure can say how it moved.
+     *
+     * @param  string|list<string>  $types
+     */
+    protected function previousRollupTotals(Project $project, string|array $types, ?string $period = null, ?string $from = null, ?string $to = null): object
+    {
+        [$start, $end] = $this->periodWindow($period, $from, $to);
+        $length = $start->diffInSeconds($end, true);
+
+        return RecordRollup::query()
+            ->where('project_id', $project->id)
+            ->whereIn('type', (array) $types)
+            ->where('bucket', '>=', $start->copy()->subSeconds((int) $length))
+            ->where('bucket', '<', $start)
+            ->select($this->rollupTotalColumns())
+            ->first();
+    }
+
+    /**
+     * The window a period covers, matching RecordRollup::scopeForPeriod().
+     *
+     * @return array{0: Carbon, 1: Carbon}
+     */
+    protected function periodWindow(?string $period, ?string $from = null, ?string $to = null): array
+    {
+        if ($period === 'custom' && $from && $to) {
+            try {
+                $start = Carbon::parse($from);
+                $end = Carbon::parse($to);
+
+                if ($start->lt($end)) {
+                    return [$start, $end];
+                }
+            } catch (\Throwable) {
+                // An unparseable range falls back to the default period.
+            }
+        }
+
+        return [Carbon::instance(Record::periodStartsAt($period)->startOfMinute()), now()];
+    }
+
+    /**
+     * @return list<Expression>
+     */
+    private function rollupTotalColumns(): array
+    {
         $sum = fn (string $column, string $alias) => DB::raw('COALESCE(SUM('.$this->col($column).'), 0) as '.$alias);
 
         $columns = [
@@ -1203,12 +1220,7 @@ class RecordService
             $columns[] = $sum($column, $column);
         }
 
-        return RecordRollup::query()
-            ->where('project_id', $project->id)
-            ->whereIn('type', (array) $types)
-            ->forPeriod($period, $from, $to)
-            ->select($columns)
-            ->first();
+        return $columns;
     }
 
     /**
@@ -1244,6 +1256,87 @@ class RecordService
         }
 
         return (float) ($totals->max_duration ?? 0);
+    }
+
+    /**
+     * A latency quantile estimated from the histogram: linear inside the
+     * bucket the quantile falls in, as Prometheus' histogram_quantile does,
+     * and kept within the fastest and slowest durations actually seen.
+     * Unlike p95Duration(), which returns the bucket's upper bound, this
+     * moves smoothly enough to draw as a line.
+     */
+    protected function latencyQuantile(object $totals, float $quantile): float
+    {
+        $samples = (int) ($totals->count_duration ?? 0);
+
+        if ($samples === 0) {
+            return 0.0;
+        }
+
+        $target = $quantile * $samples;
+        $cumulative = 0;
+        $lower = 0;
+        $estimate = null;
+
+        foreach (RollupWriter::LATENCY_BOUNDARIES as $boundary) {
+            $inBucket = (int) ($totals->{'lat_le_'.$boundary} ?? 0);
+
+            if ($inBucket > 0 && $cumulative + $inBucket >= $target) {
+                $estimate = $lower + ($boundary - $lower) * (($target - $cumulative) / $inBucket);
+                break;
+            }
+
+            $cumulative += $inBucket;
+            $lower = $boundary;
+        }
+
+        $max = isset($totals->max_duration) ? (float) $totals->max_duration : null;
+        $min = isset($totals->min_duration) ? (float) $totals->min_duration : null;
+        $estimate ??= $max ?? (float) $lower;
+
+        if ($max !== null && $max > 0) {
+            $estimate = min($estimate, $max);
+        }
+
+        if ($min !== null) {
+            $estimate = max($estimate, $min);
+        }
+
+        return $estimate;
+    }
+
+    /**
+     * How many samples fell in each latency bucket, fastest first.
+     *
+     * @return list<array{le: int|null, count: int}>
+     */
+    protected function latencyHistogram(object $totals): array
+    {
+        $buckets = array_map(fn (int $boundary) => [
+            'le' => $boundary,
+            'count' => (int) ($totals->{'lat_le_'.$boundary} ?? 0),
+        ], RollupWriter::LATENCY_BOUNDARIES);
+
+        $buckets[] = ['le' => null, 'count' => (int) ($totals->lat_le_inf ?? 0)];
+
+        return $buckets;
+    }
+
+    /**
+     * The latency figures a chart header shows.
+     *
+     * @return array{avg: float, min: float, max: float, p50: float, p95: float, p99: float}
+     */
+    protected function latencySummary(object $totals): array
+    {
+        return [
+            'avg' => round($this->avgDuration($totals), 2),
+            'min' => round((float) ($totals->min_duration ?? 0), 2),
+            'max' => round((float) ($totals->max_duration ?? 0), 2),
+            'p50' => round($this->latencyQuantile($totals, 0.5), 2),
+            'p95' => round($this->latencyQuantile($totals, 0.95), 2),
+            'p99' => round($this->latencyQuantile($totals, 0.99), 2),
+        ];
     }
 
     /**

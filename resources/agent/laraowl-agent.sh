@@ -26,16 +26,34 @@ json_escape() {
     printf '%s' "${value//\"/\\\"}"
 }
 
-# Busy share of all CPUs over one second, from the aggregate line of /proc/stat.
+# Busy share of all CPUs since the previous run, from the aggregate line of
+# /proc/stat. Run every minute, that is the whole minute's average; a one-second
+# sample would mostly catch the cron and scheduler burst on the minute itself.
+# The first run, or one after a gap or a reboot, falls back to one second.
 cpu_counters() {
     local _ user nice system idle iowait irq softirq steal
     read -r _ user nice system idle iowait irq softirq steal _ < /proc/stat
     echo "$((user + nice + system + idle + iowait + irq + softirq + steal)) $((idle + iowait))"
 }
 
-read -r total_before idle_before <<< "$(cpu_counters)"
-sleep 1
+cpu_state="${LARAOWL_AGENT_STATE:-$(dirname "$config")/cpu.state}"
+total_before=""
+idle_before=""
+
+if [ -n "$(find "$cpu_state" -mmin -5 2>/dev/null)" ]; then
+    read -r total_before idle_before < "$cpu_state" || true
+fi
+
 read -r total_after idle_after <<< "$(cpu_counters)"
+
+if [[ ! $total_before =~ ^[0-9]+$ ]] || [[ ! $idle_before =~ ^[0-9]+$ ]] || [ "$total_after" -le "$total_before" ]; then
+    total_before=$total_after
+    idle_before=$idle_after
+    sleep 1
+    read -r total_after idle_after <<< "$(cpu_counters)"
+fi
+
+{ printf '%s %s\n' "$total_after" "$idle_after" > "$cpu_state"; } 2>/dev/null || true
 
 total_delta=$((total_after - total_before))
 idle_delta=$((idle_after - idle_before))

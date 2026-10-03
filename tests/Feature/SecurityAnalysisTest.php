@@ -52,3 +52,25 @@ test('the first file audit sets the baseline; a later change is flagged', functi
 
     expect($project->issues()->where('type', 'security')->value('message'))->toBe('.env; modified');
 });
+
+test('a crawler whose user agent links to a .php page is not a file inclusion', function () {
+    $project = Project::factory()->create();
+
+    app(IngestService::class)->ingest($project, [
+        ['t' => 'request', 'method' => 'GET', 'url' => 'https://keepitfive.ie/', 'status_code' => 200, 'duration' => 5_000, 'ip' => '173.252.87.4',
+            'headers' => json_encode(['user-agent' => ['facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)']], JSON_UNESCAPED_SLASHES)],
+    ]);
+
+    expect($project->issues()->where('type', 'security')->count())->toBe(0);
+});
+
+test('script injected through a header is still flagged', function () {
+    $project = Project::factory()->create();
+
+    app(IngestService::class)->ingest($project, [
+        ['t' => 'request', 'method' => 'GET', 'url' => 'https://keepitfive.ie/', 'status_code' => 200, 'duration' => 5_000, 'ip' => '203.0.113.9',
+            'headers' => json_encode(['user-agent' => ['<script>alert(1)</script>']], JSON_UNESCAPED_SLASHES)],
+    ]);
+
+    expect($project->issues()->where('type', 'security')->value('message'))->toContain('xss');
+});

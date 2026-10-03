@@ -77,6 +77,10 @@ class SecurityService
                 "/expect:\/\//i",
             ],
             'score' => 50,
+            // A remote file can only be included through what the app reads
+            // as input. Headers carry URLs innocently (Facebook's link
+            // preview crawler sends one ending in .php in its user agent).
+            'sources' => ['url', 'query', 'body'],
         ],
     ];
 
@@ -117,6 +121,10 @@ class SecurityService
         // 2. Pattern Matching
         foreach ($preparedInputs as $source => $value) {
             foreach ($this->threatPatterns as $type => $config) {
+                if (isset($config['sources']) && ! in_array(Str::before($source, '_decoded'), $config['sources'], true)) {
+                    continue;
+                }
+
                 foreach ($config['patterns'] as $pattern) {
                     if (preg_match($pattern, $value)) {
                         $detectedThreats[] = [

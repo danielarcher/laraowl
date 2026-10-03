@@ -98,7 +98,7 @@ class CheckProjectUptime extends Command
             }
         }
 
-        $responseTime = round((microtime(true) - $start) * 1000); // in ms
+        $responseTime = self::responseTime($response, $start);
 
         // Record the check
         $project->uptimeChecks()->create([
@@ -128,6 +128,20 @@ class CheckProjectUptime extends Command
             $this->info("Project {$project->name} is back UP.");
             $this->notifyRecovery($project, $alertService);
         }
+    }
+
+    /**
+     * How long this site took to answer, in milliseconds.
+     *
+     * The checks of a batch run side by side, so the time since the batch
+     * started is the slowest site's time, not this one's. That is only the
+     * fallback, for a check that got no answer at all.
+     */
+    public static function responseTime(Response|\Throwable $response, float $batchStart): int
+    {
+        $seconds = $response instanceof Response ? $response->transferStats?->getTransferTime() : null;
+
+        return (int) round(($seconds ?? microtime(true) - $batchStart) * 1000);
     }
 
     protected function checkHeartbeats(AlertService $alertService): void

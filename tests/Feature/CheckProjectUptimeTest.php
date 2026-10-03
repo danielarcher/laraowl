@@ -7,8 +7,11 @@ use App\Services\AlertService;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Promise\RejectedPromise;
 use GuzzleHttp\Psr7\Request;
+use GuzzleHttp\Psr7\Response as PsrResponse;
+use GuzzleHttp\TransferStats;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 
 uses(RefreshDatabase::class);
@@ -252,4 +255,19 @@ test('it identifies itself as a bot so monitored sites do not count checks as vi
 
     Http::assertSent(fn ($request) => $request->hasHeader('User-Agent', CheckProjectUptime::USER_AGENT)
         && preg_match('~bot|monitor~i', $request->header('User-Agent')[0]) === 1);
+});
+
+test("each site's response time is its own, not the slowest site's in the batch", function () {
+    $batchStart = microtime(true) - 4.5;
+    $response = new Response(new PsrResponse(200));
+    $response->transferStats = new TransferStats(new Request('GET', 'https://fast.example.com'), null, 0.087);
+
+    expect(CheckProjectUptime::responseTime($response, $batchStart))->toBe(87);
+});
+
+test('a check with no answer falls back to the time since the batch started', function () {
+    $batchStart = microtime(true) - 2.0;
+
+    expect(CheckProjectUptime::responseTime(new ConnectException('refused', new Request('GET', 'https://down.example.com')), $batchStart))
+        ->toBeGreaterThanOrEqual(2000)->toBeLessThan(2500);
 });

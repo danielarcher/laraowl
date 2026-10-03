@@ -96,7 +96,7 @@ class SecurityService
 
         // 1. De-obfuscate and Prepare Inputs
         $rawInputs = [
-            'url' => $payload['url'] ?? '',
+            'url' => $this->withoutOrigin($payload['url'] ?? ''),
             'query' => json_encode($payload['query'] ?? []),
             'body' => is_array($payload['payload'] ?? null) ? json_encode($payload['payload']) : ($payload['payload'] ?? ''),
             'headers' => is_array($payload['headers'] ?? null) ? json_encode($payload['headers']) : ($payload['headers'] ?? ''),
@@ -181,6 +181,16 @@ class SecurityService
         }
 
         return $anomalies;
+    }
+
+    /**
+     * The request's path and query without its own scheme and host, so the
+     * app's address is not read as a remote URL in the request (every
+     * https://site/x.php would otherwise match the file-inclusion rule).
+     */
+    protected function withoutOrigin(string $url): string
+    {
+        return preg_replace('#^[a-z][a-z0-9+.-]*://[^/?\#]*#i', '', $url) ?? $url;
     }
 
     /**
@@ -301,7 +311,9 @@ class SecurityService
         // 1. File Integrity Check
         $settings = $project->settings ?? [];
         $oldHashes = $settings['security_hashes'] ?? [];
-        $hashChanges = $this->compareHashes($oldHashes, $hashes);
+        // The first audit only records the baseline: with nothing to compare
+        // against, every file would read as added.
+        $hashChanges = $oldHashes === [] ? [] : $this->compareHashes($oldHashes, $hashes);
 
         if (! empty($hashChanges)) {
             $securityIssues[] = [

@@ -93,6 +93,11 @@ export const formatCount = (value: number) => formatCompactNumber(value);
 
 /** Microseconds, trimmed for an axis: no decimals once past ten. */
 export function formatDuration(value: number): string {
+    // Zero has no meaningful unit; "0ms" reads with the rest of a ms axis.
+    if (value === 0) {
+        return '0ms';
+    }
+
     const label = formatMicroSeconds(value);
 
     return label.replace(/^(\d{2,})\.\d/, '$1');

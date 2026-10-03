@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\Project;
+use App\Models\Server;
 use App\Models\Team;
 use App\Models\User;
 use App\Services\UpdateService;
@@ -71,8 +72,20 @@ class HandleInertiaRequests extends Middleware
 
                 $teamIds = $user->teams()->pluck('teams.id');
 
-                return Project::whereIn('team_id', $teamIds)
-                    ->get(['id', 'team_id', 'name', 'slug']) ?? [];
+                return Project::with('media')
+                    ->whereIn('team_id', $teamIds)
+                    ->orderBy('name')
+                    ->get(['id', 'team_id', 'server_id', 'name', 'slug']) ?? [];
+            },
+            'availableServers' => function () use ($user) {
+                if (! $user) {
+                    return [];
+                }
+
+                return Server::whereIn('team_id', $user->teams()->pluck('teams.id'))
+                    ->orderBy('name')
+                    ->get(['id', 'team_id', 'name', 'last_seen_at'])
+                    ->map(fn (Server $server) => $server->only(['id', 'team_id', 'name', 'is_online']));
             },
             'currentProject' => function () use ($request, $user) {
                 $teamParam = $request->route('current_team');

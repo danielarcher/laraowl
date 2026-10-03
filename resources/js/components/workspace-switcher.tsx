@@ -6,6 +6,7 @@ import {
     Layout,
     Terminal,
     Search,
+    Server,
     Settings2,
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
@@ -20,6 +21,65 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useIsMobile } from '@/hooks/use-mobile';
 
+const PROJECT_GRADIENTS = [
+    'from-indigo-500 to-purple-600',
+    'from-blue-500 to-cyan-400',
+    'from-emerald-500 to-teal-400',
+    'from-orange-500 to-amber-400',
+    'from-rose-500 to-pink-400',
+];
+
+type ServerGroup = {
+    server: any | null;
+    projects: any[];
+};
+
+/**
+ * The team's projects grouped under the server each one runs on, servers in
+ * name order and unlinked projects last. A search term keeps a project when
+ * its own name, its server's name or its team's name matches.
+ */
+function groupTeamProjects(
+    team: any,
+    projects: any[],
+    servers: any[],
+    term: string,
+): ServerGroup[] {
+    const matches = (value?: string) =>
+        (value ?? '').toLowerCase().includes(term);
+    const teamMatches = matches(team.name);
+    const teamServers = servers.filter((s: any) => s.team_id === team.id);
+    const serverIds = new Set(teamServers.map((s: any) => s.id));
+    const teamProjects = projects.filter((p: any) => p.team_id === team.id);
+
+    const groups: ServerGroup[] = teamServers.map((server: any) => {
+        const own = teamProjects.filter((p: any) => p.server_id === server.id);
+
+        return {
+            server,
+            projects:
+                teamMatches || matches(server.name)
+                    ? own
+                    : own.filter((p: any) => matches(p.name)),
+        };
+    });
+
+    groups.push({
+        server: null,
+        projects: teamProjects.filter(
+            (p: any) =>
+                !serverIds.has(p.server_id) && (teamMatches || matches(p.name)),
+        ),
+    });
+
+    return groups.filter(
+        (group) =>
+            group.projects.length > 0 ||
+            (group.server !== null &&
+                (teamMatches || matches(group.server.name))),
+    );
+}
+
 export function WorkspaceSwitcher({
     inHeader = false,
 }: {
@@ -28,18 +88,28 @@ export function WorkspaceSwitcher({
     const { props }: any = usePage();
     const isMobile = useIsMobile();
     const currentTeam = props.currentTeam;
-    const projects = props.projects ?? [];
     const currentProject = props.currentProject;
 
     const [search, setSearch] = useState('');
 
     const filteredTeams = useMemo(() => {
-        const teamsList = props.teams ?? [];
+        const term = search.trim().toLowerCase();
 
-        return teamsList.filter((t: any) =>
-            t.name.toLowerCase().includes(search.toLowerCase()),
-        );
-    }, [props.teams, search]);
+        return (props.teams ?? [])
+            .map((team: any) => ({
+                team,
+                groups: groupTeamProjects(
+                    team,
+                    props.projects ?? [],
+                    props.availableServers ?? [],
+                    term,
+                ),
+            }))
+            .filter(
+                ({ team, groups }: any) =>
+                    groups.length > 0 || team.name.toLowerCase().includes(term),
+            );
+    }, [props.teams, props.projects, props.availableServers, search]);
 
     const switchProject = (project: any) => {
         const projectTeam =
@@ -129,83 +199,145 @@ export function WorkspaceSwitcher({
                     <Search className="size-4 text-foreground/20" />
                     <input
                         className="w-full border-none bg-transparent p-0 text-sm text-foreground placeholder:text-foreground/20 focus:ring-0"
-                        placeholder="Find application or organization"
+                        placeholder="Find application, server or team"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                     />
                 </div>
 
-                <div className="custom-scrollbar max-h-[400px] overflow-y-auto">
-                    {/* Organizations/Teams Section */}
+                <div className="custom-scrollbar max-h-[min(70vh,560px)] overflow-y-auto">
+                    {/* Teams, each with its apps grouped by server */}
                     <div className="p-1">
-                        {filteredTeams.map((team: any) => (
-                            <div key={team.id} className="mb-4 last:mb-0">
-                                <div className="flex items-center justify-between px-3 py-2">
-                                    <span
-                                        className="truncate text-[11px] font-black tracking-[0.1em] text-foreground/30 uppercase"
-                                        title={team.name}
-                                    >
-                                        {team.name}
-                                    </span>
-                                    <Settings2
-                                        className="size-3.5 shrink-0 cursor-pointer text-foreground/20 transition-colors hover:text-foreground/60"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            router.visit(
-                                                `/settings/teams/${team.slug}`,
-                                            );
-                                        }}
-                                    />
-                                </div>
+                        {filteredTeams.length === 0 && (
+                            <p className="px-3 py-6 text-center text-xs text-foreground/40">
+                                Nothing matches "{search}"
+                            </p>
+                        )}
+                        {filteredTeams.map(({ team, groups }: any) => {
+                            const hasServers = groups.some(
+                                (group: ServerGroup) => group.server !== null,
+                            );
 
-                                <div className="space-y-0.5">
-                                    {projects
-                                        .filter(
-                                            (p: any) => p.team_id === team.id,
-                                        )
-                                        .filter((p: any) =>
-                                            p.name
-                                                .toLowerCase()
-                                                .includes(search.toLowerCase()),
-                                        )
-                                        .map((project: any, index: number) => (
-                                            <DropdownMenuItem
-                                                key={project.id}
-                                                onSelect={() =>
-                                                    switchProject(project)
-                                                }
-                                                className="group mx-1 flex cursor-pointer items-center justify-between gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-white/[0.03]"
+                            return (
+                                <div key={team.id} className="mb-3 last:mb-0">
+                                    <div className="flex items-center justify-between px-3 py-2">
+                                        <span
+                                            className="truncate text-[11px] font-black tracking-[0.1em] text-foreground/30 uppercase"
+                                            title={team.name}
+                                        >
+                                            {team.name}
+                                        </span>
+                                        <Settings2
+                                            className="size-3.5 shrink-0 cursor-pointer text-foreground/20 transition-colors hover:text-foreground/60"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                router.visit(
+                                                    `/settings/teams/${team.slug}`,
+                                                );
+                                            }}
+                                        />
+                                    </div>
+
+                                    <div className="space-y-1">
+                                        {groups.map((group: ServerGroup) => (
+                                            <div
+                                                key={group.server?.id ?? 'none'}
                                             >
-                                                <div className="flex min-w-0 items-center gap-3">
-                                                    <div
-                                                        className={`size-9 shrink-0 rounded-lg bg-gradient-to-br ${
-                                                            [
-                                                                'from-indigo-500 to-purple-600',
-                                                                'from-blue-500 to-cyan-400',
-                                                                'from-emerald-500 to-teal-400',
-                                                                'from-orange-500 to-amber-400',
-                                                                'from-rose-500 to-pink-400',
-                                                            ][index % 5]
-                                                        } flex items-center justify-center text-foreground shadow-lg`}
+                                                {group.server ? (
+                                                    <DropdownMenuItem
+                                                        onSelect={() =>
+                                                            router.visit(
+                                                                `/${team.slug}/servers/${group.server.id}`,
+                                                            )
+                                                        }
+                                                        title={`Open ${group.server.name}`}
+                                                        className="mx-1 flex cursor-pointer items-center gap-2 rounded-md px-3 py-1.5 text-foreground/50 transition-colors hover:bg-white/[0.03] hover:text-foreground"
                                                     >
-                                                        <Layout className="size-5" />
-                                                    </div>
-                                                    <span
-                                                        title={project.name}
-                                                        className={`truncate text-sm font-semibold ${currentProject?.id === project.id ? 'text-foreground' : 'text-foreground/60'}`}
-                                                    >
-                                                        {project.name}
-                                                    </span>
-                                                </div>
-                                                {currentProject?.id ===
-                                                    project.id && (
-                                                    <Check className="size-4 shrink-0 text-foreground" />
+                                                        <Server className="size-3.5 shrink-0" />
+                                                        <span className="truncate text-xs font-semibold">
+                                                            {group.server.name}
+                                                        </span>
+                                                        <span
+                                                            title={
+                                                                group.server
+                                                                    .is_online
+                                                                    ? 'Online'
+                                                                    : 'Offline'
+                                                            }
+                                                            className={`size-1.5 shrink-0 rounded-full ${group.server.is_online ? 'bg-emerald-500' : 'bg-red-500'}`}
+                                                        />
+                                                        <span className="ml-auto text-[10px] font-medium text-foreground/30 tabular-nums">
+                                                            {
+                                                                group.projects
+                                                                    .length
+                                                            }
+                                                        </span>
+                                                    </DropdownMenuItem>
+                                                ) : (
+                                                    hasServers && (
+                                                        <div className="mx-1 flex items-center gap-2 px-3 py-1.5 text-foreground/30">
+                                                            <Server className="size-3.5 shrink-0" />
+                                                            <span className="text-xs font-semibold">
+                                                                No server
+                                                            </span>
+                                                        </div>
+                                                    )
                                                 )}
-                                            </DropdownMenuItem>
+
+                                                <div
+                                                    className={
+                                                        hasServers
+                                                            ? 'ml-5 space-y-0.5 border-l border-border pl-1'
+                                                            : 'space-y-0.5'
+                                                    }
+                                                >
+                                                    {group.projects.map(
+                                                        (project: any) => (
+                                                            <DropdownMenuItem
+                                                                key={project.id}
+                                                                onSelect={() =>
+                                                                    switchProject(
+                                                                        project,
+                                                                    )
+                                                                }
+                                                                className="group mx-1 flex cursor-pointer items-center justify-between gap-3 rounded-md px-2 py-1.5 transition-colors hover:bg-white/[0.03]"
+                                                            >
+                                                                <div className="flex min-w-0 items-center gap-2.5">
+                                                                    <div
+                                                                        className={`size-7 shrink-0 rounded-md bg-gradient-to-br ${
+                                                                            PROJECT_GRADIENTS[
+                                                                                project.id %
+                                                                                    PROJECT_GRADIENTS.length
+                                                                            ]
+                                                                        } flex items-center justify-center text-foreground shadow-lg`}
+                                                                    >
+                                                                        <Layout className="size-4" />
+                                                                    </div>
+                                                                    <span
+                                                                        title={
+                                                                            project.name
+                                                                        }
+                                                                        className={`truncate text-sm font-semibold ${currentProject?.id === project.id ? 'text-foreground' : 'text-foreground/60'}`}
+                                                                    >
+                                                                        {
+                                                                            project.name
+                                                                        }
+                                                                    </span>
+                                                                </div>
+                                                                {currentProject?.id ===
+                                                                    project.id && (
+                                                                    <Check className="size-4 shrink-0 text-foreground" />
+                                                                )}
+                                                            </DropdownMenuItem>
+                                                        ),
+                                                    )}
+                                                </div>
+                                            </div>
                                         ))}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
 

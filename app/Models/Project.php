@@ -37,6 +37,7 @@ class Project extends Model implements HasMedia
 
     protected $fillable = [
         'team_id',
+        'server_id',
         'name',
         'slug',
         'api_token',
@@ -117,6 +118,16 @@ class Project extends Model implements HasMedia
     public function team(): BelongsTo
     {
         return $this->belongsTo(Team::class);
+    }
+
+    /**
+     * The server the app runs on.
+     *
+     * @return BelongsTo<Server, $this>
+     */
+    public function server(): BelongsTo
+    {
+        return $this->belongsTo(Server::class);
     }
 
     public function records(): HasMany

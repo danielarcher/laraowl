@@ -2,7 +2,6 @@
 
 use App\Enums\TeamRole;
 use App\Models\Project;
-use App\Models\Record;
 use App\Models\Server;
 use App\Models\ServerMetric;
 use App\Models\Team;
@@ -130,8 +129,7 @@ test('the servers page lists the team servers with their apps', function () {
     ServerMetric::factory()->for($server)->minutesAgo(1)->create(['cpu_percent' => 42]);
     Server::factory()->create(['name' => 'someone-else']);
 
-    $project = Project::factory()->create(['team_id' => $team->id, 'name' => 'Shop']);
-    Record::create(['project_id' => $project->id, 'type' => 'request', 'payload' => ['server' => 'web-1'], 'created_at' => now()]);
+    Project::factory()->create(['team_id' => $team->id, 'server_id' => $server->id, 'name' => 'Shop']);
 
     $this->actingAs($user)
         ->get(route('servers.index', ['current_team' => $team->slug]))

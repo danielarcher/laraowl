@@ -117,6 +117,7 @@ export default function ProjectSettings({
         uptime_monitoring_enabled: project.uptime_monitoring_enabled ?? true,
         uptime_check_interval: project.uptime_check_interval || 60,
         retention_days: project.retention_days || 7,
+        server_id: (project.server_id ?? null) as number | null,
         logo: null as File | null,
         _method: 'PATCH', // For file uploads with PATCH
     });
@@ -870,6 +871,87 @@ export default function ProjectSettings({
                                                         className="h-11 rounded-xl border-border bg-muted"
                                                         placeholder="https://example.com"
                                                     />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label>Server</Label>
+                                                    <Select
+                                                        value={
+                                                            generalForm.data
+                                                                .server_id
+                                                                ? String(
+                                                                      generalForm
+                                                                          .data
+                                                                          .server_id,
+                                                                  )
+                                                                : 'none'
+                                                        }
+                                                        onValueChange={(val) =>
+                                                            generalForm.setData(
+                                                                'server_id',
+                                                                val === 'none'
+                                                                    ? null
+                                                                    : parseInt(
+                                                                          val,
+                                                                      ),
+                                                            )
+                                                        }
+                                                    >
+                                                        <SelectTrigger className="h-11 rounded-xl border-border bg-muted">
+                                                            <SelectValue placeholder="Select server" />
+                                                        </SelectTrigger>
+                                                        <SelectContent className="border-border bg-popover">
+                                                            <SelectItem value="none">
+                                                                No server
+                                                            </SelectItem>
+                                                            {(
+                                                                (props as any)
+                                                                    .availableServers ??
+                                                                []
+                                                            )
+                                                                .filter(
+                                                                    (
+                                                                        server: any,
+                                                                    ) =>
+                                                                        server.team_id ===
+                                                                        project.team_id,
+                                                                )
+                                                                .map(
+                                                                    (
+                                                                        server: any,
+                                                                    ) => (
+                                                                        <SelectItem
+                                                                            key={
+                                                                                server.id
+                                                                            }
+                                                                            value={String(
+                                                                                server.id,
+                                                                            )}
+                                                                        >
+                                                                            {
+                                                                                server.name
+                                                                            }
+                                                                        </SelectItem>
+                                                                    ),
+                                                                )}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    {generalForm.errors
+                                                        .server_id && (
+                                                        <p className="text-[10px] font-bold text-red-500">
+                                                            {
+                                                                generalForm
+                                                                    .errors
+                                                                    .server_id
+                                                            }
+                                                        </p>
+                                                    )}
+                                                    <p className="text-[10px] font-black tracking-widest text-muted-foreground uppercase opacity-50">
+                                                        Groups the app in the
+                                                        switcher. Apps that send
+                                                        data are linked to the
+                                                        server they report from
+                                                        automatically.
+                                                    </p>
                                                 </div>
                                                 <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-muted px-4 py-3">
                                                     <Label>

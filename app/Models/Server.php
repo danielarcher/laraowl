@@ -56,6 +56,16 @@ class Server extends Model
     }
 
     /**
+     * The apps running on this server.
+     *
+     * @return HasMany<Project, $this>
+     */
+    public function projects(): HasMany
+    {
+        return $this->hasMany(Project::class);
+    }
+
+    /**
      * @return HasMany<ServerMetric, $this>
      */
     public function metrics(): HasMany

@@ -8,6 +8,7 @@ use App\Models\Project;
 use App\Models\Team;
 use App\Services\CloudflareService;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class ProjectController extends Controller
 {
@@ -20,6 +21,7 @@ class ProjectController extends Controller
             'uptime_check_interval' => ['nullable', 'integer', 'min:30'],
             'retention_days' => ['nullable', 'integer', 'min:0', 'max:365'],
             'logo' => ['nullable', 'image', 'max:2048'],
+            'server_id' => ['sometimes', 'nullable', 'integer', Rule::exists('servers', 'id')->where('team_id', $project->team_id)],
         ]);
 
         // Keep the stored value when the field is omitted so a partial update
@@ -35,6 +37,10 @@ class ProjectController extends Controller
             'uptime_check_interval' => $request->uptime_check_interval ?? 60,
             'retention_days' => $request->retention_days ?? 7,
         ];
+
+        if ($request->exists('server_id')) {
+            $attributes['server_id'] = $request->input('server_id');
+        }
 
         // Clear the stale status so a disabled project no longer reads as
         // "down" and re-enabling it can't fire a false recovery alert.

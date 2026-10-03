@@ -8,7 +8,6 @@ use App\Models\Server;
 use App\Models\ServerMetric;
 use App\Models\Team;
 use Carbon\CarbonInterface;
-use Illuminate\Support\Collection;
 
 class ServerMetricService
 {
@@ -26,24 +25,23 @@ class ServerMetricService
 
     /**
      * Every server of the team with its latest sample, a one-hour sparkline and
-     * the projects whose records it last sent.
+     * the projects linked to it.
      *
      * @return list<array<string, mixed>>
      */
     public function overview(Team $team): array
     {
-        $projectsByHostname = $this->projectsByHostname($team);
         $sparklineStart = now()->subHour();
 
         return $team->servers()
-            ->with('latestMetric')
+            ->with(['latestMetric', 'projects' => fn ($query) => $query->orderBy('name')])
             ->orderBy('name')
             ->get()
             ->map(fn (Server $server) => [
                 ...$this->serverSummary($server),
                 'latest' => $server->latestMetric ? $this->presentSample($server->latestMetric) : null,
                 'sparkline' => $this->series($server, $sparklineStart, now(), 60),
-                'projects' => $projectsByHostname[$server->hostname] ?? [],
+                'projects' => $this->presentProjects($server),
             ])
             ->values()
             ->all();
@@ -62,7 +60,7 @@ class ServerMetricService
         return [
             'server' => [
                 ...$this->serverSummary($server),
-                'projects' => $this->projectsByHostname($server->team)[$server->hostname] ?? [],
+                'projects' => $this->presentProjects($server->load(['projects' => fn ($query) => $query->orderBy('name')])),
             ],
             'latest' => $latest ? $this->presentSample($latest) : null,
             'history' => $this->series($server, $from, $to, $bucket),
@@ -174,31 +172,58 @@ class ServerMetricService
     }
 
     /**
-     * Map each hostname to the team's projects whose latest record it sent.
-     * Records carry the sending machine's hostname as `payload.server`.
+     * Point each of the team's projects at the server its latest record came
+     * from. Records carry the sending machine's hostname as `payload.server`;
+     * projects without records, or whose host isn't a known server, keep the
+     * server they were given by hand.
      *
-     * @return array<string, list<array{name: string, slug: string}>>
+     * @return int The number of projects whose server changed.
      */
-    private function projectsByHostname(Team $team): array
+    public function linkProjects(Team $team): int
     {
-        /** @var Collection<int, Project> $projects */
-        $projects = $team->projects()->orderBy('name')->get(['id', 'name', 'slug']);
+        $serverIds = $team->servers()->whereNotNull('hostname')->pluck('id', 'hostname');
 
-        $byHostname = [];
+        if ($serverIds->isEmpty()) {
+            return 0;
+        }
 
-        foreach ($projects as $project) {
-            $hostname = Record::query()
-                ->where('project_id', $project->id)
-                ->orderByDesc('id')
-                ->first(['payload'])
-                ?->payload['server'] ?? null;
+        $changed = 0;
 
-            if (is_string($hostname) && $hostname !== '') {
-                $byHostname[$hostname][] = ['name' => $project->name, 'slug' => $project->slug];
+        foreach ($team->projects()->get(['id', 'server_id']) as $project) {
+            $serverId = $serverIds[$this->reportedHostname($project)] ?? null;
+
+            if ($serverId !== null && $project->server_id !== $serverId) {
+                $project->update(['server_id' => $serverId]);
+                $changed++;
             }
         }
 
-        return $byHostname;
+        return $changed;
+    }
+
+    /**
+     * The hostname that sent the project's most recent record.
+     */
+    public function reportedHostname(Project $project): string
+    {
+        $hostname = Record::query()
+            ->where('project_id', $project->id)
+            ->orderByDesc('id')
+            ->first(['payload'])
+            ?->payload['server'] ?? null;
+
+        return is_string($hostname) ? $hostname : '';
+    }
+
+    /**
+     * @return list<array{name: string, slug: string}>
+     */
+    private function presentProjects(Server $server): array
+    {
+        return $server->projects
+            ->map(fn (Project $project) => ['name' => $project->name, 'slug' => $project->slug])
+            ->values()
+            ->all();
     }
 
     private function percent(float $used, float $total): ?float

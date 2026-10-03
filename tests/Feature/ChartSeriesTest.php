@@ -76,6 +76,12 @@ test('latency quantiles are interpolated inside the histogram bucket', function 
 
     expect($point['p95_duration'])->toBe(10_000.0)
         ->and($point['max_duration'])->toBe(5_000_000.0);
+
+    // Empty slots have no latency, so a line breaks instead of hitting zero.
+    $empty = collect($stats['timeSeries'])->firstWhere('total', 0);
+
+    expect($empty['avg_duration'])->toBeNull()
+        ->and($empty['p95_duration'])->toBeNull();
 });
 
 test('the latency histogram counts every timed request once', function () {

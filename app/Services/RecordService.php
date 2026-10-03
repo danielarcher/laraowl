@@ -775,7 +775,7 @@ class RecordService
      * unix seconds (`t`) for the browser to label in local time, the status
      * split, and the latency picture: mean, estimated p50/p95 and the max.
      *
-     * @return list<array<string, int|float|string>>
+     * @return list<array<string, int|float|string|null>>
      */
     protected function getDetailedTimeSeries(Project $project, string $type, ?string $period = null, ?string $from = null, ?string $to = null): array
     {
@@ -837,6 +837,10 @@ class RecordService
             $total = (int) ($row->total ?? 0);
             $authed = (int) ($row->authed ?? 0);
 
+            // A slot with nothing timed has no latency rather than a zero one,
+            // so lines break there instead of diving to the axis.
+            $timed = $row && (int) $row->count_duration > 0 ? $row : null;
+
             return [
                 't' => $start,
                 'minute' => Carbon::createFromTimestamp($start, config('app.timezone'))->format($labelFormat),
@@ -844,10 +848,10 @@ class RecordService
                 'ok' => (int) ($row->ok ?? 0),
                 'client_error' => (int) ($row->client_error ?? 0),
                 'server_error' => (int) ($row->server_error ?? 0),
-                'avg_duration' => $row ? round($this->avgDuration($row), 2) : 0,
-                'p50_duration' => $row ? round($this->latencyQuantile($row, 0.5), 2) : 0,
-                'p95_duration' => $row ? round($this->latencyQuantile($row, 0.95), 2) : 0,
-                'max_duration' => round((float) ($row->max_duration ?? 0), 2),
+                'avg_duration' => $timed ? round($this->avgDuration($timed), 2) : null,
+                'p50_duration' => $timed ? round($this->latencyQuantile($timed, 0.5), 2) : null,
+                'p95_duration' => $timed ? round($this->latencyQuantile($timed, 0.95), 2) : null,
+                'max_duration' => $timed ? round((float) $timed->max_duration, 2) : null,
                 'hits' => (int) ($row->hits ?? 0),
                 'misses' => (int) ($row->misses ?? 0),
                 'writes' => (int) ($row->writes ?? 0),

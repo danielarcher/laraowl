@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Cache;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
@@ -33,6 +34,39 @@ class Project extends Model implements HasMedia
                 $project->slug = static::generateUniqueProjectSlug($project->name, $project->id);
             }
         });
+
+        // A changed or deleted project stops answering to its old token at
+        // once rather than when the cached lookup expires.
+        static::saved(function (Project $project) {
+            if ($project->wasChanged('api_token')) {
+                Cache::forget(static::tokenCacheKey((string) $project->getOriginal('api_token')));
+                Cache::forget(static::tokenCacheKey((string) $project->api_token));
+            }
+        });
+
+        static::deleted(function (Project $project) {
+            Cache::forget(static::tokenCacheKey((string) $project->api_token));
+        });
+    }
+
+    /**
+     * The id of the project an ingest token belongs to, or null. Cached for
+     * five minutes, misses included, so ingest needs no query.
+     */
+    public static function idForToken(string $token): ?int
+    {
+        $id = Cache::remember(
+            static::tokenCacheKey($token),
+            300,
+            fn () => (int) static::query()->where('api_token', $token)->value('id'),
+        );
+
+        return $id ?: null;
+    }
+
+    protected static function tokenCacheKey(string $token): string
+    {
+        return 'laraowl:project-token:'.hash('sha256', $token);
     }
 
     protected $fillable = [

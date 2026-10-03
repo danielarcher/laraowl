@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Services\ArrayIngestBuffer;
+use App\Services\IngestBuffer;
+use App\Services\RedisIngestBuffer;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +18,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(IngestBuffer::class, fn ($app): IngestBuffer => match (config('laraowl.ingest.buffer')) {
+            'array' => new ArrayIngestBuffer(config('laraowl.ingest.max_failed')),
+            default => new RedisIngestBuffer(
+                $app['redis']->connection(config('laraowl.ingest.redis_connection')),
+                config('laraowl.ingest.max_failed'),
+            ),
+        });
     }
 
     /**

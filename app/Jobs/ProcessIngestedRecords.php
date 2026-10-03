@@ -10,6 +10,10 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 
+/**
+ * The per-request ingest job used before the ingest buffer. Kept so jobs
+ * queued before an upgrade still run; nothing dispatches it any more.
+ */
 class ProcessIngestedRecords implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;

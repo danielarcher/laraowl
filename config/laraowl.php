@@ -87,4 +87,27 @@ return [
         'slow_outgoing_ms' => (int) env('LARAOWL_DETAIL_SLOW_OUTGOING_MS', 1000),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Ingest
+    |--------------------------------------------------------------------------
+    |
+    | The ingest endpoint buffers each batch as sent and answers 202 straight
+    | away; a queued drain job processes the buffer, merging the batches of a
+    | project. "redis" keeps the buffer across processes (production), "array"
+    | only for the current process (tests). When the buffer holds max_waiting
+    | batches the endpoint answers 503 until it drains. Batches that fail to
+    | process are set aside, up to max_failed, for `laraowl:ingest:replay`.
+    |
+    */
+
+    'ingest' => [
+        'buffer' => env('LARAOWL_INGEST_BUFFER', 'redis'),
+        'redis_connection' => env('LARAOWL_INGEST_REDIS_CONNECTION', 'default'),
+        'max_waiting' => (int) env('LARAOWL_INGEST_MAX_WAITING', 20000),
+        'max_failed' => (int) env('LARAOWL_INGEST_MAX_FAILED', 1000),
+        'drain_batch' => (int) env('LARAOWL_INGEST_DRAIN_BATCH', 100),
+        'drain_seconds' => (int) env('LARAOWL_INGEST_DRAIN_SECONDS', 20),
+    ],
+
 ];

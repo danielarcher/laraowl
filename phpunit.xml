@@ -26,6 +26,7 @@
         <env name="DB_CONNECTION" value="sqlite"/>
         <!-- Keep every raw row; DetailSamplerTest sets its own rate. -->
         <env name="LARAOWL_DETAIL_SAMPLE_RATE" value="1"/>
+        <env name="LARAOWL_INGEST_BUFFER" value="array"/>
         <env name="DB_DATABASE" value=":memory:"/>
         <env name="DB_URL" value=""/>
         <env name="MAIL_MAILER" value="array"/>

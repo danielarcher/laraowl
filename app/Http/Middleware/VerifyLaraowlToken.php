@@ -10,7 +10,8 @@ use Symfony\Component\HttpFoundation\Response;
 class VerifyLaraowlToken
 {
     /**
-     * Handle an incoming request.
+     * Resolves the project behind the request's token. The lookup is
+     * cached, so accepting a batch doesn't touch the database.
      *
      * @param  Closure(Request): (Response)  $next
      */
@@ -22,13 +23,13 @@ class VerifyLaraowlToken
             abort(401, 'API Token is missing.');
         }
 
-        $project = Project::where('api_token', $token)->first();
+        $projectId = Project::idForToken($token);
 
-        if (! $project) {
+        if (! $projectId) {
             abort(401, 'Invalid API Token.');
         }
 
-        $request->attributes->set('project', $project);
+        $request->attributes->set('project_id', $projectId);
 
         return $next($request);
     }

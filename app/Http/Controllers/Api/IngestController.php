@@ -3,37 +3,33 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Jobs\ProcessIngestedRecords;
-use App\Models\Project;
+use App\Services\IngestQueue;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class IngestController extends Controller
 {
     /**
-     * Handle incoming data from monitored projects.
+     * Accepts a batch from a monitored project for processing in the
+     * background. The body is checked for well-formed JSON and buffered as
+     * sent, so the request stays cheap whatever the batch holds.
      */
-    public function __invoke(Request $request): JsonResponse
+    public function __invoke(Request $request, IngestQueue $queue): JsonResponse
     {
-        /** @var Project $project */
-        $project = $request->attributes->get('project');
+        $body = $request->isJson() ? $request->getContent() : json_encode($request->all());
 
-        $data = $request->has('records') ? $request->input('records') : $request->all();
-
-        if (! is_array($data)) {
+        if (! is_string($body) || ! json_validate($body) || ! in_array(ltrim($body)[0] ?? '', ['{', '['], true)) {
             return response()->json(['message' => 'Invalid payload structure.'], 422);
         }
 
-        // Support both single record and collection of records
-        $records = isset($data[0]) ? $data : [$data];
-
-        // Auto-update project URL if not set
-        if ($request->has('app_url') && ! $project->url) {
-            $project->update(['url' => $request->input('app_url')]);
+        if (! $queue->accept($request->attributes->get('project_id'), $body)) {
+            return response()->json(
+                ['message' => 'LaraOwl is catching up on a backlog; try again shortly.'],
+                503,
+                ['Retry-After' => '30'],
+            );
         }
 
-        ProcessIngestedRecords::dispatch($project, $records);
-
-        return response()->json(['message' => 'Data ingested successfully.'], 200);
+        return response()->json(['message' => 'Accepted.'], 202);
     }
 }

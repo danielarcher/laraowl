@@ -25,36 +25,36 @@ export function NavMain({
                     {label}
                 </SidebarGroupLabel>
             )}
-            <SidebarMenu>
-                {items.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton
-                            asChild
-                            isActive={isCurrentUrl(item.href)}
-                            tooltip={{ children: item.title }}
-                            className={`group/menu-item transition-all duration-200 ${
-                                isCurrentUrl(item.href)
-                                    ? 'bg-white/10 font-bold text-foreground shadow-[0_0_15px_rgba(255,255,255,0.05)]'
-                                    : 'text-foreground/50 hover:bg-muted hover:text-foreground'
-                            } `}
-                        >
-                            <Link
-                                href={item.href}
-                                prefetch
-                                className="flex items-center gap-3"
+            <SidebarMenu className="gap-px">
+                {items.map((item) => {
+                    const active = isCurrentUrl(item.href);
+
+                    return (
+                        <SidebarMenuItem key={item.title}>
+                            <SidebarMenuButton
+                                asChild
+                                isActive={active}
+                                tooltip={{ children: item.title }}
+                                className={`h-7.5 gap-2.5 rounded-md px-2 text-[13px] transition-colors ${
+                                    active
+                                        ? 'bg-sidebar-accent font-medium text-foreground'
+                                        : 'text-foreground/60 hover:bg-sidebar-accent/60 hover:text-foreground'
+                                }`}
                             >
-                                {item.icon && (
-                                    <item.icon
-                                        className={`size-4 transition-transform duration-200 group-hover/menu-item:scale-110 ${isCurrentUrl(item.href) ? 'text-foreground' : 'text-foreground/40'}`}
-                                    />
-                                )}
-                                <span className="tracking-tight">
-                                    {item.title}
-                                </span>
-                            </Link>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                ))}
+                                <Link href={item.href} prefetch>
+                                    {item.icon && (
+                                        <item.icon
+                                            className={`size-4 ${active ? 'text-foreground' : 'text-foreground/40'}`}
+                                        />
+                                    )}
+                                    <span className="tracking-tight">
+                                        {item.title}
+                                    </span>
+                                </Link>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                    );
+                })}
             </SidebarMenu>
         </SidebarGroup>
     );

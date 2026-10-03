@@ -21,13 +21,61 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-const PROJECT_GRADIENTS = [
-    'from-indigo-500 to-purple-600',
-    'from-blue-500 to-cyan-400',
-    'from-emerald-500 to-teal-400',
-    'from-orange-500 to-amber-400',
-    'from-rose-500 to-pink-400',
+const PROJECT_TINTS = [
+    'bg-indigo-500/15 text-indigo-600 ring-indigo-500/25 dark:text-indigo-300',
+    'bg-sky-500/15 text-sky-600 ring-sky-500/25 dark:text-sky-300',
+    'bg-emerald-500/15 text-emerald-600 ring-emerald-500/25 dark:text-emerald-300',
+    'bg-amber-500/15 text-amber-600 ring-amber-500/25 dark:text-amber-300',
+    'bg-rose-500/15 text-rose-600 ring-rose-500/25 dark:text-rose-300',
+    'bg-violet-500/15 text-violet-600 ring-violet-500/25 dark:text-violet-300',
+    'bg-teal-500/15 text-teal-600 ring-teal-500/25 dark:text-teal-300',
+    'bg-orange-500/15 text-orange-600 ring-orange-500/25 dark:text-orange-300',
 ];
+
+/**
+ * "Keep It Five" → "KI", "iaang" → "IA".
+ */
+function projectInitials(name: string): string {
+    const words = name.trim().split(/\s+/).filter(Boolean);
+    const initials =
+        words.length > 1 ? words[0][0] + words[1][0] : name.trim().slice(0, 2);
+
+    return initials.toUpperCase();
+}
+
+/**
+ * The project's uploaded logo, or its initials on a tint picked by id.
+ */
+export function ProjectTile({
+    project,
+    className = 'size-6 text-[9px]',
+}: {
+    project: any;
+    className?: string;
+}) {
+    const logo =
+        project?.logo_url && !project.logo_url.includes('ui-avatars.com')
+            ? project.logo_url
+            : null;
+
+    if (logo) {
+        return (
+            <img
+                src={logo}
+                alt=""
+                className={`shrink-0 rounded-md object-cover ring-1 ring-sidebar-border ${className}`}
+            />
+        );
+    }
+
+    return (
+        <span
+            className={`flex shrink-0 items-center justify-center rounded-md font-semibold tracking-tight ring-1 ring-inset ${PROJECT_TINTS[(project?.id ?? 0) % PROJECT_TINTS.length]} ${className}`}
+        >
+            {projectInitials(project?.name ?? '?')}
+        </span>
+    );
+}
 
 type ServerGroup = {
     server: any | null;
@@ -89,6 +137,13 @@ export function WorkspaceSwitcher({
     const isMobile = useIsMobile();
     const currentTeam = props.currentTeam;
     const currentProject = props.currentProject;
+    const currentServer = (props.availableServers ?? []).find(
+        (server: any) =>
+            server.id ===
+            (props.projects ?? []).find(
+                (project: any) => project.id === currentProject?.id,
+            )?.server_id,
+    );
 
     const [search, setSearch] = useState('');
 
@@ -133,60 +188,64 @@ export function WorkspaceSwitcher({
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button
-                    variant="ghost"
-                    className={
-                        inHeader
-                            ? 'h-9 max-w-[200px] gap-2 rounded-lg border border-border px-3 text-foreground/70 transition-all hover:bg-muted hover:text-foreground'
-                            : 'group w-full justify-start border border-border bg-muted/30 px-2 py-8 transition-all group-data-[collapsible=icon]:py-4 hover:bg-white/[0.05]'
-                    }
-                >
-                    <div
-                        className={
-                            inHeader
-                                ? 'flex aspect-square size-5 shrink-0 items-center justify-center rounded bg-blue-600/20 text-blue-400'
-                                : 'mr-3 flex aspect-square size-8 shrink-0 items-center justify-center rounded-lg border border-border bg-muted text-foreground group-data-[collapsible=icon]:mr-0 group-data-[collapsible=icon]:size-6'
-                        }
+                {inHeader ? (
+                    <Button
+                        variant="ghost"
+                        className="h-9 max-w-[200px] gap-2 rounded-lg border border-border px-3 text-foreground/70 transition-all hover:bg-muted hover:text-foreground"
                     >
-                        <Terminal className={inHeader ? 'size-3' : 'size-4'} />
-                    </div>
-                    <div
-                        className={
-                            inHeader
-                                ? 'flex min-w-0 flex-col items-start leading-tight'
-                                : 'grid min-w-0 flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden'
-                        }
-                    >
-                        <div className="flex w-full items-center gap-1.5">
+                        <div className="flex aspect-square size-5 shrink-0 items-center justify-center rounded bg-blue-600/20 text-blue-400">
+                            <Terminal className="size-3" />
+                        </div>
+                        <div className="flex min-w-0 flex-col items-start leading-tight">
                             <span
                                 title={currentTeam?.name}
-                                className={
-                                    inHeader
-                                        ? 'truncate text-[11px] font-bold tracking-tight text-foreground'
-                                        : 'truncate text-sm font-bold tracking-tight text-foreground uppercase'
-                                }
+                                className="truncate text-[11px] font-bold tracking-tight text-foreground"
                             >
                                 {currentTeam?.name ?? 'Select Team'}
                             </span>
+                            <div className="mt-0.5 flex w-full items-center gap-1">
+                                <Layout className="size-2.5 shrink-0 text-foreground/40" />
+                                <span
+                                    title={currentProject?.name}
+                                    className="truncate text-[10px] font-medium tracking-tight text-foreground/60"
+                                >
+                                    {currentProject?.name ?? 'No Project'}
+                                </span>
+                            </div>
                         </div>
-                        <div className="mt-0.5 flex w-full items-center gap-1">
-                            <Layout className="size-2.5 shrink-0 text-foreground/40" />
+                        <ChevronsUpDown className="ml-1 size-3 shrink-0 text-foreground/20" />
+                    </Button>
+                ) : (
+                    <button
+                        type="button"
+                        className="group/switcher flex h-10 w-full min-w-0 items-center gap-2.5 rounded-lg px-1.5 text-left transition-colors outline-none group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0 hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring data-[state=open]:bg-sidebar-accent"
+                    >
+                        {currentProject ? (
+                            <ProjectTile
+                                project={currentProject}
+                                className="size-7 text-[10px]"
+                            />
+                        ) : (
+                            <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-muted text-foreground/50 ring-1 ring-sidebar-border ring-inset">
+                                <Plus className="size-3.5" />
+                            </span>
+                        )}
+                        <span className="grid min-w-0 flex-1 leading-tight group-data-[collapsible=icon]:hidden">
                             <span
                                 title={currentProject?.name}
-                                className="truncate text-[10px] font-medium tracking-tight text-foreground/60"
+                                className="truncate text-[13px] font-medium text-foreground"
                             >
-                                {currentProject?.name ?? 'No Project'}
+                                {currentProject?.name ?? 'No project yet'}
                             </span>
-                        </div>
-                    </div>
-                    <ChevronsUpDown
-                        className={
-                            inHeader
-                                ? 'ml-1 size-3 shrink-0 text-foreground/20'
-                                : 'ml-auto size-4 shrink-0 text-foreground/20 group-data-[collapsible=icon]:hidden'
-                        }
-                    />
-                </Button>
+                            <span className="mt-0.5 truncate text-[11px] text-foreground/45">
+                                {[currentTeam?.name, currentServer?.name]
+                                    .filter(Boolean)
+                                    .join(' · ')}
+                            </span>
+                        </span>
+                        <ChevronsUpDown className="size-3.5 shrink-0 text-foreground/30 transition-colors group-hover/switcher:text-foreground/60 group-data-[collapsible=icon]:hidden" />
+                    </button>
+                )}
             </DropdownMenuTrigger>
             <DropdownMenuContent
                 className="w-72 overflow-hidden rounded-xl border-border bg-card p-0 shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-xl"
@@ -198,7 +257,7 @@ export function WorkspaceSwitcher({
                 <div className="flex items-center gap-2 border-b border-border px-3 py-3">
                     <Search className="size-4 text-foreground/20" />
                     <input
-                        className="w-full border-none bg-transparent p-0 text-sm text-foreground placeholder:text-foreground/20 focus:ring-0"
+                        className="w-full border-none bg-transparent p-0 text-[13px] text-foreground placeholder:text-foreground/30 focus:ring-0"
                         placeholder="Find application, server or team"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
@@ -222,7 +281,7 @@ export function WorkspaceSwitcher({
                                 <div key={team.id} className="mb-3 last:mb-0">
                                     <div className="flex items-center justify-between px-3 py-2">
                                         <span
-                                            className="truncate text-[11px] font-black tracking-[0.1em] text-foreground/30 uppercase"
+                                            className="truncate text-[10px] font-semibold tracking-wider text-foreground/35 uppercase"
                                             title={team.name}
                                         >
                                             {team.name}
@@ -254,7 +313,7 @@ export function WorkspaceSwitcher({
                                                         className="mx-1 flex cursor-pointer items-center gap-2 rounded-md px-3 py-1.5 text-foreground/50 transition-colors hover:bg-white/[0.03] hover:text-foreground"
                                                     >
                                                         <Server className="size-3.5 shrink-0" />
-                                                        <span className="truncate text-xs font-semibold">
+                                                        <span className="truncate text-[11px] font-medium">
                                                             {group.server.name}
                                                         </span>
                                                         <span
@@ -277,7 +336,7 @@ export function WorkspaceSwitcher({
                                                     hasServers && (
                                                         <div className="mx-1 flex items-center gap-2 px-3 py-1.5 text-foreground/30">
                                                             <Server className="size-3.5 shrink-0" />
-                                                            <span className="text-xs font-semibold">
+                                                            <span className="text-[11px] font-medium">
                                                                 No server
                                                             </span>
                                                         </div>
@@ -300,24 +359,19 @@ export function WorkspaceSwitcher({
                                                                         project,
                                                                     )
                                                                 }
-                                                                className="group mx-1 flex cursor-pointer items-center justify-between gap-3 rounded-md px-2 py-1.5 transition-colors hover:bg-white/[0.03]"
+                                                                className="group mx-1 flex cursor-pointer items-center justify-between gap-3 rounded-md px-2 py-1 transition-colors hover:bg-sidebar-accent/60"
                                                             >
                                                                 <div className="flex min-w-0 items-center gap-2.5">
-                                                                    <div
-                                                                        className={`size-7 shrink-0 rounded-md bg-gradient-to-br ${
-                                                                            PROJECT_GRADIENTS[
-                                                                                project.id %
-                                                                                    PROJECT_GRADIENTS.length
-                                                                            ]
-                                                                        } flex items-center justify-center text-foreground shadow-lg`}
-                                                                    >
-                                                                        <Layout className="size-4" />
-                                                                    </div>
+                                                                    <ProjectTile
+                                                                        project={
+                                                                            project
+                                                                        }
+                                                                    />
                                                                     <span
                                                                         title={
                                                                             project.name
                                                                         }
-                                                                        className={`truncate text-sm font-semibold ${currentProject?.id === project.id ? 'text-foreground' : 'text-foreground/60'}`}
+                                                                        className={`truncate text-[13px] ${currentProject?.id === project.id ? 'font-medium text-foreground' : 'text-foreground/65'}`}
                                                                     >
                                                                         {
                                                                             project.name
@@ -352,7 +406,7 @@ export function WorkspaceSwitcher({
                             className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-3 text-foreground/50 transition-colors hover:text-foreground"
                         >
                             <Plus className="size-4" />
-                            <span className="text-sm font-semibold">
+                            <span className="text-[13px] font-medium">
                                 New Application
                             </span>
                         </DropdownMenuItem>

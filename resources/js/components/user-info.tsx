@@ -16,25 +16,25 @@ export function UserInfo({
 
     return (
         <>
-            <Avatar className="h-8 w-8 overflow-hidden rounded-lg border border-border">
+            <Avatar className="size-7 overflow-hidden rounded-md border border-border">
                 {showAvatar ? (
                     <AvatarImage src={user.avatar} alt={user.name} />
                 ) : null}
-                <AvatarFallback className="rounded-lg bg-muted text-xs font-bold text-foreground">
+                <AvatarFallback className="rounded-md bg-muted text-[10px] font-semibold text-foreground">
                     {getInitials(user.name)}
                 </AvatarFallback>
             </Avatar>
-            <div className="ml-2 grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-bold tracking-tight text-foreground/90">
+            <div className="ml-1 grid flex-1 text-left leading-tight">
+                <span className="truncate text-[13px] font-medium text-foreground/90">
                     {user.name}
                 </span>
                 {team ? (
-                    <span className="mt-0.5 truncate text-[10px] leading-none font-black tracking-widest text-foreground/30 uppercase">
+                    <span className="mt-0.5 truncate text-[11px] text-foreground/45">
                         {team.name}
                     </span>
                 ) : null}
                 {!team && showEmail ? (
-                    <span className="truncate text-xs text-foreground/40">
+                    <span className="truncate text-[11px] text-foreground/45">
                         {user.email}
                     </span>
                 ) : null}

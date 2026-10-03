@@ -21,7 +21,7 @@ import {
     Lock as LockIcon,
     Server as ServerIcon,
 } from 'lucide-react';
-import AppLogo from '@/components/app-logo';
+import AppLogoIcon from '@/components/app-logo-icon';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import {
@@ -29,9 +29,6 @@ import {
     SidebarContent,
     SidebarFooter,
     SidebarHeader,
-    SidebarMenu,
-    SidebarMenuButton,
-    SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { WorkspaceSwitcher } from '@/components/workspace-switcher';
 import type { PageProps } from '@/types';
@@ -197,32 +194,22 @@ export function AppSidebar() {
             variant="inset"
             className="border-r border-sidebar-border bg-sidebar"
         >
-            <SidebarHeader className="px-4 pt-4 pb-2">
-                <SidebarMenu>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton
-                            size="lg"
-                            asChild
-                            className="hover:bg-transparent"
-                        >
-                            <Link
-                                href={dashboardUrl}
-                                prefetch
-                                className="flex items-center gap-3"
-                            >
-                                <AppLogo />
-                            </Link>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                </SidebarMenu>
-
-                <div className="mt-4 px-2">
-                    <WorkspaceSwitcher />
-                </div>
+            <SidebarHeader className="gap-1 border-b border-sidebar-border/60 p-2">
+                <Link
+                    href={dashboardUrl}
+                    prefetch
+                    className="flex h-8 items-center gap-2 rounded-md px-1.5 text-foreground/85 transition-colors group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 hover:text-foreground"
+                >
+                    <AppLogoIcon className="size-5 shrink-0 rounded object-contain" />
+                    <span className="text-[13px] font-semibold tracking-tight group-data-[collapsible=icon]:hidden">
+                        {(props as any).name ?? 'LaraOwl'}
+                    </span>
+                </Link>
+                <WorkspaceSwitcher />
             </SidebarHeader>
 
-            <SidebarContent className="px-2 pt-4">
-                <div className="space-y-4">
+            <SidebarContent className="px-2 py-3">
+                <div className="space-y-3">
                     <NavMain
                         items={[
                             {
@@ -254,24 +241,18 @@ export function AppSidebar() {
                                 href: `/${teamSlug}/servers`,
                                 icon: ServerIcon,
                             },
-                        ]}
-                        label="Infrastructure"
-                    />
-
-                    <NavMain
-                        items={[
                             {
-                                title: 'Project Settings',
+                                title: 'Settings',
                                 href: `/${teamSlug}/${projectSlug}/settings`,
                                 icon: Settings,
                             },
                         ]}
-                        label="Settings"
+                        label="Manage"
                     />
                 </div>
             </SidebarContent>
 
-            <SidebarFooter className="border-t border-sidebar-border p-4">
+            <SidebarFooter className="border-t border-sidebar-border/60 p-2">
                 <NavUser />
             </SidebarFooter>
         </Sidebar>

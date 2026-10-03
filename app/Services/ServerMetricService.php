@@ -38,7 +38,7 @@ class ServerMetricService
             ->orderBy('name')
             ->get()
             ->map(fn (Server $server) => [
-                ...$this->serverSummary($server),
+                ...$this->summary($server),
                 'latest' => $server->latestMetric ? $this->presentSample($server->latestMetric) : null,
                 'sparkline' => $this->series($server, $sparklineStart, now(), 60),
                 'projects' => $this->presentProjects($server),
@@ -59,7 +59,7 @@ class ServerMetricService
 
         return [
             'server' => [
-                ...$this->serverSummary($server),
+                ...$this->summary($server),
                 'projects' => $this->presentProjects($server->load(['projects' => fn ($query) => $query->orderBy('name')])),
             ],
             'latest' => $latest ? $this->presentSample($latest) : null,
@@ -128,7 +128,7 @@ class ServerMetricService
     /**
      * @return array<string, mixed>
      */
-    private function serverSummary(Server $server): array
+    public function summary(Server $server): array
     {
         return [
             'id' => $server->id,
@@ -145,7 +145,7 @@ class ServerMetricService
     /**
      * @return array<string, mixed>
      */
-    private function presentSample(ServerMetric $metric): array
+    public function presentSample(ServerMetric $metric): array
     {
         return [
             'recorded_at' => $metric->recorded_at->toIso8601String(),

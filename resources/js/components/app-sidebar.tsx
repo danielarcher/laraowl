@@ -20,6 +20,7 @@ import {
     Shield,
     Lock as LockIcon,
     Server as ServerIcon,
+    Radar,
 } from 'lucide-react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { NavMain } from '@/components/nav-main';
@@ -67,6 +68,8 @@ export function AppSidebar() {
 
         return `${base}?${searchParams.toString()}`;
     };
+
+    const overviewUrl = teamSlug ? withPeriod(`/${teamSlug}/overview`) : '/';
 
     const dashboardUrl = projectSlug
         ? withPeriod(`/${teamSlug}/${projectSlug}/dashboard`)
@@ -196,7 +199,7 @@ export function AppSidebar() {
         >
             <SidebarHeader className="gap-1 border-b border-sidebar-border/60 p-2">
                 <Link
-                    href={dashboardUrl}
+                    href={overviewUrl}
                     prefetch
                     className="flex h-8 items-center gap-2 rounded-md px-1.5 text-foreground/85 transition-colors group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 hover:text-foreground"
                 >
@@ -212,6 +215,11 @@ export function AppSidebar() {
                 <div className="space-y-3">
                     <NavMain
                         items={[
+                            {
+                                title: 'Overview',
+                                href: overviewUrl,
+                                icon: Radar,
+                            },
                             {
                                 title: 'Dashboard',
                                 href: dashboardUrl,

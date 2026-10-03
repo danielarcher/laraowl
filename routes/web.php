@@ -8,6 +8,7 @@ use App\Http\Controllers\Projects\ProjectController;
 use App\Http\Controllers\Projects\RecordController;
 use App\Http\Controllers\Projects\ThresholdController;
 use App\Http\Controllers\Servers\ServerController;
+use App\Http\Controllers\Teams\OverviewController;
 use App\Http\Controllers\Teams\TeamController;
 use App\Http\Controllers\Teams\TeamInvitationController;
 use App\Http\Middleware\EnsureProjectExists;
@@ -25,12 +26,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
             return redirect()->route('teams.create');
         }
 
-        $project = $team->projects()->first();
-        if (! $project) {
+        if (! $team->projects()->exists()) {
             return redirect()->route('projects.create', ['current_team' => $team->slug]);
         }
 
-        return redirect()->route('dashboard', ['current_team' => $team->slug, 'project' => $project->slug]);
+        return redirect()->route('overview', ['current_team' => $team->slug]);
     });
 });
 
@@ -56,6 +56,12 @@ Route::prefix('{current_team}/servers')
         Route::get('/', [ServerController::class, 'index'])->name('servers.index');
         Route::get('{server}', [ServerController::class, 'show'])->whereNumber('server')->name('servers.show');
     });
+
+// Every app of the team on one page; like the servers routes, registered
+// before the project routes.
+Route::get('{current_team}/overview', [OverviewController::class, 'index'])
+    ->middleware(['auth', 'verified', EnsureTeamMembership::class])
+    ->name('overview');
 
 Route::prefix('{current_team}/{project}')
     ->middleware(['auth', 'verified', EnsureTeamMembership::class, EnsureProjectExists::class])

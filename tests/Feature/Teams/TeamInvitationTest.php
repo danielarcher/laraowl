@@ -181,9 +181,8 @@ test('onboarding does not intercept invitation acceptance', function () {
     expect($invitedUser->fresh()->belongsToTeam($team))->toBeTrue()
         ->and($invitedUser->fresh()->current_team_id)->toBe($team->id);
 
-    $this->get('/dashboard')->assertRedirect(route('dashboard', [
+    $this->get('/dashboard')->assertRedirect(route('overview', [
         'current_team' => $team->slug,
-        'project' => $project->slug,
     ]));
 });
 
@@ -222,9 +221,8 @@ test('a teamless user returns to the invitation after logging in', function () {
         ->and($invitedUser->fresh()->current_team_id)->toBe($team->id)
         ->and($invitation->fresh()->accepted_at)->not->toBeNull();
 
-    $this->get('/dashboard')->assertRedirect(route('dashboard', [
+    $this->get('/dashboard')->assertRedirect(route('overview', [
         'current_team' => $team->slug,
-        'project' => $project->slug,
     ]));
 });
 
@@ -261,9 +259,8 @@ test('a new user joins the inviting team after registering', function () {
         ->and($user->current_team_id)->toBe($team->id)
         ->and($invitation->fresh()->accepted_at)->not->toBeNull();
 
-    $this->get('/dashboard')->assertRedirect(route('dashboard', [
+    $this->get('/dashboard')->assertRedirect(route('overview', [
         'current_team' => $team->slug,
-        'project' => $project->slug,
     ]));
 });
 

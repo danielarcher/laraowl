@@ -3,6 +3,7 @@ import {
     Check,
     ChevronsUpDown,
     Plus,
+    Radar,
     Layout,
     Terminal,
     Search,
@@ -11,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import CreateProjectModal from '@/components/create-project-modal';
+import { ProjectTile } from '@/components/project-tile';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -20,62 +22,6 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useIsMobile } from '@/hooks/use-mobile';
-
-const PROJECT_TINTS = [
-    'bg-indigo-500/15 text-indigo-600 ring-indigo-500/25 dark:text-indigo-300',
-    'bg-sky-500/15 text-sky-600 ring-sky-500/25 dark:text-sky-300',
-    'bg-emerald-500/15 text-emerald-600 ring-emerald-500/25 dark:text-emerald-300',
-    'bg-amber-500/15 text-amber-600 ring-amber-500/25 dark:text-amber-300',
-    'bg-rose-500/15 text-rose-600 ring-rose-500/25 dark:text-rose-300',
-    'bg-violet-500/15 text-violet-600 ring-violet-500/25 dark:text-violet-300',
-    'bg-teal-500/15 text-teal-600 ring-teal-500/25 dark:text-teal-300',
-    'bg-orange-500/15 text-orange-600 ring-orange-500/25 dark:text-orange-300',
-];
-
-/**
- * "Keep It Five" → "KI", "iaang" → "IA".
- */
-function projectInitials(name: string): string {
-    const words = name.trim().split(/\s+/).filter(Boolean);
-    const initials =
-        words.length > 1 ? words[0][0] + words[1][0] : name.trim().slice(0, 2);
-
-    return initials.toUpperCase();
-}
-
-/**
- * The project's uploaded logo, or its initials on a tint picked by id.
- */
-export function ProjectTile({
-    project,
-    className = 'size-6 text-[9px]',
-}: {
-    project: any;
-    className?: string;
-}) {
-    const logo =
-        project?.logo_url && !project.logo_url.includes('ui-avatars.com')
-            ? project.logo_url
-            : null;
-
-    if (logo) {
-        return (
-            <img
-                src={logo}
-                alt=""
-                className={`shrink-0 rounded-md object-cover ring-1 ring-sidebar-border ${className}`}
-            />
-        );
-    }
-
-    return (
-        <span
-            className={`flex shrink-0 items-center justify-center rounded-md font-semibold tracking-tight ring-1 ring-inset ${PROJECT_TINTS[(project?.id ?? 0) % PROJECT_TINTS.length]} ${className}`}
-        >
-            {projectInitials(project?.name ?? '?')}
-        </span>
-    );
-}
 
 type ServerGroup = {
     server: any | null;
@@ -136,7 +82,8 @@ export function WorkspaceSwitcher({
     const { props }: any = usePage();
     const isMobile = useIsMobile();
     const currentTeam = props.currentTeam;
-    const currentProject = props.currentProject;
+    const onOverview = usePage().component === 'overview/index';
+    const currentProject = onOverview ? null : props.currentProject;
     const currentServer = (props.availableServers ?? []).find(
         (server: any) =>
             server.id ===
@@ -220,7 +167,11 @@ export function WorkspaceSwitcher({
                         type="button"
                         className="group/switcher flex h-10 w-full min-w-0 items-center gap-2.5 rounded-lg px-1.5 text-left transition-colors outline-none group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0 hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring data-[state=open]:bg-sidebar-accent"
                     >
-                        {currentProject ? (
+                        {onOverview ? (
+                            <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-foreground/[0.06] text-foreground/70 ring-1 ring-sidebar-border ring-inset">
+                                <Radar className="size-3.5" />
+                            </span>
+                        ) : currentProject ? (
                             <ProjectTile
                                 project={currentProject}
                                 className="size-7 text-[10px]"
@@ -235,10 +186,18 @@ export function WorkspaceSwitcher({
                                 title={currentProject?.name}
                                 className="truncate text-[13px] font-medium text-foreground"
                             >
-                                {currentProject?.name ?? 'No project yet'}
+                                {onOverview
+                                    ? 'All applications'
+                                    : (currentProject?.name ??
+                                      'No project yet')}
                             </span>
                             <span className="mt-0.5 truncate text-[11px] text-foreground/45">
-                                {[currentTeam?.name, currentServer?.name]
+                                {[
+                                    currentTeam?.name,
+                                    onOverview
+                                        ? `${(props.projects ?? []).length} apps`
+                                        : currentServer?.name,
+                                ]
                                     .filter(Boolean)
                                     .join(' · ')}
                             </span>
@@ -298,6 +257,32 @@ export function WorkspaceSwitcher({
                                     </div>
 
                                     <div className="space-y-1">
+                                        {search.trim() === '' && (
+                                            <DropdownMenuItem
+                                                onSelect={() =>
+                                                    router.visit(
+                                                        `/${team.slug}/overview`,
+                                                    )
+                                                }
+                                                className="mx-1 flex cursor-pointer items-center justify-between gap-3 rounded-md px-2 py-1 transition-colors hover:bg-sidebar-accent/60"
+                                            >
+                                                <span className="flex min-w-0 items-center gap-2.5">
+                                                    <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-foreground/[0.06] text-foreground/70 ring-1 ring-sidebar-border ring-inset">
+                                                        <Radar className="size-3" />
+                                                    </span>
+                                                    <span
+                                                        className={`truncate text-[13px] ${onOverview && team.id === currentTeam?.id ? 'font-medium text-foreground' : 'text-foreground/65'}`}
+                                                    >
+                                                        All applications
+                                                    </span>
+                                                </span>
+                                                {onOverview &&
+                                                    team.id ===
+                                                        currentTeam?.id && (
+                                                        <Check className="size-4 shrink-0 text-foreground" />
+                                                    )}
+                                            </DropdownMenuItem>
+                                        )}
                                         {groups.map((group: ServerGroup) => (
                                             <div
                                                 key={group.server?.id ?? 'none'}

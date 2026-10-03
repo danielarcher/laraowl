@@ -7,12 +7,13 @@ return [
     | Repository
     |--------------------------------------------------------------------------
     |
-    | The GitHub repository new releases are checked against. Forks that cut
-    | their own releases should point this at their own repository.
+    | The GitHub repository new releases are checked against: this version's
+    | own. A release of the original project (laraowl/laraowl) would replace
+    | this version's changes if installed over it.
     |
     */
 
-    'repository' => env('LARAOWL_REPOSITORY', 'laraowl/laraowl'),
+    'repository' => env('LARAOWL_REPOSITORY', 'danielarcher/laraowl'),
 
     /*
     |--------------------------------------------------------------------------

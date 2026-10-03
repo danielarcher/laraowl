@@ -19,7 +19,7 @@ function githubRelease(string $tag): array
     return [
         'tag_name' => $tag,
         'name' => "LaraOwl {$tag}",
-        'html_url' => "https://github.com/laraowl/laraowl/releases/tag/{$tag}",
+        'html_url' => "https://github.com/danielarcher/laraowl/releases/tag/{$tag}",
         'body' => 'Fixed the integrations URL bug.',
         'published_at' => '2026-07-09T12:00:00Z',
     ];
@@ -70,9 +70,14 @@ test('a release is newer only when it sorts above the running version', function
         ->and(Version::isNewerThanCurrent('0.0.1'))->toBeFalse();
 });
 
+test('releases are checked against this version, not the original project', function () {
+    // An upstream release would replace this version's changes if installed.
+    expect(app(UpdateService::class)->repository())->toBe('danielarcher/laraowl');
+});
+
 test('refreshing caches the latest release from github', function () {
     Http::fake([
-        'api.github.com/repos/laraowl/laraowl/releases/latest' => Http::response(githubRelease('v99.0.0')),
+        'api.github.com/repos/danielarcher/laraowl/releases/latest' => Http::response(githubRelease('v99.0.0')),
     ]);
 
     $release = app(UpdateService::class)->refresh();

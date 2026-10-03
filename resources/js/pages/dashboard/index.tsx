@@ -718,6 +718,9 @@ function IssueList({
 
     return (
         <ul className="mt-2 divide-y divide-border border-t border-border">
+            <li className="px-2 pt-2 pb-1 text-[11px] text-muted-foreground">
+                Open issues
+            </li>
             {issues.slice(0, 3).map((issue) => (
                 <li key={issue.id}>
                     <Link
@@ -783,7 +786,7 @@ function UserTable({
                                         'absolute inset-y-0.5 left-0 rounded-sm',
                                         tone === 'error'
                                             ? 'bg-series-error/10'
-                                            : 'bg-series-muted',
+                                            : 'bg-foreground/[0.05]',
                                     )}
                                     style={{
                                         width: `${(figure(row) / max) * 100}%`,

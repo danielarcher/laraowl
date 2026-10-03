@@ -8,6 +8,8 @@ use App\Models\Project;
 use App\Models\Record;
 use App\Models\RecordRollup;
 use App\Models\Threshold;
+use Illuminate\Database\Eloquent\Casts\Json;
+use Illuminate\Database\Eloquent\JsonEncodingException;
 use Illuminate\Support\Facades\DB;
 
 class IngestService
@@ -27,6 +29,12 @@ class IngestService
 
     protected DetailSampler $detailSampler;
 
+    /**
+     * Types whose record is handed on after it is stored (issue grouping,
+     * security analysis), so they need a model rather than a bulk insert.
+     */
+    private const FOLLOWED_UP_TYPES = ['exception', 'request', 'security-audit'];
+
     public function __construct(AlertService $alertService, SecurityService $securityService, RollupWriter $rollupWriter, ?DetailSampler $detailSampler = null)
     {
         $this->alertService = $alertService;
@@ -44,7 +52,15 @@ class IngestService
         $plan = $this->detailSampler->plan($records);
 
         DB::transaction(function () use ($project, $records, $plan) {
+            if (DB::connection()->getDriverName() === 'pgsql') {
+                // A crash may lose the last moment of monitoring data, never
+                // corrupt it. Not waiting for the WAL flush on every batch
+                // frees the small disk for everything else.
+                DB::statement('SET LOCAL synchronous_commit TO OFF');
+            }
+
             $batch = [];
+            $rows = [];
             $exceptions = 0;
             $createdAt = now();
 
@@ -65,7 +81,9 @@ class IngestService
                     'created_at' => $createdAt,
                 ];
 
-                if (! $plan['keep'][$index] && ! $this->thresholdFor($project, $type, $data)) {
+                $threshold = $this->thresholdFor($project, $type, $data);
+
+                if (! $plan['keep'][$index] && ! $threshold) {
                     continue;
                 }
 
@@ -77,7 +95,8 @@ class IngestService
                     }
                 }
 
-                $record = $project->records()->create([
+                $columns = [
+                    'project_id' => $project->id,
                     'type' => $type,
                     'payload' => $data,
                     'fingerprint' => $fingerprint,
@@ -86,7 +105,23 @@ class IngestService
                     'trace_id' => $traceId,
                     'message' => $this->rollupWriter->messageFor($type, $data),
                     'created_at' => $createdAt,
-                ]);
+                ];
+
+                if ($type === 'heartbeat') {
+                    $this->touchHeartbeat($project, $data);
+                }
+
+                // Most rows are never looked at again during ingest, so they
+                // go in one multi-row insert instead of a model each.
+                if (! $threshold && ! in_array($type, self::FOLLOWED_UP_TYPES, true)) {
+                    $rows[] = $this->rawRow($columns);
+
+                    continue;
+                }
+
+                // Rows queued so far go in first, so ids keep arrival order.
+                $this->insertRows($rows);
+                $record = $project->records()->create($columns);
 
                 if ($type === 'exception') {
                     $exceptions++;
@@ -101,26 +136,12 @@ class IngestService
                     $this->securityService->audit($project, $record);
                 }
 
-                if ($type === 'heartbeat') {
-                    $slug = $data['slug'] ?? 'default';
-                    $heartbeat = $project->heartbeats()->firstOrCreate(
-                        ['slug' => $slug],
-                        [
-                            'name' => $data['name'] ?? ucfirst($slug),
-                            'interval_minutes' => $data['interval'] ?? 15,
-                            'status' => 'active',
-                        ]
-                    );
-
-                    $heartbeat->update([
-                        'last_seen_at' => now(),
-                        'status' => 'active',
-                    ]);
+                if ($threshold) {
+                    $this->handleSlowPerformance($project, $record, $threshold);
                 }
-
-                $this->checkThresholds($project, $record);
             }
 
+            $this->insertRows($rows);
             $this->rollupWriter->record($project, $batch);
 
             // After the rollups, so the batch that just arrived is counted,
@@ -134,15 +155,56 @@ class IngestService
     }
 
     /**
-     * Check if a record exceeds any performance thresholds.
+     * Writes the queued raw rows in multi-row inserts and empties the queue.
+     *
+     * @param  list<array<string, mixed>>  $rows
      */
-    protected function checkThresholds(Project $project, Record $record): void
+    protected function insertRows(array &$rows): void
     {
-        $threshold = $this->thresholdFor($project, $record->type, $record->payload);
-
-        if ($threshold) {
-            $this->handleSlowPerformance($project, $record, $threshold);
+        foreach (array_chunk($rows, 500) as $chunk) {
+            Record::query()->insert($chunk);
         }
+
+        $rows = [];
+    }
+
+    /**
+     * A record's columns as a raw insert needs them: the payload encoded the
+     * way the model's array cast would.
+     *
+     * @param  array<string, mixed>  $columns
+     * @return array<string, mixed>
+     */
+    protected function rawRow(array $columns): array
+    {
+        $payload = Json::encode($columns['payload']);
+
+        if ($payload === false) {
+            throw JsonEncodingException::forAttribute(new Record, 'payload', json_last_error_msg());
+        }
+
+        return ['payload' => $payload, 'issue_id' => null] + $columns;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    protected function touchHeartbeat(Project $project, array $data): void
+    {
+        $slug = $data['slug'] ?? 'default';
+        $heartbeat = $project->heartbeats()->firstOrCreate(
+            ['slug' => $slug],
+            [
+                'name' => $data['name'] ?? ucfirst($slug),
+                'interval_minutes' => $data['interval'] ?? 15,
+                'status' => 'active',
+            ]
+        );
+
+        $heartbeat->update([
+            'last_seen_at' => now(),
+            'status' => 'active',
+        ]);
     }
 
     /**

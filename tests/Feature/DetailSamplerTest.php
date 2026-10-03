@@ -4,6 +4,7 @@ use App\Models\Project;
 use App\Models\RecordRollup;
 use App\Models\Threshold;
 use App\Services\IngestService;
+use Illuminate\Support\Facades\DB;
 
 beforeEach(function () {
     // Only what is worth opening; no random sample.
@@ -150,4 +151,26 @@ test('a sample rate of one keeps every raw row', function () {
 
     expect(rawCount($project, 'query'))->toBe(3)
         ->and($project->records()->where('type', 'request')->first()->payload)->not->toHaveKey('_detail_dropped');
+});
+
+test('plain rows go in as one insert per batch, with every column a model would set', function () {
+    config(['laraowl.raw_detail.sample_rate' => 1.0]);
+    $project = Project::factory()->create();
+
+    DB::enableQueryLog();
+    sampledIngest($project, traceOf('bulk', ['user' => ['id' => 7], 'ip' => '10.0.0.1'], queries: 40));
+    $inserts = collect(DB::getQueryLog())->filter(fn ($query) => str_starts_with($query['query'], 'insert into "records"'));
+    DB::disableQueryLog();
+
+    // The request is a model (security analysis needs it); the 42 detail
+    // rows behind it share one statement.
+    expect($inserts)->toHaveCount(2)
+        ->and(rawCount($project, 'query'))->toBe(40);
+
+    $query = $project->records()->where('type', 'query')->first();
+
+    expect($query->payload['sql'])->toBe('select * from users where id = ?')
+        ->and($query->trace_id)->toBe('bulk')
+        ->and($query->fingerprint)->toBe(md5('select * from users where id = ?'))
+        ->and($query->created_at)->not->toBeNull();
 });

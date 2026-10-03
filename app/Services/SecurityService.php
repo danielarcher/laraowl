@@ -2,8 +2,11 @@
 
 namespace App\Services;
 
+use App\Models\Issue;
+use App\Models\IssueActivity;
 use App\Models\Project;
 use App\Models\Record;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
@@ -161,7 +164,7 @@ class SecurityService
         $cachePrefix = "sec_anom_{$project->id}_{$ip}_";
 
         // A. Scanner Detection (Too many 404s)
-        if (($payload['status_code'] ?? 200) === 404) {
+        if (($payload['status_code'] ?? 200) === 404 && ! $this->isStaticFile($payload['url'] ?? '')) {
             $key = $cachePrefix.'404_count';
             $count = Cache::increment($key);
             Cache::put($key, $count, 60); // Reset every minute
@@ -176,10 +179,10 @@ class SecurityService
         }
 
         // B. User-Agent Anomaly
-        $ua = $payload['headers']['user-agent'] ?? '';
+        $ua = strtolower($this->userAgent($payload['headers'] ?? null));
         $suspiciousBots = ['sqlmap', 'nmap', 'nikto', 'dirbuster', 'gobuster', 'python-requests'];
         foreach ($suspiciousBots as $bot) {
-            if (Str::contains(strtolower($ua), $bot)) {
+            if (Str::contains($ua, $bot)) {
                 $anomalies[] = [
                     'type' => 'anomaly',
                     'detail' => "Suspicious Security Tool Detected: $bot",
@@ -189,6 +192,32 @@ class SecurityService
         }
 
         return $anomalies;
+    }
+
+    /**
+     * A script, stylesheet, image or font. A page a browser kept from
+     * before a deploy asks for the old build's files a dozen at a time;
+     * those 404s are a stale page, not a scan.
+     */
+    protected function isStaticFile(string $url): bool
+    {
+        $path = parse_url($url, PHP_URL_PATH);
+
+        return is_string($path)
+            && preg_match('/\.(?:m?js|css|map|png|jpe?g|gif|webp|avif|svg|ico|woff2?|ttf|otf|eot)$/i', $path) === 1;
+    }
+
+    /**
+     * The request's user agent. Clients send the headers JSON-encoded, each
+     * name holding a list of values.
+     */
+    protected function userAgent(mixed $headers): string
+    {
+        $headers = is_string($headers) ? json_decode($headers, true) : $headers;
+        $value = is_array($headers) ? (array_change_key_case($headers)['user-agent'] ?? '') : '';
+        $value = is_array($value) ? reset($value) : $value;
+
+        return is_string($value) ? $value : '';
     }
 
     /**
@@ -248,29 +277,29 @@ class SecurityService
 
         $riskLevel = $this->getRiskLevel($cumulativeScore);
 
-        // Report
-        $hash = md5("security_{$riskLevel}_{$ip}");
-        $title = 'Security Issue: '.strtoupper($riskLevel)." Risk from $ip";
-        $message = "Cumulative Threat Score: $cumulativeScore. Detected: ".collect($threats)->pluck('type')->unique()->implode(', ');
-
-        $issue = $project->issues()->firstOrCreate(
-            ['hash' => $hash],
-            [
-                'type' => 'security',
-                'title' => $title,
-                'message' => $message,
-                'status' => 'open',
-                'priority' => $this->getPriority($riskLevel),
-                'first_seen_at' => now(),
-                'last_seen_at' => now(),
-            ]
+        // Report: one issue per address, at the highest risk it reached.
+        // Once resolved (by hand, or quiet for a day) a return reopens it
+        // and it is rated afresh.
+        $issue = $project->issues()->firstOrNew(
+            ['hash' => md5("security_ip_{$ip}")],
+            ['type' => 'security', 'status' => 'open', 'first_seen_at' => now()],
         );
 
-        $issue->increment('occurrences_count');
-        $issue->update([
+        if ($issue->status === 'resolved') {
+            $issue->status = 'open';
+            $issue->priority = null;
+            $issue->resolved_at = null;
+        }
+
+        $level = $this->higherRisk($issue->priority, $riskLevel);
+        $issue->fill([
+            'title' => 'Security Issue: '.strtoupper($level)." Risk from $ip",
+            'message' => "Cumulative Threat Score: $cumulativeScore. Detected: ".collect($threats)->map(fn ($threat) => $threat['detail'] ?? $threat['type'])->unique()->implode(', '),
+            'priority' => $this->getPriority($level),
             'last_seen_at' => now(),
-            'message' => $message,
-        ]);
+        ])->save();
+
+        $issue->increment('occurrences_count');
 
         $record->update(['issue_id' => $issue->id]);
 
@@ -305,6 +334,46 @@ class SecurityService
             'medium' => 'medium',
             default => 'low',
         };
+    }
+
+    protected function higherRisk(?string $current, string $risk): string
+    {
+        $levels = ['low', 'medium', 'high', 'critical'];
+
+        return $current !== null && array_search($current, $levels, true) > array_search($risk, $levels, true)
+            ? $current
+            : $risk;
+    }
+
+    /**
+     * Resolves the open threat issues of addresses that have sent nothing
+     * suspicious since the given moment. A day's quiet is when an address's
+     * threat score lapses too. Audit and file-integrity issues stay open
+     * until someone deals with them. Returns how many were resolved.
+     */
+    public function resolveQuietThreats(CarbonInterface $quietSince): int
+    {
+        $issues = Issue::query()
+            ->where('type', 'security')
+            ->where('status', 'open')
+            ->where('title', 'like', 'Security Issue: % Risk from %')
+            ->where('last_seen_at', '<', $quietSince)
+            ->pluck('id');
+
+        $now = now();
+
+        foreach ($issues->chunk(500) as $chunk) {
+            Issue::query()->whereKey($chunk)->update(['status' => 'resolved', 'resolved_at' => $now]);
+            IssueActivity::insert($chunk->map(fn ($id) => [
+                'issue_id' => $id,
+                'type' => 'status_change',
+                'content' => 'resolved automatically: nothing suspicious from this address for '.$quietSince->diffForHumans($now, CarbonInterface::DIFF_ABSOLUTE),
+                'created_at' => $now,
+                'updated_at' => $now,
+            ])->all());
+        }
+
+        return $issues->count();
     }
 
     public function audit(Project $project, Record $record): void

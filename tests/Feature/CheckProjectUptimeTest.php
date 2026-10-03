@@ -1,5 +1,6 @@
 <?php
 
+use App\Console\Commands\CheckProjectUptime;
 use App\Models\Project;
 use App\Models\Team;
 use App\Services\AlertService;
@@ -237,4 +238,18 @@ test('the health check schedule prevents overlapping runs', function () {
     expect($event->expiresAt)->toBe(5);
     expect($event->runInBackground)->toBeTrue();
     expect($event->repeatSeconds)->toBe(30);
+});
+
+test('it identifies itself as a bot so monitored sites do not count checks as visits', function () {
+    Project::factory()->create([
+        'team_id' => Team::factory()->create()->id,
+        'url' => 'https://example.com',
+    ]);
+
+    Http::fake(['*' => Http::response('OK', 200)]);
+
+    $this->artisan('projects:check-health')->assertExitCode(0);
+
+    Http::assertSent(fn ($request) => $request->hasHeader('User-Agent', CheckProjectUptime::USER_AGENT)
+        && preg_match('~bot|monitor~i', $request->header('User-Agent')[0]) === 1);
 });

@@ -36,6 +36,11 @@ class CheckProjectUptime extends Command
     protected const CONCURRENCY = 25;
 
     /**
+     * Identify checks as a bot, so the monitored sites' own analytics don't count them as visitors.
+     */
+    public const USER_AGENT = 'Mozilla/5.0 (compatible; LaraOwlUptimeBot/1.0; uptime monitor)';
+
+    /**
      * Execute the console command.
      *
      * The scheduler runs this command every 30 seconds, so a single run only
@@ -66,7 +71,7 @@ class CheckProjectUptime extends Command
             $start = microtime(true);
 
             $responses = Http::pool(fn (Pool $pool) => $batch->map(
-                fn (Project $project) => $pool->retry(2, 1000, throw: false)->timeout(10)->get($project->url)
+                fn (Project $project) => $pool->retry(2, 1000, throw: false)->timeout(10)->withUserAgent(self::USER_AGENT)->get($project->url)
             )->all());
 
             foreach ($batch as $index => $project) {

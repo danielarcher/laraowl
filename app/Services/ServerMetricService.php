@@ -202,13 +202,18 @@ class ServerMetricService
     }
 
     /**
-     * The hostname that sent the project's most recent record.
+     * The hostname that sent the project's most recent record in the last day.
+     *
+     * Ordered by created_at so Postgres walks the (project_id, created_at)
+     * index: ordering by id walks the primary key backwards through the whole
+     * table for a project without records.
      */
     public function reportedHostname(Project $project): string
     {
         $hostname = Record::query()
             ->where('project_id', $project->id)
-            ->orderByDesc('id')
+            ->where('created_at', '>=', now()->subDay())
+            ->orderByDesc('created_at')
             ->first(['payload'])
             ?->payload['server'] ?? null;
 

@@ -15,4 +15,4 @@ Schedule::command('projects:check-health')
     ->runInBackground();
 Schedule::command('model:prune')->daily();
 Schedule::command('laraowl:update --check')->daily();
-Schedule::command('laraowl:projects:link-servers')->everyTenMinutes();
+Schedule::command('laraowl:projects:link-servers')->everyTenMinutes()->withoutOverlapping(10);

@@ -1,6 +1,12 @@
-import { usePage, router } from '@inertiajs/react';
-import { Calendar as CalendarIcon, ChevronDown, Check } from 'lucide-react';
+import { Link, router, usePage } from '@inertiajs/react';
+import { Calendar as CalendarIcon, Check, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
+import {
+    DateRangeCalendar,
+    formatDay,
+    toIso,
+} from '@/components/date-range-calendar';
+import type { DateRange } from '@/components/date-range-calendar';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -13,6 +19,7 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
 
 export const filters = [
     { label: '1H', value: '1h' },
@@ -22,96 +29,189 @@ export const filters = [
     { label: '30D', value: '30d' },
 ];
 
+const visitOptions = {
+    preserveState: true,
+    preserveScroll: true,
+    replace: true,
+} as const;
+
+/** The current URL with its period swapped. */
+function periodUrl(url: string, period: string, range?: DateRange): string {
+    const [path, query = ''] = url.split('?');
+    const params = new URLSearchParams(query);
+    params.set('period', period);
+    params.delete('from');
+    params.delete('to');
+
+    if (range) {
+        params.set('from', range.start);
+        // The end day counts in full.
+        params.set('to', `${range.end}T23:59:59`);
+    }
+
+    return `${path}?${params.toString()}`;
+}
+
+/** Quick ranges beside the calendar, as local dates. */
+function presets(): Array<{ label: string; range: DateRange }> {
+    const now = new Date();
+    const day = (offset: number) =>
+        toIso(
+            new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset),
+        );
+    const weekday = (now.getDay() + 6) % 7;
+
+    return [
+        { label: 'Today', range: { start: day(0), end: day(0) } },
+        { label: 'Yesterday', range: { start: day(-1), end: day(-1) } },
+        { label: 'This week', range: { start: day(-weekday), end: day(0) } },
+        {
+            label: 'Last week',
+            range: { start: day(-weekday - 7), end: day(-weekday - 1) },
+        },
+        {
+            label: 'This month',
+            range: { start: day(1 - now.getDate()), end: day(0) },
+        },
+        {
+            label: 'Last month',
+            range: {
+                start: toIso(
+                    new Date(now.getFullYear(), now.getMonth() - 1, 1),
+                ),
+                end: day(-now.getDate()),
+            },
+        },
+    ];
+}
+
+function rangeLabel(from: string, to: string): string {
+    const year = String(new Date().getFullYear());
+    const sameYear = from.startsWith(year) && to.startsWith(year);
+    const short = (iso: string) =>
+        sameYear ? formatDay(iso).slice(0, 5) : formatDay(iso);
+
+    return from.slice(0, 10) === to.slice(0, 10)
+        ? short(from)
+        : `${short(from)} – ${short(to)}`;
+}
+
+/**
+ * The period presets as a segmented control whose marker slides to the
+ * choice at once (before the page answers), with each preset prefetched on
+ * hover so the switch usually lands from cache.
+ */
+function PeriodTabs({ period, url }: { period: string; url: string }) {
+    const [chosen, setChosen] = useState<string | null>(null);
+    const shown = chosen ?? period;
+    const index = filters.findIndex((f) => f.value === shown);
+
+    return (
+        <div className="relative hidden h-8 items-center rounded-md border border-border bg-muted/50 p-0.5 lg:flex">
+            <span
+                aria-hidden
+                className={cn(
+                    'absolute inset-y-0.5 left-0.5 w-10 rounded-sm bg-background shadow-sm ring-1 ring-border transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.2,0.7,0.2,1)] motion-reduce:transition-none',
+                    index < 0 && 'opacity-0',
+                )}
+                style={{
+                    transform: `translateX(${Math.max(index, 0) * 100}%)`,
+                }}
+            />
+            {filters.map((filter) => (
+                <Link
+                    key={filter.value}
+                    href={periodUrl(url, filter.value)}
+                    {...visitOptions}
+                    prefetch
+                    cacheFor="30s"
+                    onClick={() => setChosen(filter.value)}
+                    onFinish={() =>
+                        setChosen((current) =>
+                            current === filter.value ? null : current,
+                        )
+                    }
+                    aria-current={shown === filter.value ? 'true' : undefined}
+                    className={cn(
+                        'relative z-10 flex h-full w-10 items-center justify-center text-[11px] font-medium tracking-tight transition-colors duration-200',
+                        shown === filter.value
+                            ? 'text-foreground'
+                            : 'text-muted-foreground hover:text-foreground',
+                    )}
+                >
+                    {filter.label}
+                </Link>
+            ))}
+        </div>
+    );
+}
+
 export function TimeFilter() {
-    const { props }: any = usePage();
+    const { props, url } = usePage<{
+        period?: string;
+        from?: string | null;
+        to?: string | null;
+    }>();
     const period = props.period || '24h';
-    const selected = filters.find((f) => f.value === period) || {
-        label: 'Custom',
-        value: 'custom',
-    };
-    const isCustom = period === 'custom';
+    const isCustom = period === 'custom' && !!props.from && !!props.to;
+    const selected = filters.find((f) => f.value === period);
 
-    const [fromDate, setFromDate] = useState(props.from || '');
-    const [toDate, setToDate] = useState(props.to || '');
+    const [open, setOpen] = useState(false);
+    const [draft, setDraft] = useState<DateRange>({ start: '', end: '' });
 
-    const handleFilterChange = (filter: any) => {
-        const searchParams = new URLSearchParams(window.location.search);
-        searchParams.set('period', filter.value);
-        searchParams.delete('from');
-        searchParams.delete('to');
-
-        router.visit(window.location.pathname + '?' + searchParams.toString(), {
-            preserveState: true,
-            preserveScroll: true,
-            replace: true,
-        });
-    };
-
-    const handleCustomSubmit = () => {
-        if (!fromDate || !toDate) {
-            return;
+    const openPicker = (next: boolean) => {
+        if (next) {
+            setDraft(
+                isCustom
+                    ? {
+                          start: props.from!.slice(0, 10),
+                          end: props.to!.slice(0, 10),
+                      }
+                    : { start: '', end: '' },
+            );
         }
 
-        const searchParams = new URLSearchParams(window.location.search);
-        searchParams.set('period', 'custom');
-        searchParams.set('from', fromDate);
-        searchParams.set('to', toDate);
+        setOpen(next);
+    };
 
-        router.visit(window.location.pathname + '?' + searchParams.toString(), {
-            preserveState: true,
-            preserveScroll: true,
-            replace: true,
-        });
+    const apply = (range: DateRange) => {
+        setOpen(false);
+        router.visit(periodUrl(url, 'custom', range), visitOptions);
     };
 
     return (
         <div className="flex items-center gap-2">
-            {/* Desktop Preset Filters */}
-            <div className="hidden rounded-md border border-border bg-muted p-1 backdrop-blur-sm lg:flex">
-                {filters.map((filter) => (
-                    <Button
-                        key={filter.value}
-                        variant={
-                            selected.value === filter.value
-                                ? 'secondary'
-                                : 'ghost'
-                        }
-                        size="sm"
-                        className={`h-7 px-3 text-[10px] font-bold tracking-tight uppercase ${selected.value === filter.value ? 'bg-primary text-primary-foreground shadow-lg hover:bg-primary/90' : 'text-muted-foreground hover:text-foreground'}`}
-                        onClick={() => handleFilterChange(filter)}
-                    >
-                        {filter.label}
-                    </Button>
-                ))}
-            </div>
+            <PeriodTabs period={period} url={url} />
 
-            {/* Mobile/Small Screen Preset Dropdown */}
+            {/* Small screens: the presets in a menu. */}
             <div className="lg:hidden">
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button
                             variant="outline"
                             size="sm"
-                            className="h-8 gap-2 border-border bg-muted px-3 text-[10px] font-bold tracking-tight uppercase"
+                            className="h-8 gap-1.5 px-2.5 text-[11px] font-medium"
                         >
-                            <span>{selected.label}</span>
-                            <ChevronDown className="h-3 w-3 opacity-50" />
+                            {selected?.label ?? 'Custom'}
+                            <ChevronDown className="size-3 opacity-50" />
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                        className="min-w-[100px] border-border bg-background"
-                        align="end"
-                    >
+                    <DropdownMenuContent className="min-w-[100px]" align="end">
                         {filters.map((filter) => (
                             <DropdownMenuItem
                                 key={filter.value}
-                                className={`text-[10px] font-bold tracking-tight uppercase ${selected.value === filter.value ? 'bg-muted text-foreground' : 'text-muted-foreground'}`}
-                                onClick={() => handleFilterChange(filter)}
+                                className="text-[11px] font-medium"
+                                onClick={() =>
+                                    router.visit(
+                                        periodUrl(url, filter.value),
+                                        visitOptions,
+                                    )
+                                }
                             >
                                 <div className="flex w-full items-center justify-between">
                                     {filter.label}
-                                    {selected.value === filter.value && (
-                                        <Check className="h-3 w-3" />
+                                    {period === filter.value && (
+                                        <Check className="size-3" />
                                     )}
                                 </div>
                             </DropdownMenuItem>
@@ -120,70 +220,72 @@ export function TimeFilter() {
                 </DropdownMenu>
             </div>
 
-            {/* Custom Range Button */}
-            <Popover>
+            <Popover open={open} onOpenChange={openPicker}>
                 <PopoverTrigger asChild>
                     <Button
-                        variant={isCustom ? 'secondary' : 'outline'}
+                        variant="outline"
                         size="sm"
-                        className={`h-8 gap-2 border-border bg-muted px-3 text-foreground hover:bg-primary/10 md:h-9 md:px-4 ${isCustom ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-500' : ''}`}
+                        className={cn(
+                            'h-8 gap-1.5 px-2.5 text-[11px] font-medium',
+                            isCustom
+                                ? 'border-foreground/25 text-foreground'
+                                : 'text-muted-foreground',
+                        )}
                     >
-                        <CalendarIcon className="h-3.5 w-3.5" />
-                        <span className="text-[10px] font-bold tracking-tight uppercase md:text-[11px]">
-                            <span className="hidden sm:inline">
-                                {isCustom ? 'Custom Range' : 'Custom'}
+                        <CalendarIcon className="size-3.5" />
+                        {isCustom ? (
+                            <span className="font-mono tabular-nums">
+                                {rangeLabel(props.from!, props.to!)}
                             </span>
-                            <span className="sm:hidden">
-                                {isCustom ? 'Range' : ''}
-                            </span>
-                        </span>
-                        <ChevronDown className="h-3.5 w-3.5 opacity-50" />
+                        ) : (
+                            <span className="hidden sm:inline">Custom</span>
+                        )}
+                        <ChevronDown className="size-3 opacity-50" />
                     </Button>
                 </PopoverTrigger>
                 <PopoverContent
-                    className="w-[280px] border border-border bg-background p-4 shadow-2xl backdrop-blur-xl sm:w-80 sm:p-5"
                     align="end"
+                    className="w-auto max-w-[calc(100vw-2rem)] gap-0 p-0"
                 >
-                    <div className="space-y-4 sm:space-y-5">
-                        <div className="space-y-3">
-                            <h4 className="text-[10px] font-semibold tracking-widest text-muted-foreground/60 uppercase">
-                                Time Range Selection
-                            </h4>
-                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                <div className="space-y-1.5">
-                                    <label className="text-[9px] font-semibold tracking-tight text-muted-foreground uppercase">
-                                        Start Date
-                                    </label>
-                                    <input
-                                        type="date"
-                                        value={fromDate}
-                                        onChange={(e) =>
-                                            setFromDate(e.target.value)
-                                        }
-                                        className="w-full rounded-md border border-border bg-muted p-2 text-xs text-foreground focus:ring-1 focus:ring-primary/30 focus:outline-none"
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-[9px] font-semibold tracking-tight text-muted-foreground uppercase">
-                                        End Date
-                                    </label>
-                                    <input
-                                        type="date"
-                                        value={toDate}
-                                        onChange={(e) =>
-                                            setToDate(e.target.value)
-                                        }
-                                        className="w-full rounded-md border border-border bg-muted p-2 text-xs text-foreground focus:ring-1 focus:ring-primary/30 focus:outline-none"
-                                    />
-                                </div>
+                    <div className="flex flex-col sm:flex-row">
+                        <div className="flex flex-wrap gap-1 border-b border-border p-2 sm:w-32 sm:flex-col sm:flex-nowrap sm:border-r sm:border-b-0">
+                            {presets().map((preset) => (
+                                <button
+                                    key={preset.label}
+                                    type="button"
+                                    onClick={() => apply(preset.range)}
+                                    className="rounded-sm px-2 py-1.5 text-left text-xs text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground"
+                                >
+                                    {preset.label}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="p-4 sm:w-[480px]">
+                            <DateRangeCalendar
+                                start={draft.start}
+                                end={draft.end}
+                                onChange={setDraft}
+                            />
+                            <div className="mt-4 flex items-center justify-between gap-4 border-t border-border pt-3">
+                                <span className="font-mono text-xs text-muted-foreground tabular-nums">
+                                    {draft.start
+                                        ? formatDay(draft.start)
+                                        : 'dd/mm/yyyy'}
+                                    {' – '}
+                                    {draft.end
+                                        ? formatDay(draft.end)
+                                        : 'dd/mm/yyyy'}
+                                </span>
+                                <Button
+                                    size="sm"
+                                    className="h-7 px-3 text-xs"
+                                    disabled={!draft.start || !draft.end}
+                                    onClick={() => apply(draft)}
+                                >
+                                    Apply
+                                </Button>
                             </div>
                         </div>
-                        <Button
-                            className="h-9 w-full bg-primary text-[10px] font-semibold tracking-widest text-primary-foreground uppercase transition-all hover:bg-primary/90 sm:h-10 sm:text-[11px]"
-                            onClick={handleCustomSubmit}
-                        >
-                            Apply Filter
-                        </Button>
                     </div>
                 </PopoverContent>
             </Popover>

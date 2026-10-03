@@ -52,6 +52,19 @@ test('a custom range spreads about 150 points across the range', function () {
         ->and($series[1]['t'] - $series[0]['t'])->toBe(1140); // 48h / 150, in whole minutes
 });
 
+test('a custom range as the picker sends it counts its last day in full', function () {
+    $project = Project::factory()->create();
+    $this->travelTo('2026-10-02 18:30:00');
+    chartIngest($project, [['t' => 'request', 'status_code' => 200, 'duration' => 10_000]]);
+    $this->travelTo('2026-10-03 09:00:00');
+
+    // Whole days: the start date as is, the end date to its last second.
+    $stats = app(RecordService::class)->getDashboardStats($project, 'custom', '2026-10-01', '2026-10-02T23:59:59');
+
+    expect(collect($stats['timeSeries'])->sum('total'))->toBe(1)
+        ->and(end($stats['timeSeries'])['t'])->toBeLessThan(strtotime('2026-10-03 00:00:00 UTC'));
+});
+
 test('latency quantiles are interpolated inside the histogram bucket', function () {
     $project = Project::factory()->create();
 

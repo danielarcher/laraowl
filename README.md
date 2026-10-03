@@ -91,6 +91,8 @@ The Archer flavor started from LaraOwl on 3 October 2026 and runs in production 
 
 - **Deploys on Laravel Forge that stay light.** [`deploy.sh`](deploy.sh) makes Forge's Deploy button do everything on the server. It reuses the last frontend build and `vendor/` when nothing they depend on changed, so most deploys take about 16 seconds. Everything runs under `nice`, and it reloads PHP-FPM so each release starts with a clean code cache. From a laptop, `./deploy.sh` tests, pushes, deploys and checks in one command.
 - **Uptime checks identify themselves as a bot**, so monitored apps don't count them as visitors.
+- **Uptime response times are each site's own.** The checks run side by side, and each result used to be timed from the start of the batch, so every site showed the slowest one's time.
+- **Plain PHP sites too.** [LaraOwl Lite](https://github.com/danielarcher/laraowl-lite) brings requests, errors and warnings from sites without Laravel, at a few KB per request.
 - **Updates come from this repository**, not the original project's releases, which would overwrite these changes.
 
 ## What it watches
@@ -167,6 +169,19 @@ LARAOWL_TOKEN=the-project-token
 ```
 
 `laraowl/client` 1.0.x requires Guzzle 7. Keep the client disabled in your test suite (`LARAOWL_ENABLED=false` in `phpunit.xml`).
+
+### Plain PHP sites
+
+Sites without Laravel use [LaraOwl Lite](https://github.com/danielarcher/laraowl-lite), a dependency-free client of four small classes (MIT). It sends requests, exceptions, fatal errors, warnings and logs in the same record format, after the page has been delivered, for about 15 µs and 3 KB per request:
+
+```bash
+composer config repositories.laraowl-lite vcs https://github.com/danielarcher/laraowl-lite
+composer require danielarcher/laraowl-lite
+```
+
+```php
+\LaraOwlLite\LaraOwlLite::start();   // first thing every page loads; reads the same LARAOWL_* settings
+```
 
 ## Monitor a server
 

@@ -8,6 +8,7 @@ use App\Models\Project;
 use App\Models\Record;
 use App\Models\RecordRollup;
 use App\Models\Threshold;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Casts\Json;
 use Illuminate\Database\Eloquent\JsonEncodingException;
 use Illuminate\Support\Facades\DB;
@@ -45,13 +46,20 @@ class IngestService
 
     /**
      * Process incoming records and handle issue grouping.
+     *
+     * Records are stamped with the moment LaraOwl received them, given per
+     * record when they waited in the ingest buffer, so a backlog never moves
+     * data to a later minute.
+     *
+     * @param  array<int, array<string, mixed>>  $records
+     * @param  array<int, CarbonInterface>  $receivedAt  by record index; now when absent
      */
-    public function ingest(Project $project, array $records): void
+    public function ingest(Project $project, array $records, array $receivedAt = []): void
     {
         $this->thresholds = null;
         $plan = $this->detailSampler->plan($records);
 
-        DB::transaction(function () use ($project, $records, $plan) {
+        DB::transaction(function () use ($project, $records, $receivedAt, $plan) {
             if (DB::connection()->getDriverName() === 'pgsql') {
                 // A crash may lose the last moment of monitoring data, never
                 // corrupt it. Not waiting for the WAL flush on every batch
@@ -62,13 +70,15 @@ class IngestService
             $batch = [];
             $rows = [];
             $exceptions = 0;
-            $createdAt = now();
+            $now = now();
 
             foreach ($records as $index => $data) {
                 $type = $data['t'] ?? null;
                 if (! $type) {
                     continue;
                 }
+
+                $createdAt = $receivedAt[$index] ?? $now;
 
                 $fingerprint = $this->calculateFingerprint($type, $data);
                 $traceId = $this->rollupWriter->traceIdFor($data);

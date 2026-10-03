@@ -16,6 +16,7 @@ import type { SeriesPoint } from '@/components/charts/format';
 import {
     formatCount,
     niceTicks,
+    tickStep,
     slotOf,
     tickLabel,
 } from '@/components/charts/format';
@@ -69,6 +70,7 @@ export function TimeSeriesChart({
     const slot = slotOf(data);
     const span = data.length * slot;
     const ticks = niceTicks(data, slot);
+    const step = tickStep(data, slot);
     const hasBars = series.some((s) => s.kind === 'bar');
     const lastInStack = new Map<string, string>();
     series.forEach((s) => s.stack && lastInStack.set(s.stack, s.key));
@@ -117,7 +119,7 @@ export function TimeSeriesChart({
                         tickLine={false}
                         axisLine={{ stroke: 'var(--chart-grid)' }}
                         tick={{ fontSize: 10, fill: 'var(--chart-axis)' }}
-                        tickFormatter={(t: number) => tickLabel(t, slot, span)}
+                        tickFormatter={(t: number) => tickLabel(t, step, span)}
                         ticks={ticks.length >= 2 ? ticks : undefined}
                         interval={ticks.length >= 2 ? 0 : 'preserveStartEnd'}
                         minTickGap={ticks.length >= 2 ? 0 : 56}

@@ -12,8 +12,8 @@ export function slotOf(data: SeriesPoint[]): number {
     return data.length > 1 ? data[1].t - data[0].t : 60;
 }
 
-/** Axis label: clock time inside a day, the date at day boundaries beyond it. */
-export function tickLabel(t: number, slot: number, span: number): string {
+/** Axis label: clock time inside a day, the date once ticks are days apart. */
+export function tickLabel(t: number, step: number, span: number): string {
     const date = new Date(t * 1000);
 
     // A day's window plus a point or two of overhang still reads as clock time.
@@ -21,7 +21,7 @@ export function tickLabel(t: number, slot: number, span: number): string {
         return format(date, 'HH:mm');
     }
 
-    return slot >= 86_400 || (date.getHours() === 0 && date.getMinutes() === 0)
+    return step >= 86_400 || (date.getHours() === 0 && date.getMinutes() === 0)
         ? format(date, 'dd/MM')
         : format(date, 'dd/MM HH:mm');
 }
@@ -31,37 +31,49 @@ const STEPS = [
     604800,
 ];
 
+/** Seconds since the epoch on the viewer's wall clock. */
+const localSeconds = (t: number) =>
+    t - new Date(t * 1000).getTimezoneOffset() * 60;
+
+/** The label spacing that fits about `target` labels across the data. */
+export function tickStep(
+    data: SeriesPoint[],
+    slot: number,
+    target = 7.5,
+): number {
+    const span = data.length * slot;
+
+    return (
+        STEPS.find(
+            (candidate) => candidate >= slot && span / candidate <= target,
+        ) ?? STEPS[STEPS.length - 1]
+    );
+}
+
 /**
- * The points that get an axis label: those on a round local time (whole
- * hours, midnights...), picked so about six labels fit.
+ * The points that get an axis label: the first point of each round local
+ * stretch (hour, six hours, day...). Slots that start on UTC hours never
+ * hit a local midnight exactly, so a boundary counts once it is crossed.
  */
 export function niceTicks(
     data: SeriesPoint[],
     slot: number,
-    target = 6,
+    target = 7.5,
 ): number[] {
     if (data.length < 2) {
         return data.map((point) => point.t);
     }
 
-    const span = data.length * slot;
-    const step =
-        STEPS.find(
-            (candidate) => candidate >= slot && span / candidate <= target,
-        ) ?? STEPS[STEPS.length - 1];
+    const step = tickStep(data, slot, target);
+    const stretch = (t: number) => Math.floor(localSeconds(t) / step);
 
     return data
-        .map((point) => point.t)
-        .filter((t) => {
-            const local = t - new Date(t * 1000).getTimezoneOffset() * 60;
-
-            // Weekly steps still land on midnights; anything coarser than
-            // a day just needs whole days in step.
-            return step >= 86_400
-                ? local % 86_400 === 0 &&
-                      (local / 86_400) % (step / 86_400) === 0
-                : local % step === 0;
-        });
+        .filter((point, index) =>
+            index === 0
+                ? localSeconds(point.t) % step === 0
+                : stretch(point.t) !== stretch(data[index - 1].t),
+        )
+        .map((point) => point.t);
 }
 
 /** Tooltip title: the slot's whole range, dd/mm and 24h. */

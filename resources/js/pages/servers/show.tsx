@@ -301,7 +301,7 @@ export default function ServerShow({
                         {
                             key: 'disk',
                             label: 'Root',
-                            color: categoryColors[5],
+                            color: categoryColors[6],
                             kind: 'area',
                         },
                     ]}

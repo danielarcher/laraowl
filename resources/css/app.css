@@ -1,4 +1,4 @@
-@import 'tailwindcss';
+@import 'tailwindcss' source(none);
 
 @import 'tw-animate-css';
 
@@ -8,6 +8,9 @@
 
 @import '@fontsource-variable/geist-mono';
 
+/* Classes come from the app's own sources only, so the CSS (and the
+   deploy's build cache, keyed on these files) never depends on docs or PHP. */
+@source '../js';
 @source '../views';
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 

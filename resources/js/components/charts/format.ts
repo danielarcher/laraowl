@@ -16,7 +16,8 @@ export function slotOf(data: SeriesPoint[]): number {
 export function tickLabel(t: number, slot: number, span: number): string {
     const date = new Date(t * 1000);
 
-    if (span <= 86_400) {
+    // A day's window plus a point or two of overhang still reads as clock time.
+    if (span <= 90_000) {
         return format(date, 'HH:mm');
     }
 
@@ -98,6 +99,18 @@ export function formatPercent(value: number, digits = 2): string {
 
     return `${fixed.includes('.') ? fixed.replace(/\.?0+$/, '') : fixed}%`;
 }
+
+/** Distinct hues for series that are categories (one per app), not outcomes. */
+export const categoryColors = [
+    'oklch(0.746 0.16 232.661)',
+    'oklch(0.714 0.203 305.504)',
+    'oklch(0.765 0.177 163.223)',
+    'oklch(0.828 0.189 84.429)',
+    'oklch(0.712 0.194 13.428)',
+    'oklch(0.789 0.154 211.53)',
+    'oklch(0.768 0.233 130.85)',
+    'oklch(0.667 0.295 322.15)',
+];
 
 /** Series colours, one meaning each, from the --series-* tokens. */
 export const seriesColor = {

@@ -6,6 +6,7 @@ use App\Models\Server;
 use App\Models\Team;
 use App\Models\User;
 use App\Services\IngestService;
+use App\Services\OverviewService;
 use Inertia\Testing\AssertableInertia as Assert;
 
 /**
@@ -90,8 +91,8 @@ test('each app carries a request trend that adds up to its total', function () {
         ->assertInertia(function (Assert $page) {
             $trend = collect($page->toArray()['props']['groups'][0]['projects'][0]['trend']);
 
-            expect($page->toArray()['props']['slot_seconds'])->toBe(120)
-                ->and($trend->count())->toBeBetween(30, 32)
+            expect($page->toArray()['props']['slot_seconds'])->toBe(60)
+                ->and($trend->count())->toBeBetween(60, 62)
                 ->and($trend->sum('requests'))->toBe(3)
                 ->and($trend->sum('errors'))->toBe(1)
                 ->and($trend->last()['requests'])->toBe(1);
@@ -132,4 +133,13 @@ test('signing in lands on the overview once the team has an app', function () {
     $this->actingAs($user)
         ->get('/dashboard')
         ->assertRedirect(route('overview', ['current_team' => $user->currentTeam->slug]));
+});
+
+test('trend points are round widths, so they start on whole hours', function () {
+    $overview = app(OverviewService::class);
+
+    expect($overview->slotSeconds(now()->subHour(), now()))->toBe(60)
+        ->and($overview->slotSeconds(now()->subDay(), now()))->toBe(1800)
+        ->and($overview->slotSeconds(now()->subDays(7), now()))->toBe(10800)
+        ->and($overview->slotSeconds(now()->subDays(30), now()))->toBe(43200);
 });

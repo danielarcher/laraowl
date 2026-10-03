@@ -24,7 +24,7 @@ class OverviewService
     /**
      * Roughly how many points each app's trend line holds.
      */
-    private const TREND_POINTS = 30;
+    private const TREND_POINTS = 60;
 
     public function __construct(private ServerMetricService $servers)
     {
@@ -82,13 +82,27 @@ class OverviewService
     }
 
     /**
-     * Whole minutes per trend point, so a window holds about TREND_POINTS.
+     * Round slot widths, so points start on whole hours and the chart's
+     * axis can label them.
+     */
+    private const SLOT_STEPS = [60, 120, 300, 600, 900, 1800, 3600, 7200, 10800, 21600, 43200, 86400];
+
+    /**
+     * Seconds per trend point: the first round width that keeps a window to
+     * about TREND_POINTS points.
      */
     public function slotSeconds(CarbonInterface $start, CarbonInterface $end): int
     {
         $seconds = max(60, (int) $start->diffInSeconds($end, true));
+        $ideal = $seconds / self::TREND_POINTS;
 
-        return (int) max(60, round($seconds / self::TREND_POINTS / 60) * 60);
+        foreach (self::SLOT_STEPS as $step) {
+            if ($step >= $ideal * 0.95) {
+                return $step;
+            }
+        }
+
+        return (int) (ceil($ideal / 86400) * 86400);
     }
 
     /**

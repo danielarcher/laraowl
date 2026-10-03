@@ -1,6 +1,11 @@
 import { Head, Link, usePage, usePoll } from '@inertiajs/react';
 import { ArrowUpRight, Radar, Server as ServerIcon } from 'lucide-react';
-import { Area, AreaChart, YAxis } from 'recharts';
+import { useState } from 'react';
+import { Area, AreaChart, Tooltip, YAxis } from 'recharts';
+import { ChartCard, LegendItem } from '@/components/charts/chart-card';
+import { ChartTooltipCard } from '@/components/charts/chart-tooltip';
+import { categoryColors, seriesColor } from '@/components/charts/format';
+import { TimeSeriesChart } from '@/components/charts/time-series-chart';
 import { ProjectTile } from '@/components/project-tile';
 import { Card } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
@@ -56,6 +61,7 @@ type OverviewProps = {
     totals: OverviewTotals;
     groups: OverviewGroup[];
     period: string;
+    slot_seconds: number;
 };
 
 const PERIOD_LABELS: Record<string, string> = {
@@ -144,22 +150,22 @@ function UptimeDot({ uptime }: { uptime: Uptime }) {
     );
 }
 
-function Trend({ app }: { app: OverviewApp }) {
+function Trend({ app, slot }: { app: OverviewApp; slot: number }) {
     const hasTraffic = app.trend.some((point) => point.requests > 0);
     const hasErrors = app.trend.some((point) => point.errors > 0);
 
     if (!hasTraffic) {
         return (
-            <div className="flex h-8 w-32 items-center text-[11px] text-foreground/30">
+            <div className="flex h-8 w-40 items-center text-[11px] text-foreground/30">
                 No requests
             </div>
         );
     }
 
     return (
-        <div className="h-8 w-32">
+        <div className="h-8 w-40">
             <AreaChart
-                width={128}
+                width={160}
                 height={32}
                 data={app.trend}
                 margin={{ top: 2, right: 0, bottom: 0, left: 0 }}
@@ -174,38 +180,203 @@ function Trend({ app }: { app: OverviewApp }) {
                     >
                         <stop
                             offset="0%"
-                            stopColor="#94a3b8"
-                            stopOpacity={0.35}
+                            stopColor={seriesColor.avg}
+                            stopOpacity={0.3}
                         />
                         <stop
                             offset="100%"
-                            stopColor="#94a3b8"
+                            stopColor={seriesColor.avg}
                             stopOpacity={0}
                         />
                     </linearGradient>
                 </defs>
                 <YAxis hide domain={[0, 'dataMax']} />
+                <Tooltip
+                    isAnimationActive={false}
+                    cursor={{ stroke: 'var(--chart-axis)', strokeOpacity: 0.4 }}
+                    allowEscapeViewBox={{ x: true, y: true }}
+                    wrapperStyle={{ zIndex: 20 }}
+                    content={({ active, payload }) => {
+                        if (!active || !payload?.length) {
+                            return null;
+                        }
+
+                        const point = payload[0].payload as TrendPoint;
+
+                        return (
+                            <ChartTooltipCard
+                                t={point.t}
+                                slot={slot}
+                                rows={[
+                                    {
+                                        name: 'Requests',
+                                        color: seriesColor.avg,
+                                        value: formatCount(point.requests),
+                                    },
+                                    {
+                                        name: '5xx',
+                                        color: seriesColor.error,
+                                        value: formatCount(point.errors),
+                                    },
+                                ]}
+                            />
+                        );
+                    }}
+                />
                 <Area
                     type="monotone"
                     dataKey="requests"
-                    stroke="#94a3b8"
+                    stroke={seriesColor.avg}
                     strokeWidth={1.25}
                     fill={`url(#trend-${app.id})`}
+                    dot={false}
+                    activeDot={{ r: 2.5, strokeWidth: 0 }}
                     isAnimationActive={false}
                 />
                 {hasErrors && (
                     <Area
                         type="monotone"
                         dataKey="errors"
-                        stroke="#ef4444"
+                        stroke={seriesColor.error}
                         strokeWidth={1.25}
-                        fill="#ef4444"
+                        fill={seriesColor.error}
                         fillOpacity={0.15}
+                        dot={false}
+                        activeDot={{ r: 2.5, strokeWidth: 0 }}
                         isAnimationActive={false}
                     />
                 )}
             </AreaChart>
         </div>
+    );
+}
+
+/**
+ * Every app's requests (or 5xx) stacked over time: the busiest apps get a
+ * colour each, the rest share one band.
+ */
+function TeamTraffic({ apps }: { apps: OverviewApp[] }) {
+    const [metric, setMetric] = useState<'requests' | 'errors'>('requests');
+    const ranked = [...apps]
+        .filter((app) => app.trend.some((point) => point[metric] > 0))
+        .sort((a, b) =>
+            metric === 'requests'
+                ? b.requests - a.requests
+                : b.server_errors - a.server_errors,
+        );
+    const named = ranked.slice(0, categoryColors.length - 1);
+    const rest = ranked.slice(categoryColors.length - 1);
+    const timeline = apps.find((app) => app.trend.length)?.trend ?? [];
+
+    const data = timeline.map((point, index) => {
+        const row: { t: number; [key: string]: number } = { t: point.t };
+        named.forEach((app) => {
+            row[`app_${app.id}`] = app.trend[index]?.[metric] ?? 0;
+        });
+
+        if (rest.length) {
+            row.other = rest.reduce(
+                (sum, app) => sum + (app.trend[index]?.[metric] ?? 0),
+                0,
+            );
+        }
+
+        return row;
+    });
+
+    const series = [
+        ...named.map((app, index) => ({
+            key: `app_${app.id}`,
+            name: app.name,
+            color: categoryColors[index],
+            total: metric === 'requests' ? app.requests : app.server_errors,
+        })),
+        ...(rest.length
+            ? [
+                  {
+                      key: 'other',
+                      name: `${rest.length} other${rest.length === 1 ? '' : 's'}`,
+                      color: seriesColor.ok,
+                      total: rest.reduce(
+                          (sum, app) =>
+                              sum +
+                              (metric === 'requests'
+                                  ? app.requests
+                                  : app.server_errors),
+                          0,
+                      ),
+                  },
+              ]
+            : []),
+    ];
+    const total = series.reduce((sum, item) => sum + item.total, 0);
+
+    return (
+        <ChartCard
+            title={metric === 'requests' ? 'Requests by app' : '5xx by app'}
+            value={formatCount(total)}
+            legend={
+                <div className="flex rounded-md border border-border p-0.5 text-[11px]">
+                    {(['requests', 'errors'] as const).map((option) => (
+                        <button
+                            key={option}
+                            type="button"
+                            onClick={() => setMetric(option)}
+                            className={cn(
+                                'rounded-sm px-2 py-0.5 transition-colors',
+                                metric === option
+                                    ? 'bg-muted text-foreground'
+                                    : 'text-muted-foreground hover:text-foreground',
+                            )}
+                        >
+                            {option === 'requests' ? 'Requests' : '5xx'}
+                        </button>
+                    ))}
+                </div>
+            }
+        >
+            {series.length === 0 ? (
+                <div className="flex h-[200px] items-center justify-center text-xs text-muted-foreground">
+                    {metric === 'requests'
+                        ? 'No requests in this period'
+                        : 'No server errors in this period'}
+                </div>
+            ) : (
+                <>
+                    <TimeSeriesChart
+                        data={data}
+                        height={200}
+                        series={series.map((item) => ({
+                            key: item.key,
+                            name: item.name,
+                            color: item.color,
+                            kind: 'bar',
+                            stack: 'apps',
+                        }))}
+                        footer={(point) => ({
+                            name: 'All apps',
+                            value: formatCount(
+                                series.reduce(
+                                    (sum, item) =>
+                                        sum + Number(point[item.key] ?? 0),
+                                    0,
+                                ),
+                            ),
+                        })}
+                    />
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 px-2 pt-2 pb-1">
+                        {series.map((item) => (
+                            <LegendItem
+                                key={item.key}
+                                color={item.color}
+                                label={item.name}
+                                value={formatCount(item.total)}
+                            />
+                        ))}
+                    </div>
+                </>
+            )}
+        </ChartCard>
     );
 }
 
@@ -319,10 +490,12 @@ function AppRow({
     app,
     teamSlug,
     period,
+    slot,
 }: {
     app: OverviewApp;
     teamSlug: string;
     period: string;
+    slot: number;
 }) {
     const href = `/${teamSlug}/${app.slug}/dashboard?period=${encodeURIComponent(period)}`;
 
@@ -343,7 +516,7 @@ function AppRow({
             </td>
             <td className="px-3 py-1">
                 <Link href={href} tabIndex={-1} className="block">
-                    <Trend app={app} />
+                    <Trend app={app} slot={slot} />
                 </Link>
             </td>
             <td className="px-3 py-2 text-right text-[13px] text-foreground tabular-nums">
@@ -394,7 +567,12 @@ function AppRow({
     );
 }
 
-export default function Overview({ totals, groups, period }: OverviewProps) {
+export default function Overview({
+    totals,
+    groups,
+    period,
+    slot_seconds,
+}: OverviewProps) {
     const { props }: any = usePage();
     const teamSlug: string = props.currentTeam?.slug ?? '';
     const servers = groups.filter((group) => group.server !== null).length;
@@ -486,6 +664,10 @@ export default function Overview({ totals, groups, period }: OverviewProps) {
                         />
                     </Card>
 
+                    <TeamTraffic
+                        apps={groups.flatMap((group) => group.projects)}
+                    />
+
                     <div className="space-y-4">
                         {groups.map((group) => (
                             <Card
@@ -508,7 +690,7 @@ export default function Overview({ totals, groups, period }: OverviewProps) {
                                                     <th className="py-2 pr-3 pl-4 text-left font-medium">
                                                         App
                                                     </th>
-                                                    <th className="w-36 px-3 py-2 text-left font-medium">
+                                                    <th className="w-44 px-3 py-2 text-left font-medium">
                                                         Traffic
                                                     </th>
                                                     <th className="w-24 px-3 py-2 text-right font-medium">
@@ -535,6 +717,7 @@ export default function Overview({ totals, groups, period }: OverviewProps) {
                                                         app={app}
                                                         teamSlug={teamSlug}
                                                         period={period}
+                                                        slot={slot_seconds}
                                                     />
                                                 ))}
                                             </tbody>

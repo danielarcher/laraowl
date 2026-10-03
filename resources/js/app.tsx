@@ -34,8 +34,11 @@ createInertiaApp({
             </TooltipProvider>
         );
     },
+    // A thin sky bar, only once a visit has taken a noticeable moment.
     progress: {
-        color: '#4B5563',
+        color: 'oklch(0.746 0.16 232.661)',
+        delay: 150,
+        showSpinner: false,
     },
 });
 

@@ -15,7 +15,11 @@ export function useLiveReload(
 
         const reload = () => {
             lastReloadAt.current = Date.now();
-            router.reload({ preserveScroll: true, preserveState: true } as any);
+            router.reload({
+                preserveScroll: true,
+                preserveState: true,
+                async: true,
+            } as any);
         };
 
         const schedule = () => {

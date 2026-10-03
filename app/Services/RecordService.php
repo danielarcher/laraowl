@@ -939,13 +939,19 @@ class RecordService
 
         $details = [];
 
-        $project->records()
+        // Only each user's latest profile, found through the user_key index.
+        $latest = $project->records()
             ->ofType('user')
-            ->whereIn(DB::raw($this->jsonText('id')), $ids->all())
-            ->latest()
-            ->get(['payload'])
-            ->each(function ($record) use (&$details): void {
-                $payload = $record->payload;
+            ->whereIn('user_key', $ids->all())
+            ->select(['payload', DB::raw('ROW_NUMBER() OVER (PARTITION BY '.$this->col('user_key').' ORDER BY '.$this->col('created_at').' DESC, '.$this->col('id').' DESC) as profile_rank')])
+            ->toBase();
+
+        DB::query()
+            ->fromSub($latest, 'profiles')
+            ->where('profile_rank', 1)
+            ->pluck('payload')
+            ->each(function ($json) use (&$details): void {
+                $payload = json_decode($json, true) ?: [];
                 $id = (string) ($payload['id'] ?? '');
 
                 if ($id === '' || isset($details[$id])) {

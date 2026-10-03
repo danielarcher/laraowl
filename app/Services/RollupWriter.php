@@ -372,7 +372,11 @@ class RollupWriter
      */
     public function rawUserKeyFor(array $payload): ?string
     {
-        $user = $payload['user'] ?? null;
+        // A `user` record describes the user itself, so its own id is the key;
+        // that puts the profile lookups on the (project_id, user_key) index.
+        $user = ($payload['t'] ?? null) === 'user'
+            ? ($payload['id'] ?? null)
+            : ($payload['user'] ?? null);
 
         if (is_array($user)) {
             $user = $user['id'] ?? null;

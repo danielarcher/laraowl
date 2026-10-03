@@ -66,6 +66,9 @@ test('user history resolves real email from user detail records', function () {
 
     $project->records()->create([
         'type' => 'user',
+        // Ingest keys a user record by its own id (the backfill does the same
+        // for older rows), which is what the profile lookup reads.
+        'user_key' => '789',
         'payload' => [
             't' => 'user',
             'id' => 789,
@@ -92,4 +95,23 @@ test('user history resolves real email from user detail records', function () {
     expect($history['user_name'])->toBe('Katherine Johnson')
         ->and($history['user_email'])->toBe('katherine@example.com')
         ->and((string) $history['user_id'])->toBe('789');
+});
+
+test('a user record is keyed by its own id at ingest, and the latest profile wins', function () {
+    $project = Project::factory()->create();
+    $ingest = app(IngestService::class);
+
+    $ingest->ingest($project, [['t' => 'user', 'id' => 42, 'name' => 'Old Name', 'username' => 'old@example.com']]);
+    $this->travel(1)->minute();
+    $ingest->ingest($project, [
+        ['t' => 'user', 'id' => 42, 'name' => 'Ada Lovelace', 'username' => 'ada@example.com'],
+        ['t' => 'request', 'user' => 42, 'status_code' => 200, 'duration' => 10],
+    ]);
+
+    expect($project->records()->where('type', 'user')->pluck('user_key')->unique()->all())->toBe(['42']);
+
+    $top = app(RecordService::class)->getDashboardStats($project, '1h')['active_users']->first();
+
+    expect($top->user_identifier)->toBe('Ada Lovelace')
+        ->and($top->user_email)->toBe('ada@example.com');
 });

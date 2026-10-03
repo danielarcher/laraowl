@@ -2,12 +2,17 @@ import { Head, Link, usePage, usePoll } from '@inertiajs/react';
 import { ArrowUpRight, Radar, Server as ServerIcon } from 'lucide-react';
 import { useState } from 'react';
 import { Area, AreaChart, Tooltip, YAxis } from 'recharts';
-import { ChartCard, LegendItem } from '@/components/charts/chart-card';
+import {
+    ChartCard,
+    LegendItem,
+    ShowAllSeries,
+} from '@/components/charts/chart-card';
 import { ChartTooltipCard } from '@/components/charts/chart-tooltip';
 import { categoryColors, seriesColor } from '@/components/charts/format';
 import { TimeSeriesChart } from '@/components/charts/time-series-chart';
 import { ProjectTile } from '@/components/project-tile';
 import { Card } from '@/components/ui/card';
+import { useHiddenSeries } from '@/hooks/use-hidden-series';
 import AppLayout from '@/layouts/app-layout';
 import type { ServerSample, ServerSummary } from '@/lib/server-metrics';
 import { formatPercent, usageTone } from '@/lib/server-metrics';
@@ -309,7 +314,12 @@ function TeamTraffic({ apps }: { apps: OverviewApp[] }) {
               ]
             : []),
     ];
-    const total = series.reduce((sum, item) => sum + item.total, 0);
+    const legend = useHiddenSeries(
+        'overview-apps',
+        series.map((item) => item.key),
+    );
+    const shown = legend.visible(series);
+    const total = shown.reduce((sum, item) => sum + item.total, 0);
 
     return (
         <ChartCard
@@ -346,7 +356,7 @@ function TeamTraffic({ apps }: { apps: OverviewApp[] }) {
                     <TimeSeriesChart
                         data={data}
                         height={200}
-                        series={series.map((item) => ({
+                        series={shown.map((item) => ({
                             key: item.key,
                             name: item.name,
                             color: item.color,
@@ -354,9 +364,9 @@ function TeamTraffic({ apps }: { apps: OverviewApp[] }) {
                             stack: 'apps',
                         }))}
                         footer={(point) => ({
-                            name: 'All apps',
+                            name: legend.anyHidden ? 'Shown apps' : 'All apps',
                             value: formatCount(
-                                series.reduce(
+                                shown.reduce(
                                     (sum, item) =>
                                         sum + Number(point[item.key] ?? 0),
                                     0,
@@ -364,15 +374,19 @@ function TeamTraffic({ apps }: { apps: OverviewApp[] }) {
                             ),
                         })}
                     />
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 px-2 pt-2 pb-1">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-2 pt-2 pb-1">
                         {series.map((item) => (
                             <LegendItem
                                 key={item.key}
                                 color={item.color}
                                 label={item.name}
                                 value={formatCount(item.total)}
+                                {...legend.itemProps(item.key)}
                             />
                         ))}
+                        {legend.anyHidden && (
+                            <ShowAllSeries onClick={legend.showAll} />
+                        )}
                     </div>
                 </>
             )}

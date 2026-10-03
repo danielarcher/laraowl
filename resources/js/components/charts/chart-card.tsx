@@ -1,6 +1,6 @@
 import { Link } from '@inertiajs/react';
 import { ArrowDownRight, ArrowRight, ArrowUpRight } from 'lucide-react';
-import type { ReactNode } from 'react';
+import type { MouseEvent, ReactNode } from 'react';
 import { Area, AreaChart, ResponsiveContainer, YAxis } from 'recharts';
 import { Swatch } from '@/components/charts/chart-tooltip';
 import { cn } from '@/lib/utils';
@@ -93,22 +93,71 @@ export function LegendItem({
     label,
     value,
     dashed,
+    hidden = false,
+    onToggle,
 }: {
     color: string;
     label: string;
     value?: ReactNode;
     dashed?: boolean;
+    /** Greys the entry out while its series is switched off. */
+    hidden?: boolean;
+    /** Makes the entry a button that switches its series (useHiddenSeries). */
+    onToggle?: (event: MouseEvent) => void;
 }) {
-    return (
-        <div className="flex items-center gap-1.5 text-[11px]">
+    const content = (
+        <>
             <Swatch color={color} dashed={dashed} />
-            <span className="text-muted-foreground">{label}</span>
+            <span
+                className={cn(
+                    'text-muted-foreground',
+                    hidden && 'line-through decoration-muted-foreground/60',
+                )}
+            >
+                {label}
+            </span>
             {value !== undefined && (
                 <span className="font-mono font-medium text-foreground tabular-nums">
                     {value}
                 </span>
             )}
-        </div>
+        </>
+    );
+
+    if (!onToggle) {
+        return (
+            <div className="flex items-center gap-1.5 text-[11px]">
+                {content}
+            </div>
+        );
+    }
+
+    return (
+        <button
+            type="button"
+            onClick={onToggle}
+            aria-pressed={!hidden}
+            title={`${hidden ? 'Show' : 'Hide'} ${label} · Alt-click to show only ${label}`}
+            className={cn(
+                '-mx-1 flex items-center gap-1.5 rounded-sm px-1 text-[11px] transition-[opacity,background-color] duration-150 hover:bg-muted focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none',
+                hidden && 'opacity-40 hover:opacity-70',
+            )}
+        >
+            {content}
+        </button>
+    );
+}
+
+/** Brings back every series of a chart once any is switched off. */
+export function ShowAllSeries({ onClick }: { onClick: () => void }) {
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            className="text-[11px] text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline"
+        >
+            Show all
+        </button>
     );
 }
 

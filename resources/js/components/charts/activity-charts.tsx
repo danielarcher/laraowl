@@ -1,5 +1,9 @@
 import type { ReactNode } from 'react';
-import { ChartCard, LegendItem } from '@/components/charts/chart-card';
+import {
+    ChartCard,
+    LegendItem,
+    ShowAllSeries,
+} from '@/components/charts/chart-card';
 import {
     formatCount,
     formatDuration,
@@ -10,6 +14,7 @@ import { LatencyHistogram } from '@/components/charts/latency-histogram';
 import type { HistogramBucket } from '@/components/charts/latency-histogram';
 import { TimeSeriesChart } from '@/components/charts/time-series-chart';
 import type { ChartSeries } from '@/components/charts/time-series-chart';
+import { useHiddenSeries } from '@/hooks/use-hidden-series';
 import { cn } from '@/lib/utils';
 
 export type Latency = {
@@ -55,6 +60,16 @@ export function ActivityCharts({
     extra?: ReactNode;
 }) {
     const sync = `activity-${title}`;
+    const legend = useHiddenSeries(
+        sync,
+        series.map((s) => s.key),
+    );
+    const shown = legend.visible(series);
+    // The headline follows the legend when every outcome has its total.
+    const shownTotal =
+        legend.anyHidden && shown.every((s) => s.total !== undefined)
+            ? shown.reduce((sum, s) => sum + (s.total ?? 0), 0)
+            : total;
     const panels =
         1 +
         (latency ? 1 : 0) +
@@ -71,29 +86,35 @@ export function ActivityCharts({
         >
             <ChartCard
                 title={title}
-                value={formatCount(total)}
+                value={formatCount(shownTotal)}
                 legend={
-                    series.length > 1
-                        ? series.map((s) => (
-                              <LegendItem
-                                  key={s.key}
-                                  color={s.color}
-                                  label={s.name}
-                                  value={
-                                      s.total === undefined
-                                          ? undefined
-                                          : formatCount(s.total)
-                                  }
-                              />
-                          ))
-                        : undefined
+                    series.length > 1 ? (
+                        <>
+                            {series.map((s) => (
+                                <LegendItem
+                                    key={s.key}
+                                    color={s.color}
+                                    label={s.name}
+                                    value={
+                                        s.total === undefined
+                                            ? undefined
+                                            : formatCount(s.total)
+                                    }
+                                    {...legend.itemProps(s.key)}
+                                />
+                            ))}
+                            {legend.anyHidden && (
+                                <ShowAllSeries onClick={legend.showAll} />
+                            )}
+                        </>
+                    ) : undefined
                 }
             >
                 <TimeSeriesChart
                     data={data}
                     syncId={sync}
                     height={180}
-                    series={series.map(
+                    series={shown.map(
                         (s): ChartSeries => ({
                             key: s.key,
                             name: s.name,
@@ -105,9 +126,9 @@ export function ActivityCharts({
                     footer={
                         series.length > 1
                             ? (point) => ({
-                                  name: 'Total',
+                                  name: legend.anyHidden ? 'Shown' : 'Total',
                                   value: formatCount(
-                                      series.reduce(
+                                      shown.reduce(
                                           (sum, s) =>
                                               sum + Number(point[s.key] ?? 0),
                                           0,

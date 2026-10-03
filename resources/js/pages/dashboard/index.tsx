@@ -6,6 +6,7 @@ import {
     ChartCard,
     Delta,
     LegendItem,
+    ShowAllSeries,
     Sparkline,
     StatCell,
 } from '@/components/charts/chart-card';
@@ -19,6 +20,7 @@ import type { SeriesPoint } from '@/components/charts/format';
 import { LatencyHistogram } from '@/components/charts/latency-histogram';
 import type { HistogramBucket } from '@/components/charts/latency-histogram';
 import { TimeSeriesChart } from '@/components/charts/time-series-chart';
+import { useHiddenSeries } from '@/hooks/use-hidden-series';
 import { useLiveReload } from '@/hooks/use-live-reload';
 import AppLayout from '@/layouts/app-layout';
 import { appendMonitoringQuery } from '@/lib/monitoring-query';
@@ -259,68 +261,12 @@ export default function Dashboard({
                     </StatCell>
                 </div>
 
-                <ChartCard
-                    title="Requests"
+                <RequestsChart
+                    data={series}
+                    total={total_requests}
+                    breakdown={request_breakdown}
                     href={href('requests')}
-                    linkLabel="All requests"
-                    value={formatCount(total_requests)}
-                    legend={
-                        <>
-                            <LegendItem
-                                color={seriesColor.ok}
-                                label="1/2/3xx"
-                                value={formatCount(request_breakdown?.ok)}
-                            />
-                            <LegendItem
-                                color={seriesColor.warn}
-                                label="4xx"
-                                value={formatCount(
-                                    request_breakdown?.client_error,
-                                )}
-                            />
-                            <LegendItem
-                                color={seriesColor.error}
-                                label="5xx"
-                                value={formatCount(
-                                    request_breakdown?.server_error,
-                                )}
-                            />
-                        </>
-                    }
-                >
-                    <TimeSeriesChart
-                        data={series}
-                        syncId={SYNC}
-                        height={210}
-                        series={[
-                            {
-                                key: 'ok',
-                                name: '1/2/3xx',
-                                color: seriesColor.ok,
-                                kind: 'bar',
-                                stack: 'status',
-                            },
-                            {
-                                key: 'client_error',
-                                name: '4xx',
-                                color: seriesColor.warn,
-                                kind: 'bar',
-                                stack: 'status',
-                            },
-                            {
-                                key: 'server_error',
-                                name: '5xx',
-                                color: seriesColor.error,
-                                kind: 'bar',
-                                stack: 'status',
-                            },
-                        ]}
-                        footer={(point) => ({
-                            name: 'Total',
-                            value: formatCount(Number(point.total)),
-                        })}
-                    />
-                </ChartCard>
+                />
 
                 <div className="grid grid-cols-1 gap-4 xl:grid-cols-5">
                     <ChartCard
@@ -587,6 +533,89 @@ export default function Dashboard({
                 </div>
             </div>
         </>
+    );
+}
+
+/**
+ * Requests over time by outcome. The legend switches outcomes on and off,
+ * and the headline and tooltip total follow what is shown.
+ */
+function RequestsChart({
+    data,
+    total,
+    breakdown,
+    href,
+}: {
+    data: SeriesPoint[];
+    total: number;
+    breakdown: Props['request_breakdown'];
+    href: string;
+}) {
+    const outcomes = [
+        { key: 'ok', name: '1/2/3xx', color: seriesColor.ok },
+        { key: 'client_error', name: '4xx', color: seriesColor.warn },
+        { key: 'server_error', name: '5xx', color: seriesColor.error },
+    ] as const;
+    const legend = useHiddenSeries(
+        'project-requests',
+        outcomes.map((outcome) => outcome.key),
+    );
+    const shown = legend.visible([...outcomes]);
+
+    return (
+        <ChartCard
+            title="Requests"
+            href={href}
+            linkLabel="All requests"
+            value={formatCount(
+                legend.anyHidden
+                    ? shown.reduce(
+                          (sum, outcome) =>
+                              sum + (breakdown?.[outcome.key] ?? 0),
+                          0,
+                      )
+                    : total,
+            )}
+            legend={
+                <>
+                    {outcomes.map((outcome) => (
+                        <LegendItem
+                            key={outcome.key}
+                            color={outcome.color}
+                            label={outcome.name}
+                            value={formatCount(breakdown?.[outcome.key])}
+                            {...legend.itemProps(outcome.key)}
+                        />
+                    ))}
+                    {legend.anyHidden && (
+                        <ShowAllSeries onClick={legend.showAll} />
+                    )}
+                </>
+            }
+        >
+            <TimeSeriesChart
+                data={data}
+                syncId={SYNC}
+                height={210}
+                series={shown.map((outcome) => ({
+                    ...outcome,
+                    kind: 'bar',
+                    stack: 'status',
+                }))}
+                footer={(point) => ({
+                    name: legend.anyHidden ? 'Shown' : 'Total',
+                    value: formatCount(
+                        legend.anyHidden
+                            ? shown.reduce(
+                                  (sum, outcome) =>
+                                      sum + Number(point[outcome.key] ?? 0),
+                                  0,
+                              )
+                            : Number(point.total),
+                    ),
+                })}
+            />
+        </ChartCard>
     );
 }
 

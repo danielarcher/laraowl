@@ -7,7 +7,10 @@ import {
     LegendItem,
     ShowAllSeries,
 } from '@/components/charts/chart-card';
-import { ChartTooltipCard } from '@/components/charts/chart-tooltip';
+import {
+    ChartTooltipCard,
+    FloatingTooltip,
+} from '@/components/charts/chart-tooltip';
 import { categoryColors, seriesColor } from '@/components/charts/format';
 import { TimeSeriesChart } from '@/components/charts/time-series-chart';
 import { ProjectTile } from '@/components/project-tile';
@@ -156,6 +159,7 @@ function UptimeDot({ uptime }: { uptime: Uptime }) {
 }
 
 function Trend({ app, slot }: { app: OverviewApp; slot: number }) {
+    const [anchor, setAnchor] = useState<HTMLDivElement | null>(null);
     const hasTraffic = app.trend.some((point) => point.requests > 0);
     const hasErrors = app.trend.some((point) => point.errors > 0);
 
@@ -168,7 +172,7 @@ function Trend({ app, slot }: { app: OverviewApp; slot: number }) {
     }
 
     return (
-        <div className="chart-reveal h-8 w-40">
+        <div ref={setAnchor} className="chart-reveal h-8 w-40">
             <AreaChart
                 width={160}
                 height={32}
@@ -199,9 +203,7 @@ function Trend({ app, slot }: { app: OverviewApp; slot: number }) {
                 <Tooltip
                     isAnimationActive={false}
                     cursor={{ stroke: 'var(--chart-axis)', strokeOpacity: 0.4 }}
-                    allowEscapeViewBox={{ x: true, y: true }}
-                    wrapperStyle={{ zIndex: 20 }}
-                    content={({ active, payload }) => {
+                    content={({ active, payload, coordinate }) => {
                         if (!active || !payload?.length) {
                             return null;
                         }
@@ -209,22 +211,27 @@ function Trend({ app, slot }: { app: OverviewApp; slot: number }) {
                         const point = payload[0].payload as TrendPoint;
 
                         return (
-                            <ChartTooltipCard
-                                t={point.t}
-                                slot={slot}
-                                rows={[
-                                    {
-                                        name: 'Requests',
-                                        color: seriesColor.avg,
-                                        value: formatCount(point.requests),
-                                    },
-                                    {
-                                        name: '5xx',
-                                        color: seriesColor.error,
-                                        value: formatCount(point.errors),
-                                    },
-                                ]}
-                            />
+                            <FloatingTooltip
+                                anchor={anchor}
+                                x={coordinate?.x ?? 0}
+                            >
+                                <ChartTooltipCard
+                                    t={point.t}
+                                    slot={slot}
+                                    rows={[
+                                        {
+                                            name: 'Requests',
+                                            color: seriesColor.avg,
+                                            value: formatCount(point.requests),
+                                        },
+                                        {
+                                            name: '5xx',
+                                            color: seriesColor.error,
+                                            value: formatCount(point.errors),
+                                        },
+                                    ]}
+                                />
+                            </FloatingTooltip>
                         );
                     }}
                 />

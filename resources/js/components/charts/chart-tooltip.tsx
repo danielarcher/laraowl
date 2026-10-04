@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { rangeLabel } from '@/components/charts/format';
 
 export type TooltipRow = {
@@ -49,6 +51,45 @@ export function ChartTooltipCard({
                 </div>
             )}
         </div>
+    );
+}
+
+/**
+ * A tooltip drawn on the page body beside a point of a small chart, so a
+ * chart inside a clipped or scrolling box (the overview's table rows) can't
+ * cut it off. `x` is the point's offset from the chart's left edge; near the
+ * window's right edge the tooltip flips to the point's left.
+ */
+export function FloatingTooltip({
+    anchor,
+    x,
+    children,
+}: {
+    anchor: HTMLElement | null;
+    x: number;
+    children: ReactNode;
+}) {
+    if (!anchor) {
+        return null;
+    }
+
+    const rect = anchor.getBoundingClientRect();
+    const gap = 12;
+    const pointX = rect.left + x;
+    const flip = pointX + gap + 240 > window.innerWidth;
+
+    return createPortal(
+        <div
+            className="pointer-events-none fixed z-50"
+            style={{
+                top: rect.top + rect.height / 2,
+                left: flip ? pointX - gap : pointX + gap,
+                transform: `translate(${flip ? '-100%' : '0'}, -50%)`,
+            }}
+        >
+            {children}
+        </div>,
+        document.body,
     );
 }
 

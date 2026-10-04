@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Issue;
 use App\Models\Project;
 use App\Models\Record;
 use App\Models\RecordRollup;
@@ -44,11 +45,12 @@ class OverviewService
 
         $totals = $ids === [] ? collect() : $this->totalsByProject($ids, $period, $from, $to);
         $trends = $ids === [] ? collect() : $this->requestTrends($ids, $period, $from, $to, $slot);
+        $issues = $ids === [] ? collect() : $this->issueTrends($ids, $start, $end, $slot);
 
         $rows = $projects->map(fn (Project $project) => $this->projectRow(
             $project,
             $totals->get($project->id, collect()),
-            $this->trendPoints($trends->get($project->id, collect()), $start, $end, $slot),
+            $this->trendPoints($trends->get($project->id, collect()), $issues->get($project->id, collect()), $start, $end, $slot),
         ));
 
         return [
@@ -168,12 +170,45 @@ class OverviewService
     }
 
     /**
+     * Issue occurrences per project, issue type and trend slot: the records
+     * linked to an issue. Ignored issues are noise someone chose to hide, so
+     * they don't count.
+     *
+     * @param  list<int>  $ids
+     * @return Collection<int, Collection<int, Collection<string, int>>>
+     */
+    private function issueTrends(array $ids, CarbonInterface $start, CarbonInterface $end, int $slot): Collection
+    {
+        $slotSql = $this->slotSql($slot, 'records.created_at');
+
+        return Issue::query()
+            ->join('records', 'records.issue_id', '=', 'issues.id')
+            ->whereIn('issues.project_id', $ids)
+            ->where('issues.status', '!=', 'ignored')
+            ->whereBetween('records.created_at', [$start, $end])
+            ->select([
+                'issues.project_id',
+                'issues.type',
+                DB::raw("{$slotSql} as slot"),
+                DB::raw('COUNT(*) as total'),
+            ])
+            ->groupBy('issues.project_id', 'issues.type', 'slot')
+            ->toBase()
+            ->get()
+            ->groupBy('project_id')
+            ->map(fn (Collection $rows) => $rows
+                ->groupBy(fn (object $row) => (int) $row->slot)
+                ->map(fn (Collection $types) => $types->mapWithKeys(fn (object $row) => [$row->type => (int) $row->total])));
+    }
+
+    /**
      * One point per slot across the window, gaps filled with zeros.
      *
      * @param  Collection<int, object>  $rows
-     * @return list<array{t: int, requests: int, errors: int}>
+     * @param  Collection<int, Collection<string, int>>  $issues
+     * @return list<array{t: int, requests: int, errors: int, exception_issues: int, security_issues: int}>
      */
-    private function trendPoints(Collection $rows, CarbonInterface $start, CarbonInterface $end, int $slot): array
+    private function trendPoints(Collection $rows, Collection $issues, CarbonInterface $start, CarbonInterface $end, int $slot): array
     {
         $points = [];
 
@@ -183,6 +218,8 @@ class OverviewService
                 't' => $index * $slot,
                 'requests' => (int) ($row->total ?? 0),
                 'errors' => (int) ($row->errors ?? 0),
+                'exception_issues' => $issues->get($index)?->get('exception', 0) ?? 0,
+                'security_issues' => $issues->get($index)?->get('security', 0) ?? 0,
             ];
         }
 
@@ -191,7 +228,7 @@ class OverviewService
 
     /**
      * @param  Collection<string, object>  $totals
-     * @param  list<array{t: int, requests: int, errors: int}>  $trend
+     * @param  list<array{t: int, requests: int, errors: int, exception_issues: int, security_issues: int}>  $trend
      * @return array<string, mixed>
      */
     private function projectRow(Project $project, Collection $totals, array $trend): array
@@ -219,6 +256,8 @@ class OverviewService
             'exceptions' => (int) ($totals->get('exception')->count ?? 0),
             'jobs' => (int) $jobs->sum('count'),
             'failed_jobs' => (int) $jobs->sum('server_error_count'),
+            'exception_issues' => array_sum(array_column($trend, 'exception_issues')),
+            'security_issues' => array_sum(array_column($trend, 'security_issues')),
             'trend' => $trend,
         ];
     }
@@ -337,16 +376,17 @@ class OverviewService
     }
 
     /**
-     * The trend slot a rollup bucket falls in, as whole slots since the epoch.
+     * The trend slot a timestamp column (a rollup bucket by default) falls
+     * in, as whole slots since the epoch.
      */
-    private function slotSql(int $slot): string
+    private function slotSql(int $slot, string $column = 'bucket'): string
     {
-        $bucket = $this->col('bucket');
+        $time = $this->col($column);
 
         return match (DB::connection()->getDriverName()) {
-            'pgsql' => "FLOOR(EXTRACT(EPOCH FROM {$bucket}) / {$slot})",
-            'sqlite' => "(CAST(strftime('%s', {$bucket}) AS INTEGER) / {$slot})",
-            default => "FLOOR(UNIX_TIMESTAMP({$bucket}) / {$slot})",
+            'pgsql' => "FLOOR(EXTRACT(EPOCH FROM {$time}) / {$slot})",
+            'sqlite' => "(CAST(strftime('%s', {$time}) AS INTEGER) / {$slot})",
+            default => "FLOOR(UNIX_TIMESTAMP({$time}) / {$slot})",
         };
     }
 

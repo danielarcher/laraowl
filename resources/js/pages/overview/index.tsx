@@ -21,7 +21,13 @@ import type { ServerSample, ServerSummary } from '@/lib/server-metrics';
 import { formatPercent, usageTone } from '@/lib/server-metrics';
 import { cn } from '@/lib/utils';
 
-type TrendPoint = { t: number; requests: number; errors: number };
+type TrendPoint = {
+    t: number;
+    requests: number;
+    errors: number;
+    exception_issues: number;
+    security_issues: number;
+};
 
 type Uptime = 'up' | 'down' | 'unknown' | 'off';
 
@@ -43,6 +49,8 @@ type OverviewApp = {
     exceptions: number;
     jobs: number;
     failed_jobs: number;
+    exception_issues: number;
+    security_issues: number;
     trend: TrendPoint[];
 };
 
@@ -264,44 +272,131 @@ function Trend({ app, slot }: { app: OverviewApp; slot: number }) {
 }
 
 /**
- * Every app's requests (or 5xx) stacked over time: the busiest apps get a
- * colour each, the rest share one band.
+ * What an apps chart counts: one bar segment per app per slot.
  */
-function TeamTraffic({ apps }: { apps: OverviewApp[] }) {
-    const [metric, setMetric] = useState<'requests' | 'errors'>('requests');
-    const ranked = [...apps]
-        .filter((app) => app.trend.some((point) => point[metric] > 0))
-        .sort((a, b) =>
-            metric === 'requests'
-                ? b.requests - a.requests
-                : b.server_errors - a.server_errors,
-        );
-    const named = ranked.slice(0, categoryColors.length - 1);
-    const rest = ranked.slice(categoryColors.length - 1);
+type AppMetric = {
+    key: string;
+    label: string;
+    title: string;
+    empty: string;
+    point: (point: TrendPoint) => number;
+    total: (app: OverviewApp) => number;
+};
+
+const TRAFFIC_METRICS: AppMetric[] = [
+    {
+        key: 'requests',
+        label: 'Requests',
+        title: 'Requests by app',
+        empty: 'No requests in this period',
+        point: (point) => point.requests,
+        total: (app) => app.requests,
+    },
+    {
+        key: 'errors',
+        label: '5xx',
+        title: '5xx by app',
+        empty: 'No server errors in this period',
+        point: (point) => point.errors,
+        total: (app) => app.server_errors,
+    },
+];
+
+const ISSUE_METRICS: AppMetric[] = [
+    {
+        key: 'all',
+        label: 'All',
+        title: 'Issues by app',
+        empty: 'No issues in this period',
+        point: (point) => point.exception_issues + point.security_issues,
+        total: (app) => app.exception_issues + app.security_issues,
+    },
+    {
+        key: 'exceptions',
+        label: 'Exceptions',
+        title: 'Exceptions by app',
+        empty: 'No exceptions in this period',
+        point: (point) => point.exception_issues,
+        total: (app) => app.exception_issues,
+    },
+    {
+        key: 'security',
+        label: 'Security',
+        title: 'Security issues by app',
+        empty: 'No security issues in this period',
+        point: (point) => point.security_issues,
+        total: (app) => app.security_issues,
+    },
+];
+
+/**
+ * One colour per app for every chart on the page, handed out by traffic
+ * (then issues, for apps without requests): an app looks the same in the
+ * requests and the issues chart, and the apps past the palette share the
+ * "others" band.
+ */
+function appColors(apps: OverviewApp[]): Map<number, string> {
+    const issues = (app: OverviewApp) =>
+        app.exception_issues + app.security_issues;
+
+    return new Map(
+        apps
+            .filter((app) => app.requests > 0 || issues(app) > 0)
+            .sort((a, b) => b.requests - a.requests || issues(b) - issues(a))
+            .slice(0, categoryColors.length - 1)
+            .map((app, index) => [app.id, categoryColors[index]]),
+    );
+}
+
+/**
+ * Every app's counts stacked over time, in the app's own colour. Charts on
+ * the page share one crosshair, so a slot reads across them.
+ */
+function AppsChart({
+    apps,
+    colors,
+    metrics,
+    chart,
+}: {
+    apps: OverviewApp[];
+    colors: Map<number, string>;
+    metrics: AppMetric[];
+    chart: string;
+}) {
+    const [metricKey, setMetricKey] = useState(metrics[0].key);
+    const metric =
+        metrics.find((option) => option.key === metricKey) ?? metrics[0];
+    const ranked = apps
+        .filter((app) => app.trend.some((point) => metric.point(point) > 0))
+        .sort((a, b) => metric.total(b) - metric.total(a));
+    const named = ranked.filter((app) => colors.has(app.id));
+    const rest = ranked.filter((app) => !colors.has(app.id));
     const timeline = apps.find((app) => app.trend.length)?.trend ?? [];
+    const valueAt = (app: OverviewApp, index: number) => {
+        const point = app.trend[index];
+
+        return point ? metric.point(point) : 0;
+    };
 
     const data = timeline.map((point, index) => {
         const row: { t: number; [key: string]: number } = { t: point.t };
         named.forEach((app) => {
-            row[`app_${app.id}`] = app.trend[index]?.[metric] ?? 0;
+            row[`app_${app.id}`] = valueAt(app, index);
         });
 
         if (rest.length) {
-            row.other = rest.reduce(
-                (sum, app) => sum + (app.trend[index]?.[metric] ?? 0),
-                0,
-            );
+            row.other = rest.reduce((sum, app) => sum + valueAt(app, index), 0);
         }
 
         return row;
     });
 
     const series = [
-        ...named.map((app, index) => ({
+        ...named.map((app) => ({
             key: `app_${app.id}`,
             name: app.name,
-            color: categoryColors[index],
-            total: metric === 'requests' ? app.requests : app.server_errors,
+            color: colors.get(app.id) ?? seriesColor.ok,
+            total: metric.total(app),
         })),
         ...(rest.length
             ? [
@@ -310,11 +405,7 @@ function TeamTraffic({ apps }: { apps: OverviewApp[] }) {
                       name: `${rest.length} other${rest.length === 1 ? '' : 's'}`,
                       color: seriesColor.ok,
                       total: rest.reduce(
-                          (sum, app) =>
-                              sum +
-                              (metric === 'requests'
-                                  ? app.requests
-                                  : app.server_errors),
+                          (sum, app) => sum + metric.total(app),
                           0,
                       ),
                   },
@@ -322,7 +413,7 @@ function TeamTraffic({ apps }: { apps: OverviewApp[] }) {
             : []),
     ];
     const legend = useHiddenSeries(
-        'overview-apps',
+        chart,
         series.map((item) => item.key),
     );
     const shown = legend.visible(series);
@@ -330,39 +421,40 @@ function TeamTraffic({ apps }: { apps: OverviewApp[] }) {
 
     return (
         <ChartCard
-            title={metric === 'requests' ? 'Requests by app' : '5xx by app'}
+            title={metric.title}
             value={formatCount(total)}
             legend={
-                <div className="flex rounded-md border border-border p-0.5 text-[11px]">
-                    {(['requests', 'errors'] as const).map((option) => (
-                        <button
-                            key={option}
-                            type="button"
-                            onClick={() => setMetric(option)}
-                            className={cn(
-                                'rounded-sm px-2 py-0.5 transition-colors',
-                                metric === option
-                                    ? 'bg-muted text-foreground'
-                                    : 'text-muted-foreground hover:text-foreground',
-                            )}
-                        >
-                            {option === 'requests' ? 'Requests' : '5xx'}
-                        </button>
-                    ))}
-                </div>
+                metrics.length > 1 && (
+                    <div className="flex rounded-md border border-border p-0.5 text-[11px]">
+                        {metrics.map((option) => (
+                            <button
+                                key={option.key}
+                                type="button"
+                                onClick={() => setMetricKey(option.key)}
+                                className={cn(
+                                    'rounded-sm px-2 py-0.5 transition-colors',
+                                    metric.key === option.key
+                                        ? 'bg-muted text-foreground'
+                                        : 'text-muted-foreground hover:text-foreground',
+                                )}
+                            >
+                                {option.label}
+                            </button>
+                        ))}
+                    </div>
+                )
             }
         >
             {series.length === 0 ? (
                 <div className="flex h-[200px] items-center justify-center text-xs text-muted-foreground">
-                    {metric === 'requests'
-                        ? 'No requests in this period'
-                        : 'No server errors in this period'}
+                    {metric.empty}
                 </div>
             ) : (
                 <>
                     <TimeSeriesChart
                         data={data}
                         height={200}
+                        syncId="overview-apps"
                         series={shown.map((item) => ({
                             key: item.key,
                             name: item.name,
@@ -597,6 +689,8 @@ export default function Overview({
     const { props }: any = usePage();
     const teamSlug: string = props.currentTeam?.slug ?? '';
     const servers = groups.filter((group) => group.server !== null).length;
+    const apps = groups.flatMap((group) => group.projects);
+    const colors = appColors(apps);
 
     usePoll(60_000);
 
@@ -685,9 +779,20 @@ export default function Overview({
                         />
                     </Card>
 
-                    <TeamTraffic
-                        apps={groups.flatMap((group) => group.projects)}
-                    />
+                    <div className="grid gap-4 lg:grid-cols-2">
+                        <AppsChart
+                            apps={apps}
+                            colors={colors}
+                            metrics={TRAFFIC_METRICS}
+                            chart="overview-apps"
+                        />
+                        <AppsChart
+                            apps={apps}
+                            colors={colors}
+                            metrics={ISSUE_METRICS}
+                            chart="overview-issues"
+                        />
+                    </div>
 
                     <div className="enter-stagger space-y-4">
                         {groups.map((group) => (

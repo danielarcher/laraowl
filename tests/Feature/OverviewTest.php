@@ -99,6 +99,37 @@ test('each app carries a request trend that adds up to its total', function () {
         });
 });
 
+test('each app carries its issue occurrences per type, and ignored issues do not count', function () {
+    [$user, $team] = overviewTeam();
+    $shop = Project::factory()->create(['team_id' => $team->id, 'name' => 'Shop']);
+    $blog = Project::factory()->create(['team_id' => $team->id, 'name' => 'Blog']);
+
+    $this->travelTo(now()->subMinutes(30));
+    overviewIngest($shop, [['t' => 'exception', 'class' => 'E', 'message' => 'm']]);
+    $this->travelBack();
+    overviewIngest($shop, [
+        ['t' => 'exception', 'class' => 'E', 'message' => 'm'],
+        ['t' => 'request', 'method' => 'GET', 'url' => 'https://shop.test/../../etc/passwd', 'status_code' => 404, 'ip' => '203.0.113.7'],
+    ]);
+    overviewIngest($blog, [['t' => 'exception', 'class' => 'E', 'message' => 'm']]);
+    $blog->issues()->update(['status' => 'ignored']);
+
+    $this->actingAs($user)
+        ->get(route('overview', ['current_team' => $team->slug, 'period' => '1h']))
+        ->assertOk()
+        ->assertInertia(function (Assert $page) {
+            $apps = collect($page->toArray()['props']['groups'][0]['projects'])->keyBy('name');
+            $trend = collect($apps['Shop']['trend']);
+
+            expect($apps['Shop']['exception_issues'])->toBe(2)
+                ->and($apps['Shop']['security_issues'])->toBe(1)
+                ->and($trend->sum('exception_issues'))->toBe(2)
+                ->and($trend->where('exception_issues', '>', 0)->count())->toBe(2)
+                ->and($trend->last()['security_issues'])->toBe(1)
+                ->and($apps['Blog']['exception_issues'])->toBe(0);
+        });
+});
+
 test('the overview counts apps that are up, down or quiet', function () {
     [$user, $team] = overviewTeam();
     Project::factory()->create(['team_id' => $team->id, 'url' => 'https://up.test', 'uptime_monitoring_enabled' => true, 'last_uptime_status' => 'up']);

@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\Project;
 use App\Models\Record;
 use App\Models\RecordGroupRollup;
+use App\Models\RecordGroupSourceRollup;
 use App\Models\RecordGroupUserBucket;
 use App\Models\RecordIpBucket;
 use App\Models\RecordRollup;
@@ -185,6 +186,7 @@ class BackfillRollups extends Command
             RecordGroupUserBucket::query(),
             RecordIpBucket::query(),
             RecordSourceRollup::query(),
+            RecordGroupSourceRollup::query(),
         ];
 
         foreach ($tables as $query) {

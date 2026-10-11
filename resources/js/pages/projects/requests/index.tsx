@@ -12,6 +12,8 @@ import { ActivityCharts } from '@/components/charts/activity-charts';
 import { seriesColor } from '@/components/charts/format';
 import { EmptyState } from '@/components/empty-state';
 import { Pagination } from '@/components/pagination';
+import { SourceFilter } from '@/components/source-filter';
+import type { TrafficSourceKey } from '@/components/source-filter';
 import {
     Table,
     TableBody,
@@ -31,6 +33,8 @@ export default function RequestsIndex({
     timeSeries,
     stats,
     overview,
+    sources,
+    source_totals,
     period,
     from,
     to,
@@ -41,6 +45,10 @@ export default function RequestsIndex({
     timeSeries: any;
     stats: any;
     overview: any;
+    /** The traffic sources the figures and routes count. */
+    sources?: string[];
+    /** Requests per source over the period, counted or not. */
+    source_totals?: Partial<Record<TrafficSourceKey, number>>;
     period?: string | null;
     from?: string | null;
     to?: string | null;
@@ -118,10 +126,15 @@ export default function RequestsIndex({
             <Head title="Requests Monitoring" />
 
             <div className="space-y-8">
+                <SourceFilter
+                    selected={sources ?? []}
+                    totals={source_totals ?? {}}
+                />
+
                 <ActivityCharts
                     data={timeSeries}
                     title="Requests"
-                    total={stats.requests}
+                    total={overview?.total ?? stats.requests}
                     series={[
                         {
                             key: 'ok',

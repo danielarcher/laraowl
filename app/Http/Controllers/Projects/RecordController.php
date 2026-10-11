@@ -71,7 +71,9 @@ class RecordController extends Controller
         $sort = request()->query('sort', 'total');
         $direction = request()->query('direction', 'desc');
 
-        return $this->renderWithStats('projects/requests', $this->recordService->getRequestStats($project, $period, $from, $to, $sort, $direction), $project, $period, $from, $to);
+        $sources = TrafficSource::parse(request()->query('sources'));
+
+        return $this->renderWithStats('projects/requests', $this->recordService->getRequestStats($project, $period, $from, $to, $sort, $direction, $sources), $project, $period, $from, $to);
     }
 
     protected function renderUsersIndex(Project $project, string $period, ?string $from, ?string $to): Response

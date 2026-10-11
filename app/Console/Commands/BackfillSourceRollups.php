@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Project;
 use App\Models\Record;
+use App\Models\RecordGroupSourceRollup;
 use App\Models\RecordSourceRollup;
 use App\Services\RollupWriter;
 use Carbon\CarbonInterface;
@@ -32,9 +33,10 @@ class BackfillSourceRollups extends Command
         }
 
         $since = now()->subDays(max(1, (int) $this->option('days')))->startOfHour();
-        // Ingest keeps writing the latest minutes; records still in the
-        // buffer have not reached the table yet, so those are left to it.
-        $until = now()->subMinutes(2)->startOfMinute();
+        // Ingest keeps writing the current hour (the route rows are hourly),
+        // and records still in the buffer have not reached the table yet, so
+        // the rebuild stops at the last full hour.
+        $until = now()->subMinutes(2)->startOfHour();
 
         foreach ($projects as $project) {
             $this->rebuild($project, $rollupWriter, $since, $until);
@@ -51,11 +53,12 @@ class BackfillSourceRollups extends Command
      */
     protected function rebuild(Project $project, RollupWriter $rollupWriter, CarbonInterface $since, CarbonInterface $until): void
     {
-        RecordSourceRollup::query()
-            ->where('project_id', $project->id)
-            ->where('bucket', '>=', $since)
-            ->where('bucket', '<', $until)
-            ->delete();
+        foreach ([RecordSourceRollup::query(), RecordGroupSourceRollup::query()] as $query) {
+            $query->where('project_id', $project->id)
+                ->where('bucket', '>=', $since)
+                ->where('bucket', '<', $until)
+                ->delete();
+        }
 
         $requests = 0;
 
@@ -63,13 +66,14 @@ class BackfillSourceRollups extends Command
             Record::query()
                 ->where('project_id', $project->id)
                 ->where('created_at', '>=', $hour)
-                ->where('created_at', '<', $hour->addHour()->min($until))
+                ->where('created_at', '<', $hour->addHour())
                 ->where('type', 'request')
-                ->select(['id', 'type', 'payload', 'created_at'])
+                ->select(['id', 'type', 'payload', 'fingerprint', 'created_at'])
                 ->chunkById(2000, function (Collection $chunk) use ($project, $rollupWriter, &$requests) {
                     $rollupWriter->recordSources($project, $chunk->map(fn (Record $record) => [
                         'type' => $record->type,
                         'payload' => $record->payload ?? [],
+                        'fingerprint' => $record->fingerprint,
                         'created_at' => $record->created_at,
                     ])->all());
 

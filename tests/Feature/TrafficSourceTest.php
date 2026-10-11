@@ -133,3 +133,36 @@ test('the source rollups can be rebuilt from raw requests', function () {
 
     expect((int) RecordSourceRollup::where('project_id', $project->id)->sum('count'))->toBe(2);
 });
+
+test('the requests page leaves sources out of its figures and route list', function () {
+    $user = User::factory()->create();
+    $team = $user->currentTeam;
+    $project = Project::factory()->create(['team_id' => $team->id]);
+
+    app(IngestService::class)->ingest($project, [
+        sourceRequest(CHROME_UA) + ['method' => 'GET', 'route_path' => '/'],
+        sourceRequest(CLAUDEBOT_UA) + ['method' => 'GET', 'route_path' => '/pessoa/{candidate}'],
+        sourceRequest(CLAUDEBOT_UA, 500) + ['method' => 'GET', 'route_path' => '/pessoa/{candidate}'],
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('requests', ['current_team' => $team->slug, 'project' => $project->slug, 'period' => '1h', 'sources' => 'human']))
+        ->assertInertia(fn ($page) => $page
+            ->component('projects/requests/index')
+            ->where('sources', ['human'])
+            ->where('overview.total', 1)
+            ->where('overview.server_error', 0)
+            ->where('source_totals.ai', 2)
+            ->has('requests.data', 1)
+            ->where('requests.data.0.path', '/'));
+
+    $all = app(RecordService::class)->getRequestStats($project, '1h');
+    $crawlers = app(RecordService::class)->getRequestStats($project, '1h', sources: ['ai']);
+
+    expect($all['requests']->total())->toBe(2)
+        ->and($all['overview']['total'])->toBe(3)
+        ->and($crawlers['requests']->total())->toBe(1)
+        ->and($crawlers['requests']->items()[0]->path)->toBe('/pessoa/{candidate}')
+        ->and((int) $crawlers['requests']->items()[0]->total)->toBe(2)
+        ->and((int) $crawlers['requests']->items()[0]->server_error_count)->toBe(1);
+});

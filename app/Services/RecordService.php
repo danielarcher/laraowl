@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Project;
 use App\Models\Record;
 use App\Models\RecordGroupRollup;
+use App\Models\RecordGroupSourceRollup;
 use App\Models\RecordGroupUserBucket;
 use App\Models\RecordIpBucket;
 use App\Models\RecordRollup;
@@ -55,19 +56,20 @@ class RecordService
     /**
      * Aggregate Request Data
      */
-    public function getRequestStats(Project $project, ?string $period = null, ?string $from = null, ?string $to = null, string $sort = 'total', string $direction = 'desc'): array
+    public function getRequestStats(Project $project, ?string $period = null, ?string $from = null, ?string $to = null, string $sort = 'total', string $direction = 'desc', ?array $sources = null): array
     {
         $allowedSorts = ['method', 'path', 'total', 'ok_count', 'client_error_count', 'server_error_count', 'avg_duration', 'p95_duration'];
         $sort = in_array($sort, $allowedSorts) ? $sort : 'total';
         $direction = $direction === 'asc' ? 'asc' : 'desc';
 
-        $overview = $this->rollupTotals($project, 'request', $period, $from, $to);
+        $overview = $this->rollupTotals($project, 'request', $period, $from, $to, $sources);
 
         $requests = $this->groupList(
             $project, 'request', $period, $from, $to,
             sort: $sort,
             direction: $direction,
             sortMap: ['method' => 'label', 'path' => 'sublabel', 'p95_duration' => 'max_duration'],
+            sources: $sources,
         )->through(function ($row) {
             $row->method = $row->label;
             $row->path = $row->sublabel;
@@ -77,8 +79,11 @@ class RecordService
 
         return [
             'requests' => $requests,
-            'timeSeries' => $this->getDetailedTimeSeries($project, 'request', $period, $from, $to),
+            'timeSeries' => $this->getDetailedTimeSeries($project, 'request', $period, $from, $to, $sources),
+            'sources' => $sources ?? TrafficSource::ALL,
+            'source_totals' => $this->sourceTotals($project, $period, $from, $to),
             'overview' => [
+                'total' => (int) $overview->total,
                 'ok' => (int) $overview->ok,
                 'client_error' => (int) $overview->client_error,
                 'server_error' => (int) $overview->server_error,
@@ -1155,11 +1160,9 @@ class RecordService
     /**
      * Distinct groups of a type over the period, straight off the group rollups.
      */
-    protected function distinctGroups(Project $project, string|array $types, ?string $period, ?string $from, ?string $to, string $column = 'group_key'): int
+    protected function distinctGroups(Project $project, string|array $types, ?string $period, ?string $from, ?string $to, string $column = 'group_key', ?array $sources = null): int
     {
-        return RecordGroupRollup::query()
-            ->where('project_id', $project->id)
-            ->whereIn('type', (array) $types)
+        return $this->groupRollupQuery($project, $types, $sources)
             ->forPeriod($period, $from, $to)
             ->distinct()
             ->count($column);
@@ -1189,6 +1192,23 @@ class RecordService
     protected function rollupQuery(Project $project, string|array $types, ?array $sources = null): Builder
     {
         $query = $sources === null ? RecordRollup::query() : RecordSourceRollup::query()->whereIn('source', $sources);
+
+        return $query
+            ->where('project_id', $project->id)
+            ->whereIn('type', (array) $types);
+    }
+
+    /**
+     * The group rollups of these types, or, given traffic sources, the
+     * per-route request rollups of just those sources.
+     *
+     * @param  string|list<string>  $types
+     * @param  list<string>|null  $sources
+     * @return Builder<RecordGroupRollup>|Builder<RecordGroupSourceRollup>
+     */
+    protected function groupRollupQuery(Project $project, string|array $types, ?array $sources = null): Builder
+    {
+        $query = $sources === null ? RecordGroupRollup::query() : RecordGroupSourceRollup::query()->whereIn('source', $sources);
 
         return $query
             ->where('project_id', $project->id)
@@ -1417,6 +1437,7 @@ class RecordService
         string $sort = 'total',
         string $direction = 'desc',
         array $sortMap = [],
+        ?array $sources = null,
     ): LengthAwarePaginator {
         $sum = fn (string $column, string $alias) => DB::raw('SUM('.$this->col($column).') as '.$alias);
 
@@ -1451,9 +1472,7 @@ class RecordService
 
         $orderBy = $sortMap[$sort] ?? $sort;
 
-        $groups = RecordGroupRollup::query()
-            ->where('project_id', $project->id)
-            ->whereIn('type', (array) $types)
+        $groups = $this->groupRollupQuery($project, $types, $sources)
             ->forPeriod($period, $from, $to)
             ->select($columns)
             ->groupBy('group_key')
@@ -1461,7 +1480,7 @@ class RecordService
 
         return $this->paginateWithKnownTotal(
             $groups,
-            $this->distinctGroups($project, $types, $period, $from, $to),
+            $this->distinctGroups($project, $types, $period, $from, $to, sources: $sources),
             perPage: 20,
         )
             ->through(function ($row) {

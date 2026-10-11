@@ -206,28 +206,61 @@ class RollupWriter
     }
 
     /**
-     * Fold a batch's requests into the per-source rollups.
+     * Fold a batch's requests into the per-source rollups, overall and per route.
      *
-     * @param  list<array{type: string, payload: array<string, mixed>, created_at: CarbonInterface}>  $batch
+     * @param  list<array{type: string, payload: array<string, mixed>, fingerprint?: string|null, created_at: CarbonInterface}>  $batch
      */
     public function recordSources(Project $project, array $batch): void
     {
         $rows = [];
+        $groups = [];
 
         foreach ($batch as $entry) {
             if ($entry['type'] !== 'request') {
                 continue;
             }
 
+            $payload = $entry['payload'];
             $bucket = $this->bucketFor($entry['created_at']);
-            $source = TrafficSource::forPayload($entry['payload']);
+            $source = TrafficSource::forPayload($payload);
+            $deltas = $this->deltasFor('request', $payload);
             $key = $bucket.'@'.$source;
 
             $rows[$key] = $this->mergeDeltas(
                 $rows[$key] ?? $this->emptyRow($project->id, 'request', $bucket) + ['source' => $source],
-                $this->deltasFor('request', $entry['payload']),
+                $deltas,
             );
+
+            $fingerprint = $entry['fingerprint'] ?? null;
+
+            if ($fingerprint) {
+                $hour = $this->hourFor($entry['created_at']);
+                $groupKey = $hour.'@'.$fingerprint.'@'.$source;
+                [$label, $sublabel] = $this->groupLabelsFor('request', $payload);
+
+                $groups[$groupKey] = $this->mergeDeltas(
+                    $groups[$groupKey] ?? $this->emptyGroupRow($project->id, 'request', $hour, $fingerprint) + ['source' => $source],
+                    $deltas,
+                );
+
+                $groups[$groupKey]['label'] = $label;
+                $groups[$groupKey]['sublabel'] = $sublabel;
+                $groups[$groupKey]['last_seen_at'] = max(
+                    $groups[$groupKey]['last_seen_at'] ?? '',
+                    $entry['created_at']->format('Y-m-d H:i:s'),
+                );
+            }
         }
+
+        $this->upsertIncrement(
+            'record_group_source_rollups',
+            array_values($groups),
+            conflict: ['project_id', 'type', 'bucket', 'group_key', 'source'],
+            additive: static::additiveColumns(),
+            maxColumns: ['max_duration', 'last_seen_at'],
+            minColumns: ['min_duration'],
+            overwrite: ['label', 'sublabel'],
+        );
 
         $this->upsertIncrement(
             'record_source_rollups',

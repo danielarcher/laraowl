@@ -20,7 +20,7 @@ import type { SeriesPoint } from '@/components/charts/format';
 import { LatencyHistogram } from '@/components/charts/latency-histogram';
 import type { HistogramBucket } from '@/components/charts/latency-histogram';
 import { TimeSeriesChart } from '@/components/charts/time-series-chart';
-import { SourceFilter } from '@/components/source-filter';
+import { SourceFilter, trafficSources } from '@/components/source-filter';
 import type { TrafficSourceKey } from '@/components/source-filter';
 import { useHiddenSeries } from '@/hooks/use-hidden-series';
 import { useLiveReload } from '@/hooks/use-live-reload';
@@ -278,7 +278,19 @@ export default function Dashboard({
                     data={series}
                     total={total_requests}
                     breakdown={request_breakdown}
-                    href={href('requests')}
+                    href={appendMonitoringQuery(
+                        `/${teamSlug}/${project?.slug}/requests`,
+                        {
+                            period,
+                            from,
+                            to,
+                            sources:
+                                sources &&
+                                sources.length < trafficSources.length
+                                    ? sources.join(',')
+                                    : null,
+                        },
+                    )}
                 />
 
                 <div className="grid grid-cols-1 gap-4 xl:grid-cols-5">

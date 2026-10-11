@@ -72,8 +72,28 @@ class RecordController extends Controller
         $direction = request()->query('direction', 'desc');
 
         $sources = TrafficSource::parse(request()->query('sources'));
+        $routes = $this->routesFromQuery(request()->query('routes'));
 
-        return $this->renderWithStats('projects/requests', $this->recordService->getRequestStats($project, $period, $from, $to, $sort, $direction, $sources), $project, $period, $from, $to);
+        return $this->renderWithStats('projects/requests', $this->recordService->getRequestStats($project, $period, $from, $to, $sort, $direction, $sources, $routes), $project, $period, $from, $to);
+    }
+
+    /**
+     * The routes (group keys) the requests page charts, or null for all.
+     *
+     * @return list<string>|null
+     */
+    protected function routesFromQuery(mixed $value): ?array
+    {
+        if (! is_string($value) || $value === '') {
+            return null;
+        }
+
+        $routes = array_values(array_unique(array_filter(
+            explode(',', $value),
+            fn (string $route) => preg_match('/^[A-Za-z0-9_-]{1,64}$/', $route) === 1,
+        )));
+
+        return $routes === [] ? null : array_slice($routes, 0, 20);
     }
 
     protected function renderUsersIndex(Project $project, string $period, ?string $from, ?string $to): Response

@@ -35,9 +35,8 @@ class RecordGroupSourceRollup extends Model
     }
 
     /**
-     * Limit the query to the hours covered by the requested period.
-     *
-     * @see RecordUserBucket::scopeForPeriod()
+     * Limit the query to the buckets covered by the requested period. The
+     * buckets are ten minutes wide, so a period starts on the one it falls in.
      */
     public function scopeForPeriod(Builder $query, ?string $period, ?string $from = null, ?string $to = null): Builder
     {
@@ -45,6 +44,8 @@ class RecordGroupSourceRollup extends Model
             return $query->whereBetween('bucket', [$from, $to]);
         }
 
-        return $query->where('bucket', '>=', Record::periodStartsAt($period)->startOfHour());
+        $start = Record::periodStartsAt($period)->startOfMinute();
+
+        return $query->where('bucket', '>=', $start->subMinutes($start->minute % 10));
     }
 }

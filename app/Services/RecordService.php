@@ -56,13 +56,13 @@ class RecordService
     /**
      * Aggregate Request Data
      */
-    public function getRequestStats(Project $project, ?string $period = null, ?string $from = null, ?string $to = null, string $sort = 'total', string $direction = 'desc', ?array $sources = null): array
+    public function getRequestStats(Project $project, ?string $period = null, ?string $from = null, ?string $to = null, string $sort = 'total', string $direction = 'desc', ?array $sources = null, ?array $routes = null): array
     {
         $allowedSorts = ['method', 'path', 'total', 'ok_count', 'client_error_count', 'server_error_count', 'avg_duration', 'p95_duration'];
         $sort = in_array($sort, $allowedSorts) ? $sort : 'total';
         $direction = $direction === 'asc' ? 'asc' : 'desc';
 
-        $overview = $this->rollupTotals($project, 'request', $period, $from, $to, $sources);
+        $overview = $this->rollupTotals($project, 'request', $period, $from, $to, $sources, $routes);
 
         $requests = $this->groupList(
             $project, 'request', $period, $from, $to,
@@ -79,9 +79,10 @@ class RecordService
 
         return [
             'requests' => $requests,
-            'timeSeries' => $this->getDetailedTimeSeries($project, 'request', $period, $from, $to, $sources),
+            'timeSeries' => $this->getDetailedTimeSeries($project, 'request', $period, $from, $to, $sources, $routes),
             'sources' => $sources ?? TrafficSource::ALL,
             'source_totals' => $this->sourceTotals($project, $period, $from, $to),
+            'routes' => $routes ?? [],
             'overview' => [
                 'total' => (int) $overview->total,
                 'ok' => (int) $overview->ok,
@@ -804,10 +805,16 @@ class RecordService
      *
      * @return list<array<string, int|float|string|null>>
      */
-    protected function getDetailedTimeSeries(Project $project, string $type, ?string $period = null, ?string $from = null, ?string $to = null, ?array $sources = null): array
+    protected function getDetailedTimeSeries(Project $project, string $type, ?string $period = null, ?string $from = null, ?string $to = null, ?array $sources = null, ?array $routes = null): array
     {
         $period = $period ?: '1h';
         $grid = TimeSlots::for($period, $from, $to);
+
+        // A route's own counts are kept in ten-minute buckets.
+        if ($routes !== null) {
+            $grid = $grid->atLeast(RollupWriter::ROUTE_BUCKET_SECONDS);
+        }
+
         $slotSql = TimeSlots::sql($grid->slot, $this->col('bucket'));
 
         $sum = fn (string $column, string $alias) => DB::raw('SUM('.$this->col($column).') as '.$this->col($alias));
@@ -832,7 +839,7 @@ class RecordService
             $columns[] = $sum($column, $column);
         }
 
-        $rows = $this->rollupQuery($project, $type, $sources)
+        $rows = $this->rollupQuery($project, $type, $sources, $routes)
             ->forPeriod($period, $from, $to)
             ->select($columns)
             ->groupBy('slot_index')
@@ -1173,25 +1180,33 @@ class RecordService
      *
      * @param  string|list<string>  $types
      */
-    protected function rollupTotals(Project $project, string|array $types, ?string $period = null, ?string $from = null, ?string $to = null, ?array $sources = null): object
+    protected function rollupTotals(Project $project, string|array $types, ?string $period = null, ?string $from = null, ?string $to = null, ?array $sources = null, ?array $routes = null): object
     {
-        return $this->rollupQuery($project, $types, $sources)
+        return $this->rollupQuery($project, $types, $sources, $routes)
             ->forPeriod($period, $from, $to)
             ->select($this->rollupTotalColumns())
             ->first();
     }
 
     /**
-     * The rollups of these types, or, given traffic sources, the request
-     * rollups of just those sources.
+     * The rollups of these types; given traffic sources, the request rollups
+     * of just those sources; given routes (group keys), those routes' own
+     * request rollups, of every source unless sources are given too.
      *
      * @param  string|list<string>  $types
      * @param  list<string>|null  $sources
-     * @return Builder<RecordRollup>|Builder<RecordSourceRollup>
+     * @param  list<string>|null  $routes
+     * @return Builder<RecordRollup>|Builder<RecordSourceRollup>|Builder<RecordGroupSourceRollup>
      */
-    protected function rollupQuery(Project $project, string|array $types, ?array $sources = null): Builder
+    protected function rollupQuery(Project $project, string|array $types, ?array $sources = null, ?array $routes = null): Builder
     {
-        $query = $sources === null ? RecordRollup::query() : RecordSourceRollup::query()->whereIn('source', $sources);
+        $query = match (true) {
+            $routes !== null => RecordGroupSourceRollup::query()
+                ->whereIn('group_key', $routes)
+                ->when($sources !== null, fn (Builder $builder) => $builder->whereIn('source', $sources)),
+            $sources !== null => RecordSourceRollup::query()->whereIn('source', $sources),
+            default => RecordRollup::query(),
+        };
 
         return $query
             ->where('project_id', $project->id)

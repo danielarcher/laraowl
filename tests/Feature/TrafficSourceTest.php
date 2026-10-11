@@ -166,3 +166,42 @@ test('the requests page leaves sources out of its figures and route list', funct
         ->and((int) $crawlers['requests']->items()[0]->total)->toBe(2)
         ->and((int) $crawlers['requests']->items()[0]->server_error_count)->toBe(1);
 });
+
+test('picked routes narrow the requests page charts to those routes', function () {
+    $user = User::factory()->create();
+    $team = $user->currentTeam;
+    $project = Project::factory()->create(['team_id' => $team->id]);
+
+    app(IngestService::class)->ingest($project, [
+        sourceRequest(CHROME_UA, 200, 10) + ['method' => 'GET', 'route_path' => '/'],
+        sourceRequest(CHROME_UA, 404, 30) + ['method' => 'GET', 'route_path' => '/'],
+        sourceRequest(CLAUDEBOT_UA, 500, 900) + ['method' => 'GET', 'route_path' => '/pessoa/{candidate}'],
+        sourceRequest(CLAUDEBOT_UA, 200, 900) + ['method' => 'GET', 'route_path' => '/pessoa/{candidate}'],
+    ]);
+
+    $hashes = collect(app(RecordService::class)->getRequestStats($project, '1h')['requests']->items())
+        ->pluck('hash', 'path');
+    $home = $hashes['/'];
+
+    $stats = app(RecordService::class)->getRequestStats($project, '1h', routes: [$home]);
+
+    expect($stats['routes'])->toBe([$home])
+        ->and($stats['overview']['total'])->toBe(2)
+        ->and($stats['overview']['client_error'])->toBe(1)
+        ->and($stats['overview']['avg_duration'])->toBe(20.0)
+        ->and(array_sum(array_column($stats['timeSeries'], 'total')))->toBe(2)
+        // Ten-minute points: an hour's chart has six or seven of them.
+        ->and(count($stats['timeSeries']))->toBeLessThanOrEqual(7)
+        // The route list itself stays whole, so other routes can be picked.
+        ->and($stats['requests']->total())->toBe(2);
+
+    // Routes and sources narrow together.
+    $crawledHome = app(RecordService::class)->getRequestStats($project, '1h', sources: ['ai'], routes: [$home]);
+    expect($crawledHome['overview']['total'])->toBe(0);
+
+    $this->actingAs($user)
+        ->get(route('requests', ['current_team' => $team->slug, 'project' => $project->slug, 'period' => '1h', 'routes' => $home.',bad key!']))
+        ->assertInertia(fn ($page) => $page
+            ->where('routes', [$home])
+            ->where('overview.total', 2));
+});

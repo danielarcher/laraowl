@@ -58,6 +58,19 @@ final class TimeSlots
     }
 
     /**
+     * The same window on points at least this wide, for data stored coarser
+     * than the period's own points.
+     */
+    public function atLeast(int $slot): self
+    {
+        if ($this->slot >= $slot) {
+            return $this;
+        }
+
+        return new self($slot, intdiv($this->first * $this->slot, $slot), intdiv($this->last * $this->slot, $slot));
+    }
+
+    /**
      * Point indexes from oldest to newest.
      *
      * @return list<int>

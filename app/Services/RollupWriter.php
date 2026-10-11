@@ -26,6 +26,12 @@ class RollupWriter
     public const GROUP_USER_TYPES = ['exception'];
 
     /**
+     * Width of the per-route source buckets, in seconds: fine enough for a
+     * route's own chart over a day, coarse enough to keep the table small.
+     */
+    public const ROUTE_BUCKET_SECONDS = 600;
+
+    /**
      * The prefix the client gives anonymous visitors instead of a null user.
      */
     public const GUEST_ID_PREFIX = 'guest_';
@@ -234,12 +240,12 @@ class RollupWriter
             $fingerprint = $entry['fingerprint'] ?? null;
 
             if ($fingerprint) {
-                $hour = $this->hourFor($entry['created_at']);
-                $groupKey = $hour.'@'.$fingerprint.'@'.$source;
+                $slot = $this->routeBucketFor($entry['created_at']);
+                $groupKey = $slot.'@'.$fingerprint.'@'.$source;
                 [$label, $sublabel] = $this->groupLabelsFor('request', $payload);
 
                 $groups[$groupKey] = $this->mergeDeltas(
-                    $groups[$groupKey] ?? $this->emptyGroupRow($project->id, 'request', $hour, $fingerprint) + ['source' => $source],
+                    $groups[$groupKey] ?? $this->emptyGroupRow($project->id, 'request', $slot, $fingerprint) + ['source' => $source],
                     $deltas,
                 );
 
@@ -329,6 +335,16 @@ class RollupWriter
     public function bucketFor(CarbonInterface $at): string
     {
         return $at->copy()->startOfMinute()->format('Y-m-d H:i:s');
+    }
+
+    /**
+     * Floor a timestamp to its per-route source bucket.
+     */
+    public function routeBucketFor(CarbonInterface $at): string
+    {
+        $seconds = $at->getTimestamp();
+
+        return $at->copy()->setTimestamp($seconds - $seconds % static::ROUTE_BUCKET_SECONDS)->format('Y-m-d H:i:s');
     }
 
     /**

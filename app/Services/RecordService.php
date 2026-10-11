@@ -8,8 +8,10 @@ use App\Models\RecordGroupRollup;
 use App\Models\RecordGroupUserBucket;
 use App\Models\RecordIpBucket;
 use App\Models\RecordRollup;
+use App\Models\RecordSourceRollup;
 use App\Models\RecordUserBucket;
 use App\Support\TimeSlots;
+use App\Support\TrafficSource;
 use Carbon\Carbon;
 use Cron\CronExpression;
 use Illuminate\Contracts\Database\Query\Expression;
@@ -94,9 +96,9 @@ class RecordService
     /**
      * Get comprehensive dashboard metrics.
      */
-    public function getDashboardStats(Project $project, ?string $period = null, ?string $from = null, ?string $to = null): array
+    public function getDashboardStats(Project $project, ?string $period = null, ?string $from = null, ?string $to = null, ?array $sources = null): array
     {
-        $requestStats = $this->rollupTotals($project, 'request', $period, $from, $to);
+        $requestStats = $this->rollupTotals($project, 'request', $period, $from, $to, $sources);
         $exceptionStats = $this->rollupTotals($project, 'exception', $period, $from, $to);
         $jobStats = $this->rollupTotals($project, ['job-attempt', 'queued-job'], $period, $from, $to);
 
@@ -115,10 +117,12 @@ class RecordService
             ],
             'duration_stats' => $this->latencySummary($requestStats),
             'latency_histogram' => $this->latencyHistogram($requestStats),
-            'previous' => $this->previousDashboardTotals($project, $period, $from, $to),
+            'previous' => $this->previousDashboardTotals($project, $period, $from, $to, $sources),
+            'sources' => $sources ?? TrafficSource::ALL,
+            'source_totals' => $this->sourceTotals($project, $period, $from, $to),
             'total_exceptions' => (int) $exceptionStats->total,
             'recent_issues' => $project->issues()->where('status', 'open')->latest('last_seen_at')->limit(5)->get(),
-            'timeSeries' => $this->getDetailedTimeSeries($project, 'request', $period, $from, $to),
+            'timeSeries' => $this->getDetailedTimeSeries($project, 'request', $period, $from, $to, $sources),
             'exceptionTimeSeries' => $this->getDetailedTimeSeries($project, 'exception', $period, $from, $to),
             'jobTimeSeries' => $this->getDetailedTimeSeries($project, 'job-attempt', $period, $from, $to),
             'job_stats' => [
@@ -147,9 +151,9 @@ class RecordService
      *
      * @return array{requests: int, server_error: int, p95: float, exceptions: int, jobs: int, failed_jobs: int}
      */
-    protected function previousDashboardTotals(Project $project, ?string $period, ?string $from, ?string $to): array
+    protected function previousDashboardTotals(Project $project, ?string $period, ?string $from, ?string $to, ?array $sources = null): array
     {
-        $requests = $this->previousRollupTotals($project, 'request', $period, $from, $to);
+        $requests = $this->previousRollupTotals($project, 'request', $period, $from, $to, $sources);
         $exceptions = $this->previousRollupTotals($project, 'exception', $period, $from, $to);
         $jobs = $this->previousRollupTotals($project, ['job-attempt', 'queued-job'], $period, $from, $to);
 
@@ -795,7 +799,7 @@ class RecordService
      *
      * @return list<array<string, int|float|string|null>>
      */
-    protected function getDetailedTimeSeries(Project $project, string $type, ?string $period = null, ?string $from = null, ?string $to = null): array
+    protected function getDetailedTimeSeries(Project $project, string $type, ?string $period = null, ?string $from = null, ?string $to = null, ?array $sources = null): array
     {
         $period = $period ?: '1h';
         $grid = TimeSlots::for($period, $from, $to);
@@ -823,9 +827,7 @@ class RecordService
             $columns[] = $sum($column, $column);
         }
 
-        $rows = RecordRollup::query()
-            ->where('project_id', $project->id)
-            ->where('type', $type)
+        $rows = $this->rollupQuery($project, $type, $sources)
             ->forPeriod($period, $from, $to)
             ->select($columns)
             ->groupBy('slot_index')
@@ -1168,14 +1170,47 @@ class RecordService
      *
      * @param  string|list<string>  $types
      */
-    protected function rollupTotals(Project $project, string|array $types, ?string $period = null, ?string $from = null, ?string $to = null): object
+    protected function rollupTotals(Project $project, string|array $types, ?string $period = null, ?string $from = null, ?string $to = null, ?array $sources = null): object
     {
-        return RecordRollup::query()
-            ->where('project_id', $project->id)
-            ->whereIn('type', (array) $types)
+        return $this->rollupQuery($project, $types, $sources)
             ->forPeriod($period, $from, $to)
             ->select($this->rollupTotalColumns())
             ->first();
+    }
+
+    /**
+     * The rollups of these types, or, given traffic sources, the request
+     * rollups of just those sources.
+     *
+     * @param  string|list<string>  $types
+     * @param  list<string>|null  $sources
+     * @return Builder<RecordRollup>|Builder<RecordSourceRollup>
+     */
+    protected function rollupQuery(Project $project, string|array $types, ?array $sources = null): Builder
+    {
+        $query = $sources === null ? RecordRollup::query() : RecordSourceRollup::query()->whereIn('source', $sources);
+
+        return $query
+            ->where('project_id', $project->id)
+            ->whereIn('type', (array) $types);
+    }
+
+    /**
+     * Requests per traffic source over the period, every source listed.
+     *
+     * @return array<string, int>
+     */
+    protected function sourceTotals(Project $project, ?string $period, ?string $from, ?string $to): array
+    {
+        $counts = RecordSourceRollup::query()
+            ->where('project_id', $project->id)
+            ->where('type', 'request')
+            ->forPeriod($period, $from, $to)
+            ->select('source', DB::raw('SUM('.$this->col('count').') as total'))
+            ->groupBy('source')
+            ->pluck('total', 'source');
+
+        return array_combine(TrafficSource::ALL, array_map(fn (string $source) => (int) ($counts[$source] ?? 0), TrafficSource::ALL));
     }
 
     /**
@@ -1184,14 +1219,12 @@ class RecordService
      *
      * @param  string|list<string>  $types
      */
-    protected function previousRollupTotals(Project $project, string|array $types, ?string $period = null, ?string $from = null, ?string $to = null): object
+    protected function previousRollupTotals(Project $project, string|array $types, ?string $period = null, ?string $from = null, ?string $to = null, ?array $sources = null): object
     {
         [$start, $end] = $this->periodWindow($period, $from, $to);
         $length = $start->diffInSeconds($end, true);
 
-        return RecordRollup::query()
-            ->where('project_id', $project->id)
-            ->whereIn('type', (array) $types)
+        return $this->rollupQuery($project, $types, $sources)
             ->where('bucket', '>=', $start->copy()->subSeconds((int) $length))
             ->where('bucket', '<', $start)
             ->select($this->rollupTotalColumns())

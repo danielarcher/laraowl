@@ -20,6 +20,8 @@ import type { SeriesPoint } from '@/components/charts/format';
 import { LatencyHistogram } from '@/components/charts/latency-histogram';
 import type { HistogramBucket } from '@/components/charts/latency-histogram';
 import { TimeSeriesChart } from '@/components/charts/time-series-chart';
+import { SourceFilter } from '@/components/source-filter';
+import type { TrafficSourceKey } from '@/components/source-filter';
 import { useHiddenSeries } from '@/hooks/use-hidden-series';
 import { useLiveReload } from '@/hooks/use-live-reload';
 import AppLayout from '@/layouts/app-layout';
@@ -88,6 +90,10 @@ type Props = {
         last_check: string | null;
         url: string | null;
     };
+    /** The traffic sources the request figures count. */
+    sources: string[];
+    /** Requests per source over the period, counted or not. */
+    source_totals: Partial<Record<TrafficSourceKey, number>>;
     period: string;
     from?: string | null;
     to?: string | null;
@@ -112,6 +118,8 @@ export default function Dashboard({
     auth_users_count,
     guest_users_count,
     uptime_status,
+    sources,
+    source_totals,
     period,
     from,
     to,
@@ -154,6 +162,11 @@ export default function Dashboard({
                     url={uptime_status?.url ?? project?.url}
                     uptime={uptimeEnabled ? uptime_status?.current : 'disabled'}
                     lastCheck={uptime_status?.last_check}
+                />
+
+                <SourceFilter
+                    selected={sources ?? []}
+                    totals={source_totals ?? {}}
                 />
 
                 {/* Headline figures, each against the window just before. */}

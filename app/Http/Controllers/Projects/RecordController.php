@@ -8,6 +8,7 @@ use App\Models\Record;
 use App\Models\Team;
 use App\Services\RecordService;
 use App\Support\ExceptionTrace;
+use App\Support\TrafficSource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -60,7 +61,9 @@ class RecordController extends Controller
      */
     protected function renderDashboardIndex(Project $project, string $period, ?string $from, ?string $to): Response
     {
-        return $this->renderWithStats('dashboard', $this->recordService->getDashboardStats($project, $period, $from, $to), $project, $period, $from, $to);
+        $sources = TrafficSource::parse(request()->query('sources'));
+
+        return $this->renderWithStats('dashboard', $this->recordService->getDashboardStats($project, $period, $from, $to, $sources), $project, $period, $from, $to);
     }
 
     protected function renderRequestsIndex(Project $project, string $period, ?string $from, ?string $to): Response

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Project;
+use App\Support\TrafficSource;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Grammar;
 use Illuminate\Support\Facades\DB;
@@ -172,6 +173,8 @@ class RollupWriter
             minColumns: ['min_duration'],
         );
 
+        $this->recordSources($project, $batch);
+
         $this->upsertIncrement(
             'record_group_rollups',
             array_values($groups),
@@ -200,6 +203,40 @@ class RollupWriter
         if ($groupUsers !== []) {
             DB::table('record_group_user_buckets')->insertOrIgnore(array_values($groupUsers));
         }
+    }
+
+    /**
+     * Fold a batch's requests into the per-source rollups.
+     *
+     * @param  list<array{type: string, payload: array<string, mixed>, created_at: CarbonInterface}>  $batch
+     */
+    public function recordSources(Project $project, array $batch): void
+    {
+        $rows = [];
+
+        foreach ($batch as $entry) {
+            if ($entry['type'] !== 'request') {
+                continue;
+            }
+
+            $bucket = $this->bucketFor($entry['created_at']);
+            $source = TrafficSource::forPayload($entry['payload']);
+            $key = $bucket.'@'.$source;
+
+            $rows[$key] = $this->mergeDeltas(
+                $rows[$key] ?? $this->emptyRow($project->id, 'request', $bucket) + ['source' => $source],
+                $this->deltasFor('request', $entry['payload']),
+            );
+        }
+
+        $this->upsertIncrement(
+            'record_source_rollups',
+            array_values($rows),
+            conflict: ['project_id', 'type', 'bucket', 'source'],
+            additive: static::additiveColumns(),
+            maxColumns: ['max_duration'],
+            minColumns: ['min_duration'],
+        );
     }
 
     /**

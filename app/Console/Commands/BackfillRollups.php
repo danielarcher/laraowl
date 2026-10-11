@@ -8,6 +8,7 @@ use App\Models\RecordGroupRollup;
 use App\Models\RecordGroupUserBucket;
 use App\Models\RecordIpBucket;
 use App\Models\RecordRollup;
+use App\Models\RecordSourceRollup;
 use App\Models\RecordUserBucket;
 use App\Services\RollupWriter;
 use Illuminate\Console\Command;
@@ -183,6 +184,7 @@ class BackfillRollups extends Command
             RecordUserBucket::query(),
             RecordGroupUserBucket::query(),
             RecordIpBucket::query(),
+            RecordSourceRollup::query(),
         ];
 
         foreach ($tables as $query) {

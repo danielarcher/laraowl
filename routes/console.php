@@ -14,7 +14,9 @@ Schedule::command('projects:check-health')
     ->everyThirtySeconds()
     ->withoutOverlapping(5)
     ->runInBackground();
-Schedule::command('model:prune')->daily();
+// Hourly keeps each run to about an hour of expired rows, so deletes stay
+// small and autovacuum keeps up instead of one huge run at midnight.
+Schedule::command('model:prune')->hourly()->withoutOverlapping(60);
 Schedule::command('laraowl:update --check')->daily();
 Schedule::command('laraowl:projects:link-servers')->everyTenMinutes()->withoutOverlapping(10);
 Schedule::command('laraowl:security:resolve-quiet')->hourly();

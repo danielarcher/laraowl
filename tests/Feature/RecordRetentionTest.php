@@ -55,6 +55,18 @@ test('retention windows are scoped per project', function () {
         ->and(Record::find($keptByLongWindow->id))->not->toBeNull();
 });
 
+test('pruning walks every chunk of every project and returns the total', function () {
+    $first = Project::factory()->create(['retention_days' => 7]);
+    $second = Project::factory()->create(['retention_days' => 3]);
+
+    Record::factory()->count(5)->create(['project_id' => $first->id, 'created_at' => now()->subDays(8)]);
+    Record::factory()->count(3)->create(['project_id' => $second->id, 'created_at' => now()->subDays(4)]);
+    $kept = Record::factory()->create(['project_id' => $second->id, 'created_at' => now()->subDays(2)]);
+
+    expect((new Record)->pruneAll(2))->toBe(8)
+        ->and(Record::query()->pluck('id')->all())->toBe([$kept->id]);
+});
+
 /**
  * Reflect into the private per-driver SQL fragment directly, since the test
  * suite only opens a real connection to SQLite — this exercises the

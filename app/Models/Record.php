@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\MassPrunable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Events\ModelsPruned;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\DB;
 
@@ -112,6 +113,48 @@ class Record extends Model
                 ->where('projects.retention_days', '>', 0)
                 ->whereRaw($this->retentionCutoffSql(DB::connection()->getDriverName()));
         });
+    }
+
+    /**
+     * Prune one project at a time with a fixed cutoff.
+     *
+     * The default MassPrunable loop re-runs `prunable()` per chunk, and its
+     * correlated per-row cutoff can't use an index: on Postgres every chunk
+     * became a sequential scan of the whole table (one `model:prune` ran for
+     * 15h on a 5 GB `records` table). A plain `project_id = ? AND
+     * created_at < ?` walks `records_project_created_idx` and only touches
+     * the rows it deletes. `prunable()` stays as the set-based definition
+     * for `model:prune --pretend`.
+     */
+    public function pruneAll(int $chunkSize = 1000): int
+    {
+        $total = 0;
+
+        $projects = Project::query()
+            ->where('retention_days', '>', 0)
+            ->get(['id', 'retention_days']);
+
+        foreach ($projects as $project) {
+            $cutoff = now()->subDays($project->retention_days);
+
+            do {
+                $ids = static::query()
+                    ->where('project_id', $project->id)
+                    ->where('created_at', '<', $cutoff)
+                    ->orderBy('created_at')
+                    ->limit($chunkSize)
+                    ->pluck('id');
+
+                $count = $ids->isEmpty() ? 0 : static::query()->whereKey($ids)->delete();
+                $total += $count;
+
+                if ($count > 0) {
+                    event(new ModelsPruned(static::class, $total));
+                }
+            } while ($count > 0);
+        }
+
+        return $total;
     }
 
     /**

@@ -7,6 +7,7 @@ import {
     ChevronUp,
     ChevronsUpDown,
     Globe,
+    History,
     X,
 } from 'lucide-react';
 import type { MouseEvent } from 'react';
@@ -25,11 +26,50 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { UserFilter } from '@/components/user-filter';
+import type { RequestUser } from '@/components/user-filter';
 import { useLiveReload } from '@/hooks/use-live-reload';
 import AppLayout from '@/layouts/app-layout';
 import { monitoringQuery } from '@/lib/monitoring-query';
 import { cn, formatMicroSeconds, formatCompactNumber } from '@/lib/utils';
+import { show as showRecord } from '@/routes/records';
 import { show as showRequest } from '@/routes/requests';
+import { show as showUser } from '@/routes/users';
+
+type UserActivity = {
+    id: number;
+    at: string;
+    hash: string;
+    method: string;
+    path: string;
+    url: string | null;
+    status: number | null;
+    duration: number | null;
+};
+
+const activityTime = new Intl.DateTimeFormat('en-GB', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+});
+
+/** The URL's path and query, or the route when the client sent no URL. */
+function activityTarget(entry: UserActivity): string {
+    if (!entry.url) {
+        return entry.path || '(no route)';
+    }
+
+    try {
+        const url = new URL(entry.url);
+
+        return `${url.pathname}${url.search}`;
+    } catch {
+        return entry.url;
+    }
+}
 
 export default function RequestsIndex({
     requests,
@@ -39,6 +79,9 @@ export default function RequestsIndex({
     sources,
     source_totals,
     routes,
+    users = [],
+    user = null,
+    activity = [],
     period,
     from,
     to,
@@ -55,6 +98,12 @@ export default function RequestsIndex({
     source_totals?: Partial<Record<TrafficSourceKey, number>>;
     /** The routes (group hashes) the charts are narrowed to; none = all. */
     routes?: string[];
+    /** The period's most active signed-in users. */
+    users?: RequestUser[];
+    /** The user the page is narrowed to, if any. */
+    user?: RequestUser | null;
+    /** The user's latest requests, newest first. */
+    activity?: UserActivity[];
     period?: string | null;
     from?: string | null;
     to?: string | null;
@@ -189,10 +238,28 @@ export default function RequestsIndex({
             <Head title="Requests Monitoring" />
 
             <div className="space-y-8">
-                <SourceFilter
-                    selected={sources ?? []}
-                    totals={source_totals ?? {}}
-                />
+                <div className="space-y-2">
+                    <SourceFilter
+                        selected={sources ?? []}
+                        totals={source_totals ?? {}}
+                    />
+                    <UserFilter
+                        users={users}
+                        selected={user}
+                        profileHref={
+                            user
+                                ? showUser.url(
+                                      {
+                                          current_team: teamSlug,
+                                          project: projectSlug,
+                                          hash: user.hash,
+                                      },
+                                      monitoringQuery({ period, from, to }),
+                                  )
+                                : undefined
+                        }
+                    />
+                </div>
 
                 <div className="space-y-3">
                     {selectedRoutes.length > 0 && (
@@ -482,6 +549,114 @@ export default function RequestsIndex({
                         )}
                     </div>
                 </div>
+
+                {user && (
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2 font-bold text-foreground">
+                            <History className="h-4 w-4 text-muted-foreground" />
+                            <span>Activity</span>
+                            <span className="text-xs font-normal text-muted-foreground">
+                                {user.name || user.key}'s latest requests
+                                {selectedRoutes.length > 0 &&
+                                    ' on the charted routes'}
+                            </span>
+                        </div>
+                        <div className="overflow-hidden rounded-lg border border-border bg-card">
+                            {activity.length > 0 ? (
+                                <Table>
+                                    <TableHeader className="bg-muted/30">
+                                        <TableRow className="border-border hover:bg-transparent">
+                                            <TableHead className="text-[10px] font-bold text-muted-foreground uppercase">
+                                                Time
+                                            </TableHead>
+                                            <TableHead className="text-[10px] font-bold text-muted-foreground uppercase">
+                                                Method
+                                            </TableHead>
+                                            <TableHead className="text-[10px] font-bold text-muted-foreground uppercase">
+                                                URL
+                                            </TableHead>
+                                            <TableHead className="text-center text-[10px] font-bold text-muted-foreground uppercase">
+                                                Status
+                                            </TableHead>
+                                            <TableHead className="text-right text-[10px] font-bold text-muted-foreground uppercase">
+                                                Duration
+                                            </TableHead>
+                                            <TableHead className="w-[50px]"></TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {activity.map((entry) => (
+                                            <TableRow
+                                                key={entry.id}
+                                                className="group border-border hover:bg-muted/30"
+                                            >
+                                                <TableCell className="font-mono text-xs whitespace-nowrap text-muted-foreground tabular-nums">
+                                                    {activityTime.format(
+                                                        new Date(entry.at),
+                                                    )}
+                                                </TableCell>
+                                                <TableCell
+                                                    className={`text-[10px] font-bold uppercase ${getMethodColor(entry.method)}`}
+                                                >
+                                                    {entry.method}
+                                                </TableCell>
+                                                <TableCell
+                                                    className="max-w-[480px] truncate font-mono text-xs text-foreground/90"
+                                                    title={
+                                                        entry.url ?? entry.path
+                                                    }
+                                                >
+                                                    {activityTarget(entry)}
+                                                </TableCell>
+                                                <TableCell
+                                                    className={cn(
+                                                        'text-center font-mono text-xs',
+                                                        (entry.status ?? 0) >=
+                                                            500
+                                                            ? 'font-bold text-red-500'
+                                                            : (entry.status ??
+                                                                    0) >= 400
+                                                              ? 'text-yellow-500'
+                                                              : 'text-foreground/60',
+                                                    )}
+                                                >
+                                                    {entry.status ?? '—'}
+                                                </TableCell>
+                                                <TableCell className="text-right font-mono text-xs text-foreground/90">
+                                                    {entry.duration === null
+                                                        ? '—'
+                                                        : formatMicroSeconds(
+                                                              entry.duration,
+                                                          )}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Link
+                                                        href={showRecord.url({
+                                                            current_team:
+                                                                teamSlug,
+                                                            project:
+                                                                projectSlug,
+                                                            record: entry.id,
+                                                        })}
+                                                        title="Open request"
+                                                    >
+                                                        <div className="rounded border border-border bg-muted p-1">
+                                                            <ArrowUpRight className="h-3 w-3" />
+                                                        </div>
+                                                    </Link>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            ) : (
+                                <p className="p-6 text-center text-xs text-muted-foreground">
+                                    No requests from this user in the period.
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                )}
             </div>
         </>
     );

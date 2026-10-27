@@ -73,8 +73,10 @@ class RecordController extends Controller
 
         $sources = TrafficSource::parse(request()->query('sources'));
         $routes = $this->routesFromQuery(request()->query('routes'));
+        $user = request()->query('user');
+        $user = is_string($user) && $user !== '' ? mb_substr($user, 0, 64) : null;
 
-        return $this->renderWithStats('projects/requests', $this->recordService->getRequestStats($project, $period, $from, $to, $sort, $direction, $sources, $routes), $project, $period, $from, $to);
+        return $this->renderWithStats('projects/requests', $this->recordService->getRequestStats($project, $period, $from, $to, $sort, $direction, $sources, $routes, $user), $project, $period, $from, $to);
     }
 
     /**

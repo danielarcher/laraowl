@@ -56,11 +56,15 @@ class RecordService
     /**
      * Aggregate Request Data
      */
-    public function getRequestStats(Project $project, ?string $period = null, ?string $from = null, ?string $to = null, string $sort = 'total', string $direction = 'desc', ?array $sources = null, ?array $routes = null): array
+    public function getRequestStats(Project $project, ?string $period = null, ?string $from = null, ?string $to = null, string $sort = 'total', string $direction = 'desc', ?array $sources = null, ?array $routes = null, ?string $user = null): array
     {
         $allowedSorts = ['method', 'path', 'total', 'ok_count', 'client_error_count', 'server_error_count', 'avg_duration', 'p95_duration'];
         $sort = in_array($sort, $allowedSorts) ? $sort : 'total';
         $direction = $direction === 'asc' ? 'asc' : 'desc';
+
+        if ($user !== null) {
+            return $this->getUserRequestStats($project, $user, $period, $from, $to, $sort, $direction, $sources, $routes);
+        }
 
         $overview = $this->rollupTotals($project, 'request', $period, $from, $to, $sources, $routes);
 
@@ -83,6 +87,9 @@ class RecordService
             'sources' => $sources ?? TrafficSource::ALL,
             'source_totals' => $this->sourceTotals($project, $period, $from, $to),
             'routes' => $routes ?? [],
+            'users' => $this->requestUsers($project, $period, $from, $to),
+            'user' => null,
+            'activity' => [],
             'overview' => [
                 'total' => (int) $overview->total,
                 'ok' => (int) $overview->ok,
@@ -97,6 +104,217 @@ class RecordService
             'sort' => $sort,
             'direction' => $direction,
         ];
+    }
+
+    /**
+     * The most a user's request view reads back, newest first.
+     */
+    public const USER_REQUEST_LIMIT = 5000;
+
+    /**
+     * The requests page for one signed-in user. Rollups don't keep users per
+     * route, so this reads the user's own raw requests (on the user_key
+     * index) and totals them the way the rollups would.
+     *
+     * @param  list<string>|null  $sources
+     * @param  list<string>|null  $routes
+     */
+    protected function getUserRequestStats(Project $project, string $user, ?string $period, ?string $from, ?string $to, string $sort, string $direction, ?array $sources, ?array $routes): array
+    {
+        $writer = app(RollupWriter::class);
+        $grid = TimeSlots::for($period ?: '1h', $from, $to);
+
+        $records = $project->records()
+            ->ofType('request')
+            ->where('user_key', $user)
+            ->forPeriod($period, $from, $to)
+            ->latest()
+            ->limit(static::USER_REQUEST_LIMIT)
+            ->get(['id', 'payload', 'fingerprint', 'created_at']);
+
+        $totals = [];
+        $slots = [];
+        $groups = [];
+        $activity = [];
+
+        foreach ($records as $record) {
+            $payload = $record->payload ?? [];
+
+            if ($sources !== null && ! in_array(TrafficSource::forPayload($payload), $sources, true)) {
+                continue;
+            }
+
+            $deltas = $writer->deltasFor('request', $payload);
+            $hash = (string) $record->fingerprint;
+            [$method, $path] = $writer->groupLabelsFor('request', $payload);
+
+            $groups[$hash] = $this->addDeltas($groups[$hash] ?? [
+                'hash' => $hash,
+                'method' => $method,
+                'path' => $path,
+                'last_seen' => $record->created_at->toIso8601String(),
+            ], $deltas);
+
+            // Picked routes narrow the charts and the activity, not the list.
+            if ($routes !== null && ! in_array($hash, $routes, true)) {
+                continue;
+            }
+
+            $totals = $this->addDeltas($totals, $deltas);
+            $slot = intdiv($record->created_at->getTimestamp(), $grid->slot);
+            $slots[$slot] = $this->addDeltas($slots[$slot] ?? [], $deltas);
+
+            if (count($activity) < 100) {
+                $activity[] = [
+                    'id' => $record->id,
+                    'at' => $record->created_at->toIso8601String(),
+                    'hash' => $hash,
+                    'method' => $method,
+                    'path' => $path,
+                    'url' => is_string($payload['url'] ?? null) ? $payload['url'] : null,
+                    'status' => is_numeric($payload['status_code'] ?? null) ? (int) $payload['status_code'] : null,
+                    'duration' => is_numeric($payload['duration'] ?? null) ? (float) $payload['duration'] : null,
+                ];
+            }
+        }
+
+        $overview = $this->totalsFromColumns($totals);
+        $rows = collect($slots)->map(fn (array $columns) => $this->totalsFromColumns($columns));
+
+        $requests = collect($groups)
+            ->map(function (array $group) {
+                $row = (object) [
+                    'hash' => $group['hash'],
+                    'method' => $group['method'],
+                    'path' => $group['path'],
+                    'label' => $group['method'],
+                    'sublabel' => $group['path'],
+                    'total' => (int) ($group['count'] ?? 0),
+                    'ok_count' => (int) ($group['ok_count'] ?? 0),
+                    'client_error_count' => (int) ($group['client_error_count'] ?? 0),
+                    'server_error_count' => (int) ($group['server_error_count'] ?? 0),
+                    'last_seen' => $group['last_seen'],
+                ];
+                $timing = $this->totalsFromColumns($group);
+                $row->avg_duration = round($this->avgDuration($timing), 2);
+                $row->p95_duration = $this->p95Duration($timing);
+
+                return $row;
+            })
+            ->sortBy(fn (object $row) => $row->{$sort} ?? '', SORT_REGULAR, $direction === 'desc')
+            ->values();
+
+        $page = Paginator::resolveCurrentPage();
+        $requests = new LengthAwarePaginator($requests->forPage($page, 20)->values(), $requests->count(), 20, $page, [
+            'path' => Paginator::resolveCurrentPath(),
+            'query' => request()->query(),
+        ]);
+
+        $details = $this->userDetailsByIds($project, [$user]);
+
+        return [
+            'requests' => $requests,
+            'timeSeries' => $this->timeSeriesPoints($grid, $rows, $rows->map(fn (object $row) => $row->total > 0 ? 1 : 0), $grid->slot),
+            'sources' => $sources ?? TrafficSource::ALL,
+            'source_totals' => $this->sourceTotals($project, $period, $from, $to),
+            'routes' => $routes ?? [],
+            'users' => $this->requestUsers($project, $period, $from, $to),
+            'user' => [
+                'key' => $user,
+                'hash' => md5($user),
+                'name' => ($details[$user]['name'] ?? '') ?: $user,
+                'email' => $details[$user]['email'] ?? '',
+                'truncated' => $records->count() >= static::USER_REQUEST_LIMIT,
+            ],
+            'activity' => $activity,
+            'overview' => [
+                'total' => (int) $overview->total,
+                'ok' => (int) $overview->ok,
+                'client_error' => (int) $overview->client_error,
+                'server_error' => (int) $overview->server_error,
+                'avg_duration' => round($this->avgDuration($overview), 2),
+                'max_duration' => round((float) ($overview->max_duration ?? 0), 2),
+                'min_duration' => round((float) ($overview->min_duration ?? 0), 2),
+                'latency' => $this->latencySummary($overview),
+                'histogram' => $this->latencyHistogram($overview),
+            ],
+            'sort' => $sort,
+            'direction' => $direction,
+        ];
+    }
+
+    /**
+     * The signed-in users with the most requests over the period, by name.
+     *
+     * @return list<array{key: string, hash: string, name: string, email: string, requests: int, last_seen: string|null}>
+     */
+    protected function requestUsers(Project $project, ?string $period, ?string $from, ?string $to): array
+    {
+        $users = $this->topUsers($project, 'request', 'request_count', $period, $from, $to, limit: 30);
+        $this->enrichUserRows($project, $users);
+
+        return $users->map(fn ($row) => [
+            'key' => (string) $row->user_id,
+            'hash' => md5((string) $row->user_id),
+            'name' => (string) $row->user_identifier,
+            'email' => (string) $row->user_email,
+            'requests' => (int) $row->request_count,
+            'last_seen' => $row->last_seen ? (string) $row->last_seen : null,
+        ])->values()->all();
+    }
+
+    /**
+     * Fold one record's deltas into rollup-style counters.
+     *
+     * @param  array<string, mixed>  $columns
+     * @param  array<string, float|int|null>  $deltas
+     * @return array<string, mixed>
+     */
+    private function addDeltas(array $columns, array $deltas): array
+    {
+        foreach ($deltas as $column => $value) {
+            if ($value === null) {
+                continue;
+            }
+
+            $columns[$column] = match ($column) {
+                'max_duration' => max($columns[$column] ?? $value, $value),
+                'min_duration' => min($columns[$column] ?? $value, $value),
+                default => ($columns[$column] ?? 0) + $value,
+            };
+        }
+
+        return $columns;
+    }
+
+    /**
+     * Rollup-style counters under the aliases rollupTotals() answers with.
+     *
+     * @param  array<string, mixed>  $columns
+     */
+    private function totalsFromColumns(array $columns): object
+    {
+        $totals = [
+            'total' => $columns['count'] ?? 0,
+            'ok' => $columns['ok_count'] ?? 0,
+            'client_error' => $columns['client_error_count'] ?? 0,
+            'server_error' => $columns['server_error_count'] ?? 0,
+            'neutral' => $columns['neutral_count'] ?? 0,
+            'hits' => $columns['hits'] ?? 0,
+            'misses' => $columns['misses'] ?? 0,
+            'writes' => $columns['writes'] ?? 0,
+            'authed' => $columns['authed_count'] ?? 0,
+            'sum_duration' => $columns['sum_duration'] ?? 0,
+            'count_duration' => $columns['count_duration'] ?? 0,
+            'max_duration' => $columns['max_duration'] ?? null,
+            'min_duration' => $columns['min_duration'] ?? null,
+        ];
+
+        foreach (RollupWriter::latencyColumns() as $column) {
+            $totals[$column] = $columns[$column] ?? 0;
+        }
+
+        return (object) $totals;
     }
 
     /**
@@ -861,6 +1079,18 @@ class RecordService
             ->pluck('active_users', 'slot_index')
             ->mapWithKeys(fn ($count, $index) => [(int) $index => (int) $count]);
 
+        return $this->timeSeriesPoints($grid, $rows, $activeUsers, $userSlot);
+    }
+
+    /**
+     * The gap-filled chart points for rows keyed by slot index.
+     *
+     * @param  Collection<int, object>  $rows
+     * @param  Collection<int, int>  $activeUsers  distinct users per $userSlot-wide slot
+     * @return list<array<string, int|float|string|null>>
+     */
+    protected function timeSeriesPoints(TimeSlots $grid, Collection $rows, Collection $activeUsers, int $userSlot): array
+    {
         $labelFormat = $grid->withinADay() ? 'H:i' : 'd/m H:i';
 
         return array_map(function (int $index) use ($grid, $rows, $activeUsers, $userSlot, $labelFormat) {
@@ -1507,11 +1737,11 @@ class RecordService
     }
 
     /**
-     * The five users producing the most records of a type over a period.
+     * The users producing the most records of a type over a period.
      *
      * @return Collection<int, object>
      */
-    protected function topUsers(Project $project, string $type, string $countAlias, ?string $period = null, ?string $from = null, ?string $to = null)
+    protected function topUsers(Project $project, string $type, string $countAlias, ?string $period = null, ?string $from = null, ?string $to = null, int $limit = 5)
     {
         return RecordUserBucket::query()
             ->where('project_id', $project->id)
@@ -1526,7 +1756,7 @@ class RecordService
             ])
             ->groupBy('user_key')
             ->orderByDesc($countAlias)
-            ->limit(5)
+            ->limit($limit)
             ->get();
     }
 

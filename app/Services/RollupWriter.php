@@ -86,6 +86,7 @@ class RollupWriter
         $groupUsers = [];
         $userBuckets = [];
         $ipBuckets = [];
+        $profiles = [];
 
         foreach ($batch as $entry) {
             $type = $entry['type'];
@@ -94,6 +95,16 @@ class RollupWriter
             $bucket = $this->bucketFor($seenAt);
             $hour = $this->hourFor($seenAt);
             $deltas = $this->deltasFor($type, $payload);
+
+            if ($type === 'user' && ($profileKey = $this->rawUserKeyFor($payload)) !== null) {
+                $profiles[$profileKey] = [
+                    'project_id' => $project->id,
+                    'user_key' => $profileKey,
+                    'name' => mb_substr((string) (is_scalar($payload['name'] ?? null) ? $payload['name'] : ''), 0, 255),
+                    'email' => mb_substr((string) (is_scalar($payload['username'] ?? $payload['email'] ?? null) ? ($payload['username'] ?? $payload['email']) : ''), 0, 255),
+                    'seen_at' => $seenAt->format('Y-m-d H:i:s'),
+                ];
+            }
 
             $key = $type.'@'.$bucket;
             $rollups[$key] = $this->mergeDeltas(
@@ -208,6 +219,11 @@ class RollupWriter
 
         if ($groupUsers !== []) {
             DB::table('record_group_user_buckets')->insertOrIgnore(array_values($groupUsers));
+        }
+
+        // Profiles outlive the raw `user` records, so users keep their names.
+        if ($profiles !== []) {
+            DB::table('record_user_profiles')->upsert(array_values($profiles), ['project_id', 'user_key'], ['name', 'email', 'seen_at']);
         }
     }
 

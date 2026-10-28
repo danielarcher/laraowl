@@ -21,7 +21,7 @@ import { LatencyHistogram } from '@/components/charts/latency-histogram';
 import type { HistogramBucket } from '@/components/charts/latency-histogram';
 import { TimeSeriesChart } from '@/components/charts/time-series-chart';
 import { SourceFilter, trafficSources } from '@/components/source-filter';
-import type { TrafficSourceKey } from '@/components/source-filter';
+import type { SourcePoint, TrafficSourceKey } from '@/components/source-filter';
 import { useHiddenSeries } from '@/hooks/use-hidden-series';
 import { useLiveReload } from '@/hooks/use-live-reload';
 import AppLayout from '@/layouts/app-layout';
@@ -94,6 +94,8 @@ type Props = {
     sources: string[];
     /** Requests per source over the period, counted or not. */
     source_totals: Partial<Record<TrafficSourceKey, number>>;
+    /** Requests per source over the period, one point per chart slot. */
+    source_series?: SourcePoint[];
     period: string;
     from?: string | null;
     to?: string | null;
@@ -120,6 +122,7 @@ export default function Dashboard({
     uptime_status,
     sources,
     source_totals,
+    source_series,
     period,
     from,
     to,
@@ -167,6 +170,7 @@ export default function Dashboard({
                 <SourceFilter
                     selected={sources ?? []}
                     totals={source_totals ?? {}}
+                    series={source_series ?? []}
                 />
 
                 {/* Headline figures, each against the window just before. */}

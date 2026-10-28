@@ -14,6 +14,19 @@ export const trafficSources = [
 
 export type TrafficSourceKey = (typeof trafficSources)[number]['key'];
 
+/** One chart slot: its start (unix seconds) and requests per source. */
+export type SourcePoint = { t: number } & Partial<
+    Record<TrafficSourceKey, number>
+>;
+
+const slotTime = new Intl.DateTimeFormat('en-GB', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+});
+
 /** The current URL with its sources swapped; every source means no filter. */
 function sourcesUrl(selected: string[]): string {
     const params = new URLSearchParams(window.location.search);
@@ -38,17 +51,16 @@ function sourcesUrl(selected: string[]): string {
 export function SourceFilter({
     selected,
     totals,
+    series = [],
 }: {
     selected: string[];
     totals: Partial<Record<TrafficSourceKey, number>>;
+    /** Requests per source over the period, one point per chart slot. */
+    series?: SourcePoint[];
 }) {
     // Moves at once, before the page answers.
     const [chosen, setChosen] = useState<string[] | null>(null);
     const shown = chosen ?? selected;
-    const all = trafficSources.reduce(
-        (sum, source) => sum + (totals[source.key] ?? 0),
-        0,
-    );
     const filtered = shown.length < trafficSources.length;
 
     const visit = (next: string[]) => {
@@ -157,23 +169,84 @@ export function SourceFilter({
                     )}
                 </div>
             </div>
-            {/* The mix of the period, left out sources dimmed. */}
-            <div className="flex h-0.5 bg-series-muted" aria-hidden>
-                {all > 0 &&
-                    trafficSources.map((source) => (
+            <SourceTimeline series={series} shown={shown} />
+        </div>
+    );
+}
+
+/**
+ * Traffic over the period, one stacked column per chart slot. Column height
+ * follows the square root of its total, so a single flood doesn't flatten
+ * every other slot; inside a column each source keeps its true share.
+ */
+function SourceTimeline({
+    series,
+    shown,
+}: {
+    series: SourcePoint[];
+    shown: string[];
+}) {
+    const totalOf = (point: SourcePoint) =>
+        trafficSources.reduce(
+            (sum, source) => sum + (point[source.key] ?? 0),
+            0,
+        );
+    const peak = Math.max(0, ...series.map(totalOf));
+
+    if (series.length === 0 || peak === 0) {
+        return <div className="h-px bg-border" aria-hidden />;
+    }
+
+    return (
+        <div
+            className="flex h-10 items-end gap-px border-t border-border px-3 pt-1.5"
+            aria-label="Requests per traffic source over the period"
+        >
+            {series.map((point) => {
+                const total = totalOf(point);
+                const height = total > 0 ? Math.sqrt(total / peak) * 100 : 0;
+                const label = [
+                    slotTime.format(new Date(point.t * 1000)),
+                    ...trafficSources
+                        .filter((source) => (point[source.key] ?? 0) > 0)
+                        .map(
+                            (source) =>
+                                `${source.label} ${formatCount(point[source.key] ?? 0)}`,
+                        ),
+                ].join(' · ');
+
+                return (
+                    <div
+                        key={point.t}
+                        title={total > 0 ? label : `${label} · no requests`}
+                        className="flex h-full min-w-px flex-1 flex-col-reverse justify-start hover:bg-muted/40"
+                    >
                         <div
-                            key={source.key}
-                            className={cn(
-                                'transition-opacity duration-150',
-                                !shown.includes(source.key) && 'opacity-25',
-                            )}
-                            style={{
-                                width: `${((totals[source.key] ?? 0) / all) * 100}%`,
-                                backgroundColor: source.color,
-                            }}
-                        />
-                    ))}
-            </div>
+                            className="flex w-full flex-col-reverse"
+                            style={{ height: `${height}%` }}
+                        >
+                            {trafficSources.map((source) => {
+                                const count = point[source.key] ?? 0;
+
+                                return count > 0 ? (
+                                    <div
+                                        key={source.key}
+                                        className={cn(
+                                            'w-full transition-opacity duration-150',
+                                            !shown.includes(source.key) &&
+                                                'opacity-25',
+                                        )}
+                                        style={{
+                                            height: `${(count / total) * 100}%`,
+                                            backgroundColor: source.color,
+                                        }}
+                                    />
+                                ) : null;
+                            })}
+                        </div>
+                    </div>
+                );
+            })}
         </div>
     );
 }

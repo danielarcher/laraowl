@@ -86,6 +86,7 @@ class RecordService
             'timeSeries' => $this->getDetailedTimeSeries($project, 'request', $period, $from, $to, $sources, $routes),
             'sources' => $sources ?? TrafficSource::ALL,
             'source_totals' => $this->sourceTotals($project, $period, $from, $to),
+            'source_series' => $this->sourceSeries($project, $period, $from, $to),
             'routes' => $routes ?? [],
             'users' => $this->requestUsers($project, $period, $from, $to),
             'user' => null,
@@ -212,11 +213,17 @@ class RecordService
 
         $details = $this->userDetailsByIds($project, [$user]);
 
+        // Raw requests are pruned after the project's retention, so a longer
+        // period only has the user's requests since then.
+        [$windowStart] = $this->periodWindow($period, $from, $to);
+        $keptSince = (int) $project->retention_days > 0 ? now()->subDays((int) $project->retention_days) : null;
+
         return [
             'requests' => $requests,
             'timeSeries' => $this->timeSeriesPoints($grid, $rows, $rows->map(fn (object $row) => $row->total > 0 ? 1 : 0), $grid->slot),
             'sources' => $sources ?? TrafficSource::ALL,
             'source_totals' => $this->sourceTotals($project, $period, $from, $to),
+            'source_series' => $this->sourceSeries($project, $period, $from, $to),
             'routes' => $routes ?? [],
             'users' => $this->requestUsers($project, $period, $from, $to),
             'user' => [
@@ -225,6 +232,7 @@ class RecordService
                 'name' => ($details[$user]['name'] ?? '') ?: $user,
                 'email' => $details[$user]['email'] ?? '',
                 'truncated' => $records->count() >= static::USER_REQUEST_LIMIT,
+                'kept_days' => $keptSince && $windowStart->lt($keptSince) ? (int) $project->retention_days : null,
             ],
             'activity' => $activity,
             'overview' => [
@@ -344,6 +352,7 @@ class RecordService
             'previous' => $this->previousDashboardTotals($project, $period, $from, $to, $sources),
             'sources' => $sources ?? TrafficSource::ALL,
             'source_totals' => $this->sourceTotals($project, $period, $from, $to),
+            'source_series' => $this->sourceSeries($project, $period, $from, $to),
             'total_exceptions' => (int) $exceptionStats->total,
             'recent_issues' => $project->issues()->where('status', 'open')->latest('last_seen_at')->limit(5)->get(),
             'timeSeries' => $this->getDetailedTimeSeries($project, 'request', $period, $from, $to, $sources),
@@ -1183,10 +1192,28 @@ class RecordService
 
         $details = [];
 
-        // Only each user's latest profile, found through the user_key index.
+        DB::table('record_user_profiles')
+            ->where('project_id', $project->id)
+            ->whereIn('user_key', $ids->all())
+            ->get(['user_key', 'name', 'email'])
+            ->each(function ($profile) use (&$details): void {
+                $details[(string) $profile->user_key] = [
+                    'name' => (string) $profile->name,
+                    'email' => filter_var($profile->email, FILTER_VALIDATE_EMAIL) ? (string) $profile->email : '',
+                ];
+            });
+
+        $missing = $ids->reject(fn (string $id): bool => isset($details[$id]))->values();
+
+        if ($missing->isEmpty()) {
+            return $details;
+        }
+
+        // Users not in the profile table yet: their latest raw profile,
+        // found through the user_key index.
         $latest = $project->records()
             ->ofType('user')
-            ->whereIn('user_key', $ids->all())
+            ->whereIn('user_key', $missing->all())
             ->select(['payload', DB::raw('ROW_NUMBER() OVER (PARTITION BY '.$this->col('user_key').' ORDER BY '.$this->col('created_at').' DESC, '.$this->col('id').' DESC) as profile_rank')])
             ->toBase();
 
@@ -1476,6 +1503,41 @@ class RecordService
             ->pluck('total', 'source');
 
         return array_combine(TrafficSource::ALL, array_map(fn (string $source) => (int) ($counts[$source] ?? 0), TrafficSource::ALL));
+    }
+
+    /**
+     * Requests per traffic source on the period's chart grid, gap filled.
+     *
+     * @return list<array<string, int>>
+     */
+    protected function sourceSeries(Project $project, ?string $period, ?string $from, ?string $to): array
+    {
+        $grid = TimeSlots::for($period ?: '1h', $from, $to);
+
+        $counts = RecordSourceRollup::query()
+            ->where('project_id', $project->id)
+            ->where('type', 'request')
+            ->forPeriod($period, $from, $to)
+            ->select([
+                DB::raw(TimeSlots::sql($grid->slot, $this->col('bucket')).' as slot_index'),
+                'source',
+                DB::raw('SUM('.$this->col('count').') as total'),
+            ])
+            ->groupBy('slot_index', 'source')
+            ->get()
+            ->groupBy(fn ($row) => (int) $row->slot_index);
+
+        return array_map(function (int $index) use ($grid, $counts) {
+            $point = ['t' => $index * $grid->slot] + array_fill_keys(TrafficSource::ALL, 0);
+
+            foreach ($counts->get($index, []) as $row) {
+                if (array_key_exists($row->source, $point)) {
+                    $point[$row->source] = (int) $row->total;
+                }
+            }
+
+            return $point;
+        }, $grid->indexes());
     }
 
     /**

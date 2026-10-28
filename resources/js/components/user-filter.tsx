@@ -18,6 +18,8 @@ export type RequestUser = {
     last_seen?: string | null;
     /** More requests than the page reads back: the figures are the latest. */
     truncated?: boolean;
+    /** Raw requests are kept this many days, fewer than the period covers. */
+    kept_days?: number | null;
 };
 
 /** Users shown as chips before the rest fold into the picker. */
@@ -124,6 +126,12 @@ export function UserFilter({
                             Profile
                             <ArrowUpRight className="size-3" />
                         </Link>
+                    )}
+                    {shown.kept_days && (
+                        <span className="ml-2 text-[11px] text-muted-foreground">
+                            Per-user requests cover the last {shown.kept_days}{' '}
+                            days
+                        </span>
                     )}
                     {shown.truncated && (
                         <span className="ml-2 text-[11px] text-muted-foreground">

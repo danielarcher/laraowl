@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Project;
+use App\Models\Record;
 use App\Models\User;
 use App\Services\IngestService;
 use App\Services\RecordService;
@@ -116,4 +117,58 @@ test('a user from another project shows nothing', function () {
     expect($stats['overview']['total'])->toBe(0)
         ->and($stats['activity'])->toBe([])
         ->and($stats['requests']->total())->toBe(0);
+});
+
+test('a user keeps their name after the raw profile records are pruned', function () {
+    $project = Project::factory()->create();
+
+    app(IngestService::class)->ingest($project, [
+        userRequest('7', '/inicio/index'),
+        ['t' => 'user', 'id' => '7', 'name' => 'Ana Souza', 'username' => 'ana@example.com'],
+    ]);
+
+    Record::where('project_id', $project->id)->where('type', 'user')->delete();
+
+    $users = app(RecordService::class)->getRequestStats($project, '1h')['users'];
+
+    expect($users[0])->toMatchArray(['key' => '7', 'name' => 'Ana Souza', 'email' => 'ana@example.com']);
+});
+
+test('a newer profile renames the user', function () {
+    $project = Project::factory()->create();
+
+    app(IngestService::class)->ingest($project, [['t' => 'user', 'id' => '7', 'name' => 'Ana', 'username' => '']]);
+    app(IngestService::class)->ingest($project, [
+        userRequest('7', '/'),
+        ['t' => 'user', 'id' => '7', 'name' => 'Ana Souza', 'username' => 'ana@example.com'],
+    ]);
+
+    expect(app(RecordService::class)->getRequestStats($project, '1h')['users'][0]['name'])->toBe('Ana Souza');
+});
+
+test('a user view longer than raw retention says how far back it reaches', function () {
+    $project = Project::factory()->create(['retention_days' => 7]);
+
+    app(IngestService::class)->ingest($project, [userRequest('7', '/')]);
+
+    expect(app(RecordService::class)->getRequestStats($project, '14d', user: '7')['user']['kept_days'])->toBe(7)
+        ->and(app(RecordService::class)->getRequestStats($project, '24h', user: '7')['user']['kept_days'])->toBeNull();
+});
+
+test('the traffic row gets requests per source on the chart grid', function () {
+    $project = Project::factory()->create();
+
+    app(IngestService::class)->ingest($project, [
+        userRequest(null, '/'),
+        array_merge(userRequest(null, '/'), ['headers' => json_encode(['user-agent' => ['Mozilla/5.0 (compatible; Googlebot/2.1)']])]),
+    ]);
+
+    $series = app(RecordService::class)->getRequestStats($project, '1h')['source_series'];
+    $dashboard = app(RecordService::class)->getDashboardStats($project, '1h')['source_series'];
+
+    expect($series)->toHaveCount(60)
+        ->and(array_sum(array_column($series, 'human')))->toBe(1)
+        ->and(array_sum(array_column($series, 'search')))->toBe(1)
+        ->and($series[0])->toHaveKeys(['t', 'human', 'search', 'ai', 'monitor', 'bot'])
+        ->and($dashboard)->toHaveCount(60);
 });

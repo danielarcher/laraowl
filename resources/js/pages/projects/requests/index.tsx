@@ -17,7 +17,7 @@ import { seriesColor } from '@/components/charts/format';
 import { EmptyState } from '@/components/empty-state';
 import { Pagination } from '@/components/pagination';
 import { SourceFilter } from '@/components/source-filter';
-import type { TrafficSourceKey } from '@/components/source-filter';
+import type { SourcePoint, TrafficSourceKey } from '@/components/source-filter';
 import {
     Table,
     TableBody,
@@ -78,6 +78,7 @@ export default function RequestsIndex({
     overview,
     sources,
     source_totals,
+    source_series,
     routes,
     users = [],
     user = null,
@@ -96,6 +97,8 @@ export default function RequestsIndex({
     sources?: string[];
     /** Requests per source over the period, counted or not. */
     source_totals?: Partial<Record<TrafficSourceKey, number>>;
+    /** Requests per source over the period, one point per chart slot. */
+    source_series?: SourcePoint[];
     /** The routes (group hashes) the charts are narrowed to; none = all. */
     routes?: string[];
     /** The period's most active signed-in users. */
@@ -242,6 +245,7 @@ export default function RequestsIndex({
                     <SourceFilter
                         selected={sources ?? []}
                         totals={source_totals ?? {}}
+                        series={source_series ?? []}
                     />
                     <UserFilter
                         users={users}

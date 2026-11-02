@@ -54,9 +54,26 @@ export type ServerSummary = {
     projects: ServerProjectLink[];
 };
 
+export type ServerFlag = {
+    key: 'disk' | 'memory' | 'swap' | 'cpu' | 'idle';
+    label: string;
+    tone: 'error' | 'warn' | 'info';
+};
+
+/** Seven-day averages, the disk forecast and the flags they raise. */
+export type ServerInsights = {
+    cpu_avg: number;
+    cpu_max: number;
+    memory_avg: number | null;
+    swap_avg: number | null;
+    disk_full_in_days: number | null;
+    flags: ServerFlag[];
+};
+
 export type ServerOverview = ServerSummary & {
     latest: ServerSample | null;
     sparkline: ServerPoint[];
+    insights: ServerInsights | null;
 };
 
 export function formatBytes(bytes: number | null | undefined): string {

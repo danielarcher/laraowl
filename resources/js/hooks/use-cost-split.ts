@@ -1,17 +1,7 @@
-import { useState } from 'react';
+import { usePersistedState } from '@/hooks/use-persisted-state';
 import type { CostSplit } from '@/lib/costs';
 
-const STORAGE_KEY = 'laraowl.cost-split';
-
-function storedSplit(): CostSplit {
-    if (typeof window === 'undefined') {
-        return 'equal';
-    }
-
-    return window.localStorage.getItem(STORAGE_KEY) === 'traffic'
-        ? 'traffic'
-        : 'equal';
-}
+const SPLITS: readonly CostSplit[] = ['equal', 'traffic'];
 
 /**
  * How a server's price is shared across its apps: evenly or by traffic.
@@ -19,12 +9,5 @@ function storedSplit(): CostSplit {
  * pages always split the same way.
  */
 export function useCostSplit(): [CostSplit, (split: CostSplit) => void] {
-    const [split, setSplit] = useState<CostSplit>(storedSplit);
-
-    const update = (next: CostSplit) => {
-        window.localStorage.setItem(STORAGE_KEY, next);
-        setSplit(next);
-    };
-
-    return [split, update];
+    return usePersistedState('laraowl.cost-split', SPLITS, 'equal');
 }

@@ -8,7 +8,9 @@ use App\Models\Project;
 use App\Models\Server;
 use App\Models\Team;
 use App\Models\User;
+use App\Services\CostService;
 use App\Services\IngestService;
+use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
 
 /**
@@ -258,4 +260,23 @@ test('removing a server keeps its cost, unlinked', function () {
     $server->delete();
 
     expect($cost->fresh()->server_id)->toBeNull();
+});
+
+test('the 30-day traffic behind the split is read once and then cached', function () {
+    [, $team] = costTeam();
+    $server = Server::factory()->create(['team_id' => $team->id]);
+    $shop = Project::factory()->create(['team_id' => $team->id, 'server_id' => $server->id]);
+    Cost::factory()->create(['team_id' => $team->id, 'server_id' => $server->id, 'category' => CostCategory::Server, 'amount_cents' => 1000]);
+    costRequests($shop, 2);
+
+    $costs = app(CostService::class);
+    DB::enableQueryLog();
+    $costs->serverShares($team);
+    $costs->serverShares($team);
+
+    $rollupReads = collect(DB::getQueryLog())
+        ->filter(fn (array $query) => str_contains($query['query'], 'record_rollups'));
+
+    expect($rollupReads)->toHaveCount(1)
+        ->and($costs->serverShares($team)[$server->id]['apps'][0]['requests'])->toBe(2);
 });

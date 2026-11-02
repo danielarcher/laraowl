@@ -11,6 +11,7 @@ use App\Models\Server;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -19,6 +20,12 @@ use Illuminate\Support\Facades\DB;
  */
 class CostService
 {
+    /**
+     * How long the 30-day request totals are kept: summing a month of minute
+     * rollups is the slowest part of every page that splits prices.
+     */
+    private const TRAFFIC_CACHE_SECONDS = 600;
+
     /**
      * Whether the user may see and edit the team's costs.
      */
@@ -114,7 +121,7 @@ class CostService
             ->whereIn('server_id', $prices->keys())
             ->orderBy('name')
             ->get(['id', 'name', 'slug', 'server_id']);
-        $requests = $this->requestsByProject($projects->modelKeys());
+        $requests = $this->requestsByProject($team, $projects->modelKeys());
 
         return $team->servers()
             ->whereIn('id', $prices->keys())
@@ -171,17 +178,30 @@ class CostService
     }
 
     /**
-     * Requests per project over the traffic window, from the minute rollups.
+     * Requests per project over the traffic window, from the minute rollups,
+     * cached per team and set of projects.
      *
      * @param  list<int>  $ids
      * @return Collection<int, int>
      */
-    private function requestsByProject(array $ids): Collection
+    private function requestsByProject(Team $team, array $ids): Collection
     {
         if ($ids === []) {
             return collect();
         }
 
+        sort($ids);
+        $key = sprintf('laraowl.costs.traffic.%d.%d.%s', $team->id, $this->trafficDays(), md5(implode(',', $ids)));
+
+        return collect(Cache::remember($key, self::TRAFFIC_CACHE_SECONDS, fn () => $this->readRequests($ids)->all()));
+    }
+
+    /**
+     * @param  list<int>  $ids
+     * @return Collection<int, int>
+     */
+    private function readRequests(array $ids): Collection
+    {
         $count = DB::connection()->getQueryGrammar()->wrap('count');
 
         return RecordRollup::query()

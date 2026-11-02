@@ -10,6 +10,7 @@ use App\Models\RecordRollup;
 use App\Models\Server;
 use App\Models\Team;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -55,9 +56,17 @@ class CostService
      */
     public function monthlyCents(Cost $cost): float
     {
+        return $this->billCents($cost) / $cost->interval->months();
+    }
+
+    /**
+     * One bill of the cost in cents of the base currency.
+     */
+    public function billCents(Cost $cost): float
+    {
         $rate = (float) (config('laraowl.costs.rates')[$cost->currency] ?? 1.0);
 
-        return $cost->amount_cents * $rate / $cost->interval->months();
+        return $cost->amount_cents * $rate;
     }
 
     /**
@@ -67,7 +76,7 @@ class CostService
      */
     public function summary(Team $team): array
     {
-        $costs = $team->costs()->get();
+        $costs = $team->costs()->with('server:id,name')->get();
         $monthly = $costs->sum(fn (Cost $cost) => $this->monthlyCents($cost));
 
         $categories = collect(CostCategory::cases())
@@ -94,9 +103,131 @@ class CostService
             'approximate' => $costs->contains(fn (Cost $cost) => $cost->currency !== $this->baseCurrency()),
             'count' => $costs->count(),
             'categories' => $categories,
+            'items' => $this->items($costs),
             'apps' => $apps,
+            'requests' => array_sum(array_column($apps, 'requests')),
             'traffic_days' => $this->trafficDays(),
+            ...$this->forecast($costs),
         ];
+    }
+
+    /**
+     * Every cost as a line of the statement, biggest first within its
+     * category.
+     *
+     * @param  Collection<int, Cost>  $costs
+     * @return list<array<string, mixed>>
+     */
+    private function items(Collection $costs): array
+    {
+        return $costs
+            ->map(fn (Cost $cost) => [
+                'id' => $cost->id,
+                'name' => $cost->name,
+                'category' => $cost->category->value,
+                'server_name' => $cost->server?->name,
+                'interval' => $cost->interval->value,
+                'amount_cents' => $cost->amount_cents,
+                'currency' => $cost->currency,
+                'monthly_cents' => (int) round($this->monthlyCents($cost)),
+                'renews_on' => $cost->renews_on?->toDateString(),
+            ])
+            ->sortBy([
+                fn (array $a, array $b) => array_search(CostCategory::from($a['category']), CostCategory::cases(), true)
+                    <=> array_search(CostCategory::from($b['category']), CostCategory::cases(), true),
+                fn (array $a, array $b) => $b['monthly_cents'] <=> $a['monthly_cents'],
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * What gets billed in each of the coming months: monthly costs every
+     * month, yearly ones in full on their renewal month. Yearly costs
+     * without a renewal date are spread a twelfth a month.
+     *
+     * @param  Collection<int, Cost>  $costs
+     * @return array{forecast: list<array<string, mixed>>, renewals: list<array<string, mixed>>, unscheduled_cents: int}
+     */
+    private function forecast(Collection $costs): array
+    {
+        $today = CarbonImmutable::today();
+        $first = $today->startOfMonth();
+        $end = $first->addMonths(self::FORECAST_MONTHS);
+        $empty = array_fill_keys(array_map(fn (CostCategory $category) => $category->value, CostCategory::cases()), 0.0);
+
+        $months = collect(range(0, self::FORECAST_MONTHS - 1))
+            ->mapWithKeys(fn (int $offset) => [$first->addMonths($offset)->format('Y-m') => ['categories' => $empty, 'renewals' => []]])
+            ->all();
+        $renewals = [];
+        $unscheduled = 0.0;
+
+        foreach ($costs as $cost) {
+            $category = $cost->category->value;
+
+            if ($cost->interval->months() === 1) {
+                foreach ($months as $key => $month) {
+                    $months[$key]['categories'][$category] += $this->monthlyCents($cost);
+                }
+
+                continue;
+            }
+
+            if ($cost->renews_on === null) {
+                $unscheduled += $this->monthlyCents($cost);
+
+                foreach ($months as $key => $month) {
+                    $months[$key]['categories'][$category] += $this->monthlyCents($cost);
+                }
+
+                continue;
+            }
+
+            $next = $this->nextRenewal(CarbonImmutable::parse($cost->renews_on), $today, $cost->interval->months());
+            $renewals[] = [
+                'id' => $cost->id,
+                'name' => $cost->name,
+                'category' => $category,
+                'date' => $next->toDateString(),
+                'days' => (int) $today->diffInDays($next),
+                'cents' => (int) round($this->billCents($cost)),
+            ];
+
+            for ($date = $next; $date < $end; $date = $date->addMonthsNoOverflow($cost->interval->months())) {
+                $key = $date->format('Y-m');
+                $months[$key]['categories'][$category] += $this->billCents($cost);
+                $months[$key]['renewals'][] = ['name' => $cost->name, 'date' => $date->toDateString(), 'cents' => (int) round($this->billCents($cost))];
+            }
+        }
+
+        usort($renewals, fn (array $a, array $b) => $a['date'] <=> $b['date'] ?: $a['name'] <=> $b['name']);
+
+        return [
+            'forecast' => collect($months)
+                ->map(fn (array $month, string $key) => [
+                    'month' => $key,
+                    'total_cents' => (int) round(array_sum($month['categories'])),
+                    'categories' => array_map(fn (float $cents) => (int) round($cents), $month['categories']),
+                    'renewals' => $month['renewals'],
+                ])
+                ->values()
+                ->all(),
+            'renewals' => array_slice($renewals, 0, self::RENEWALS_SHOWN),
+            'unscheduled_cents' => (int) round($unscheduled),
+        ];
+    }
+
+    /**
+     * The first renewal on or after today: a stale date rolls forward by
+     * whole billing periods.
+     */
+    private function nextRenewal(CarbonImmutable $date, CarbonImmutable $today, int $months): CarbonImmutable
+    {
+        while ($date < $today) {
+            $date = $date->addMonthsNoOverflow($months);
+        }
+
+        return $date;
     }
 
     /**
@@ -176,6 +307,16 @@ class CostService
             ->values()
             ->all();
     }
+
+    /**
+     * How many months the bill forecast looks ahead, this one included.
+     */
+    private const FORECAST_MONTHS = 12;
+
+    /**
+     * How many renewals the summary lists.
+     */
+    private const RENEWALS_SHOWN = 5;
 
     /**
      * Requests per project over the traffic window, from the minute rollups,

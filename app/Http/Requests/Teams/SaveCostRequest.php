@@ -41,6 +41,7 @@ class SaveCostRequest extends FormRequest
             'amount' => ['required', 'numeric', 'gt:0', 'max:1000000', 'decimal:0,2'],
             'currency' => ['required', Rule::in(app(CostService::class)->currencies())],
             'interval' => ['required', Rule::enum(CostInterval::class)],
+            'renews_on' => ['nullable', 'date_format:Y-m-d'],
         ];
     }
 
@@ -53,6 +54,7 @@ class SaveCostRequest extends FormRequest
     {
         return [
             'server_id' => 'server',
+            'renews_on' => 'renewal date',
         ];
     }
 
@@ -72,6 +74,7 @@ class SaveCostRequest extends FormRequest
             'amount_cents' => (int) round((float) $validated['amount'] * 100),
             'currency' => $validated['currency'],
             'interval' => $validated['interval'],
+            'renews_on' => $validated['renews_on'] ?? null,
         ];
     }
 }

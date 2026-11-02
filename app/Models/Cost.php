@@ -26,6 +26,7 @@ class Cost extends Model
         'amount_cents',
         'currency',
         'interval',
+        'renews_on',
     ];
 
     /**
@@ -39,6 +40,7 @@ class Cost extends Model
             'category' => CostCategory::class,
             'interval' => CostInterval::class,
             'amount_cents' => 'integer',
+            'renews_on' => 'date',
         ];
     }
 

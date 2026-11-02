@@ -52,12 +52,17 @@ function monthDays(year: number, month: number): (string | null)[] {
     ];
 }
 
-function MonthGrid({
+/**
+ * One month of day buttons. Days after `latest` can't be picked; without it
+ * every day can.
+ */
+export function MonthGrid({
     year,
     month,
     range,
     hovered,
     today,
+    latest = null,
     onPick,
     onHover,
 }: {
@@ -66,6 +71,7 @@ function MonthGrid({
     range: DateRange;
     hovered: string | null;
     today: string;
+    latest?: string | null;
     onPick: (date: string) => void;
     onHover: (date: string | null) => void;
 }) {
@@ -96,7 +102,7 @@ function MonthGrid({
                         return <span key={`pad-${i}`} />;
                     }
 
-                    const future = day > today;
+                    const future = latest !== null && day > latest;
                     const isStart = day === range.start;
                     const isEnd = day === end;
                     const between =
@@ -212,6 +218,7 @@ export function DateRangeCalendar({
                         range={range}
                         hovered={hovered}
                         today={today}
+                        latest={today}
                         onPick={pick}
                         onHover={setHovered}
                     />
@@ -222,6 +229,7 @@ export function DateRangeCalendar({
                     range={range}
                     hovered={hovered}
                     today={today}
+                    latest={today}
                     onPick={pick}
                     onHover={setHovered}
                 />

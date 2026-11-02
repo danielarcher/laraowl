@@ -1,6 +1,8 @@
 import { Form, Head } from '@inertiajs/react';
 import { useState } from 'react';
 import CostController from '@/actions/App/Http/Controllers/Teams/CostController';
+import { DatePicker } from '@/components/date-picker';
+import { formatDay } from '@/components/date-range-calendar';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -27,6 +29,7 @@ type CostRow = {
     amount_cents: number;
     currency: string;
     interval: 'monthly' | 'yearly';
+    renews_on: string | null;
     monthly_cents: number;
 };
 
@@ -66,6 +69,7 @@ function CostForm({
     const [interval, setBilledInterval] = useState<string>(
         cost?.interval ?? 'monthly',
     );
+    const [renewsOn, setRenewsOn] = useState(cost?.renews_on ?? '');
     const action = cost
         ? CostController.update.form([team.slug, cost.id])
         : CostController.store.form(team.slug);
@@ -92,6 +96,7 @@ function CostForm({
                     />
                     <input type="hidden" name="currency" value={currency} />
                     <input type="hidden" name="interval" value={interval} />
+                    <input type="hidden" name="renews_on" value={renewsOn} />
 
                     <div className="grid gap-2">
                         <Label htmlFor="cost-name">Name</Label>
@@ -217,6 +222,23 @@ function CostForm({
                         </div>
                     </div>
 
+                    <div className="grid gap-4 sm:grid-cols-3">
+                        <div className="grid gap-2">
+                            <Label htmlFor="cost-renews-on">Renews on</Label>
+                            <DatePicker
+                                id="cost-renews-on"
+                                value={renewsOn}
+                                onChange={setRenewsOn}
+                                placeholder="Not set"
+                            />
+                            <InputError message={errors.renews_on} />
+                        </div>
+                        <p className="self-end pb-2 text-xs text-muted-foreground sm:col-span-2">
+                            For yearly costs: the bill lands on this month in
+                            the forecast.
+                        </p>
+                    </div>
+
                     <div className="flex items-center gap-3">
                         <Button type="submit" disabled={processing}>
                             {cost ? 'Save cost' : 'Add cost'}
@@ -310,6 +332,8 @@ export default function TeamCosts({
                                         {label(cost.category)}
                                         {cost.server_name &&
                                             ` · ${cost.server_name}`}
+                                        {cost.renews_on &&
+                                            ` · renews ${formatDay(cost.renews_on)}`}
                                     </div>
                                 </div>
                                 <div className="flex shrink-0 items-center gap-2">

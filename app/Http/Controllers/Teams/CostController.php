@@ -42,6 +42,7 @@ class CostController extends Controller
                     'amount_cents' => $cost->amount_cents,
                     'currency' => $cost->currency,
                     'interval' => $cost->interval->value,
+                    'renews_on' => $cost->renews_on?->toDateString(),
                     'monthly_cents' => (int) round($this->costs->monthlyCents($cost)),
                 ]),
             'summary' => $this->costs->summary($team),

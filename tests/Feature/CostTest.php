@@ -10,6 +10,7 @@ use App\Models\Team;
 use App\Models\User;
 use App\Services\CostService;
 use App\Services\IngestService;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -173,6 +174,10 @@ test('the overview shows the monthly spend by category, converting other currenc
                 ['category' => 'domain', 'label' => 'Domains', 'monthly_cents' => 100],
             ])
             ->has('spending.apps', 1)
+            ->has('spending.items', 4)
+            ->has('spending.forecast', 12)
+            ->where('spending.forecast.0.total_cents', 4400)
+            ->where('spending.unscheduled_cents', 100)
         );
 });
 
@@ -279,4 +284,76 @@ test('the 30-day traffic behind the split is read once and then cached', functio
 
     expect($rollupReads)->toHaveCount(1)
         ->and($costs->serverShares($team)[$server->id]['apps'][0]['requests'])->toBe(2);
+});
+
+test('the forecast bills monthly costs every month and yearly ones on their renewal month', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-11-02 12:00'));
+    [, $team] = costTeam();
+    Cost::factory()->create(['team_id' => $team->id, 'name' => 'web-1', 'category' => CostCategory::Server, 'amount_cents' => 1000]);
+    Cost::factory()->create(['team_id' => $team->id, 'name' => 'example.com', 'category' => CostCategory::Domain, 'amount_cents' => 2400, 'interval' => CostInterval::Yearly, 'renews_on' => '2027-03-09']);
+    // A renewal date in the past rolls forward a year at a time.
+    Cost::factory()->create(['team_id' => $team->id, 'name' => 'old.org', 'category' => CostCategory::Domain, 'amount_cents' => 1200, 'interval' => CostInterval::Yearly, 'renews_on' => '2025-01-15']);
+    // Paid for years ahead: nothing to bill this year.
+    Cost::factory()->create(['team_id' => $team->id, 'name' => 'long.com.br', 'category' => CostCategory::Domain, 'amount_cents' => 5000, 'interval' => CostInterval::Yearly, 'renews_on' => '2029-08-07']);
+
+    $summary = app(CostService::class)->summary($team);
+    $months = collect($summary['forecast'])->keyBy('month');
+
+    expect($summary['forecast'])->toHaveCount(12)
+        ->and($summary['forecast'][0]['month'])->toBe('2026-11')
+        ->and($summary['forecast'][11]['month'])->toBe('2027-10')
+        ->and($months['2026-11']['total_cents'])->toBe(1000)
+        ->and($months['2027-01']['total_cents'])->toBe(2200)
+        ->and($months['2027-01']['renewals'])->toBe([['name' => 'old.org', 'date' => '2027-01-15', 'cents' => 1200]])
+        ->and($months['2027-03']['categories'])->toMatchArray(['server' => 1000, 'domain' => 2400])
+        ->and(collect($summary['forecast'])->sum('total_cents'))->toBe(12 * 1000 + 2400 + 1200)
+        ->and(array_column($summary['renewals'], 'name'))->toBe(['old.org', 'example.com', 'long.com.br'])
+        ->and($summary['renewals'][0]['days'])->toBe(74)
+        ->and($summary['unscheduled_cents'])->toBe(0);
+});
+
+test('a yearly cost without a renewal date is spread over the forecast', function () {
+    [, $team] = costTeam();
+    Cost::factory()->create(['team_id' => $team->id, 'category' => CostCategory::Domain, 'amount_cents' => 2400, 'interval' => CostInterval::Yearly]);
+
+    $summary = app(CostService::class)->summary($team);
+
+    expect(array_unique(array_column($summary['forecast'], 'total_cents')))->toBe([200])
+        ->and($summary['unscheduled_cents'])->toBe(200)
+        ->and($summary['renewals'])->toBe([]);
+});
+
+test('the statement lists every cost by category, biggest first, with the requests behind the unit cost', function () {
+    [, $team] = costTeam();
+    $server = Server::factory()->create(['team_id' => $team->id, 'name' => 'web-1']);
+    $project = Project::factory()->create(['team_id' => $team->id, 'server_id' => $server->id]);
+    costRequests($project, 4);
+    Cost::factory()->create(['team_id' => $team->id, 'name' => 'Small plan', 'category' => CostCategory::Plan, 'amount_cents' => 500]);
+    Cost::factory()->create(['team_id' => $team->id, 'name' => 'Big plan', 'category' => CostCategory::Plan, 'amount_cents' => 1900]);
+    Cost::factory()->create(['team_id' => $team->id, 'server_id' => $server->id, 'name' => 'web-1', 'category' => CostCategory::Server, 'amount_cents' => 1710]);
+
+    $summary = app(CostService::class)->summary($team);
+
+    expect(array_column($summary['items'], 'name'))->toBe(['web-1', 'Big plan', 'Small plan'])
+        ->and($summary['items'][0]['server_name'])->toBe('web-1')
+        ->and($summary['requests'])->toBe(4);
+});
+
+test('a cost keeps its renewal date, which must be a real day', function () {
+    [$user, $team] = costTeam();
+    $fields = ['name' => 'example.com', 'category' => 'domain', 'amount' => '20.18', 'currency' => 'USD', 'interval' => 'yearly'];
+
+    $this->actingAs($user)
+        ->post(route('teams.costs.store', ['team' => $team->slug]), [...$fields, 'renews_on' => '2027-02-30'])
+        ->assertSessionHasErrors('renews_on');
+
+    $this->actingAs($user)
+        ->post(route('teams.costs.store', ['team' => $team->slug]), [...$fields, 'renews_on' => '2027-03-09'])
+        ->assertSessionHasNoErrors();
+
+    expect($team->costs()->sole()->renews_on->toDateString())->toBe('2027-03-09');
+
+    $this->actingAs($user)
+        ->get(route('teams.costs.index', ['team' => $team->slug]))
+        ->assertInertia(fn (Assert $page) => $page->where('costs.0.renews_on', '2027-03-09'));
 });

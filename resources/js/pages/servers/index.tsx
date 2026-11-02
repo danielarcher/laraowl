@@ -161,16 +161,17 @@ function ServerCard({
                             <h3 className="truncate text-lg font-semibold tracking-tight text-foreground">
                                 {server.name}
                             </h3>
+                        </div>
+                        <div className="mt-1 truncate text-[11px] text-muted-foreground">
                             {cost && (
                                 <span
-                                    className="shrink-0 text-[12px] font-medium text-muted-foreground tabular-nums"
+                                    className="font-medium text-foreground tabular-nums"
                                     data-test="server-price"
                                 >
                                     {formatMoney(cost.monthly_cents)}/mo
+                                    {' · '}
                                 </span>
                             )}
-                        </div>
-                        <div className="mt-1 truncate text-[11px] text-muted-foreground">
                             {[server.hostname, server.ip_address]
                                 .filter(Boolean)
                                 .join(' · ') || 'Waiting for the agent'}

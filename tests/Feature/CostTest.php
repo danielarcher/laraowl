@@ -79,7 +79,7 @@ test('an owner adds, updates and removes a cost', function () {
 
     $this->actingAs($user)
         ->patch(route('teams.costs.update', ['team' => $team->slug, 'cost' => $cost->id]), [
-            'name' => 'keepitfive.ie',
+            'name' => 'shop.example.com',
             'category' => 'domain',
             'server_id' => null,
             'amount' => '61.5',
@@ -89,7 +89,7 @@ test('an owner adds, updates and removes a cost', function () {
         ->assertRedirect();
 
     expect($cost->fresh())
-        ->name->toBe('keepitfive.ie')
+        ->name->toBe('shop.example.com')
         ->amount_cents->toBe(6150)
         ->currency->toBe('EUR')
         ->interval->toBe(CostInterval::Yearly)

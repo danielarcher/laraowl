@@ -39,7 +39,7 @@ test('a Lite batch is accepted and stored as requests, logs and exceptions', fun
     $this->withToken($project->api_token)->postJson('/api/records', liteBatch())->assertStatus(202);
 
     expect($project->records()->orderBy('id')->pluck('type')->all())->toBe(['request', 'log', 'log', 'exception'])
-        ->and($project->records()->where('type', 'request')->first()->payload['url'])->toBe('https://balfolkdublin.ie/ticket/[redacted]?lang=en');
+        ->and($project->records()->where('type', 'request')->first()->payload['url'])->toBe('https://events.example.com/ticket/[redacted]?lang=en');
 
     $route = RecordGroupRollup::query()->where('project_id', $project->id)->where('type', 'request')->sole();
 
@@ -86,7 +86,7 @@ test('Lite records show on the requests, request detail and logs pages', functio
 
 test('a Lite site is linked to the server it runs on', function () {
     [, $team, $project] = liteProject();
-    $server = Server::factory()->create(['team_id' => $team->id, 'hostname' => 'silent-temple']);
+    $server = Server::factory()->create(['team_id' => $team->id, 'hostname' => 'web-01']);
 
     $this->withToken($project->api_token)->postJson('/api/records', liteBatch())->assertStatus(202);
     $this->artisan('laraowl:projects:link-servers')->assertSuccessful();

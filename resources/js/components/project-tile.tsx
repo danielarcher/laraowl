@@ -10,7 +10,7 @@ const PROJECT_TINTS = [
 ];
 
 /**
- * "Keep It Five" → "KI", "iaang" → "IA".
+ * "Acme Shop" → "AS", "storefront" → "ST".
  */
 function projectInitials(name: string): string {
     const words = name.trim().split(/\s+/).filter(Boolean);

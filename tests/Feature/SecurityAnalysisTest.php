@@ -15,7 +15,7 @@ test("the app's own address does not count as a remote file in the request", fun
 
     // An analytics beacon sent a few times by one visitor.
     foreach (range(1, 5) as $ignored) {
-        securityIngest($project, 'https://keepitfive.ie/track.php');
+        securityIngest($project, 'https://shop.example.com/track.php');
     }
 
     expect($project->issues()->where('type', 'security')->count())->toBe(0);
@@ -24,7 +24,7 @@ test("the app's own address does not count as a remote file in the request", fun
 test('a remote file passed in the query is still flagged', function () {
     $project = Project::factory()->create();
 
-    securityIngest($project, 'https://keepitfive.ie/page?include=http://evil.example/shell.txt');
+    securityIngest($project, 'https://shop.example.com/page?include=http://evil.example/shell.txt');
 
     expect($project->issues()->where('type', 'security')->value('message'))->toContain('lfi_rfi');
 });
@@ -32,7 +32,7 @@ test('a remote file passed in the query is still flagged', function () {
 test('probing a sensitive path is still flagged', function () {
     $project = Project::factory()->create();
 
-    securityIngest($project, 'https://keepitfive.ie/../../etc/passwd');
+    securityIngest($project, 'https://shop.example.com/../../etc/passwd');
 
     expect($project->issues()->where('type', 'security')->value('message'))->toContain('path_traversal');
 });
@@ -57,7 +57,7 @@ test('a crawler whose user agent links to a .php page is not a file inclusion', 
     $project = Project::factory()->create();
 
     app(IngestService::class)->ingest($project, [
-        ['t' => 'request', 'method' => 'GET', 'url' => 'https://keepitfive.ie/', 'status_code' => 200, 'duration' => 5_000, 'ip' => '173.252.87.4',
+        ['t' => 'request', 'method' => 'GET', 'url' => 'https://shop.example.com/', 'status_code' => 200, 'duration' => 5_000, 'ip' => '173.252.87.4',
             'headers' => json_encode(['user-agent' => ['facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)']], JSON_UNESCAPED_SLASHES)],
     ]);
 
@@ -68,7 +68,7 @@ test('script injected through a header is still flagged', function () {
     $project = Project::factory()->create();
 
     app(IngestService::class)->ingest($project, [
-        ['t' => 'request', 'method' => 'GET', 'url' => 'https://keepitfive.ie/', 'status_code' => 200, 'duration' => 5_000, 'ip' => '203.0.113.9',
+        ['t' => 'request', 'method' => 'GET', 'url' => 'https://shop.example.com/', 'status_code' => 200, 'duration' => 5_000, 'ip' => '203.0.113.9',
             'headers' => json_encode(['user-agent' => ['<script>alert(1)</script>']], JSON_UNESCAPED_SLASHES)],
     ]);
 
@@ -86,12 +86,12 @@ function securityRequest(Project $project, string $url, string $ip, int $status 
 test('an address has one issue, which escalates as its score rises and never drops', function () {
     $project = Project::factory()->create();
 
-    securityRequest($project, 'https://keepitfive.ie/.git/config', '203.0.113.7');
+    securityRequest($project, 'https://shop.example.com/.git/config', '203.0.113.7');
     $issue = $project->issues()->sole();
     expect($issue->priority)->toBe('medium')
         ->and($issue->title)->toBe('Security Issue: MEDIUM Risk from 203.0.113.7');
 
-    securityRequest($project, 'https://keepitfive.ie/.git/HEAD', '203.0.113.7');
+    securityRequest($project, 'https://shop.example.com/.git/HEAD', '203.0.113.7');
     $issue->refresh();
     expect($issue->priority)->toBe('critical')
         ->and($issue->title)->toBe('Security Issue: CRITICAL Risk from 203.0.113.7')
@@ -100,12 +100,12 @@ test('an address has one issue, which escalates as its score rises and never dro
     // The score lapses after a day; a milder probe while the issue is open
     // keeps the level it reached.
     $this->travel(25)->hours();
-    securityRequest($project, 'https://keepitfive.ie/.git/index', '203.0.113.7');
+    securityRequest($project, 'https://shop.example.com/.git/index', '203.0.113.7');
 
     expect($project->issues()->sole()->priority)->toBe('critical')
         ->and($project->issues()->sole()->occurrences_count)->toBe(3);
 
-    securityRequest($project, 'https://keepitfive.ie/.git/config', '198.51.100.4');
+    securityRequest($project, 'https://shop.example.com/.git/config', '198.51.100.4');
 
     expect($project->issues()->count())->toBe(2);
 });
@@ -114,8 +114,8 @@ test('missing scripts, styles and images are a stale page, not a directory scan'
     $project = Project::factory()->create();
 
     foreach (range(1, 15) as $n) {
-        securityRequest($project, "https://fastidious.gg/build/assets/chunk-{$n}.js", '203.0.113.7', 404);
-        securityRequest($project, "https://fastidious.gg/build/assets/app-{$n}.css?v=2", '203.0.113.7', 404);
+        securityRequest($project, "https://app.example.com/build/assets/chunk-{$n}.js", '203.0.113.7', 404);
+        securityRequest($project, "https://app.example.com/build/assets/app-{$n}.css?v=2", '203.0.113.7', 404);
     }
 
     expect($project->issues()->count())->toBe(0);
@@ -125,7 +125,7 @@ test('a run of missing pages is still a directory scan', function () {
     $project = Project::factory()->create();
 
     foreach (range(1, 12) as $n) {
-        securityRequest($project, "https://fastidious.gg/admin-{$n}", '203.0.113.7', 404);
+        securityRequest($project, "https://app.example.com/admin-{$n}", '203.0.113.7', 404);
     }
 
     expect($project->issues()->sole()->message)->toContain('Directory Scanning Detected (Rapid 404s)');
@@ -134,14 +134,14 @@ test('a run of missing pages is still a directory scan', function () {
 test('a security tool named in the user agent is flagged', function () {
     $project = Project::factory()->create();
 
-    securityRequest($project, 'https://keepitfive.ie/', '203.0.113.7', headers: ['user-agent' => ['sqlmap/1.8.2#stable (https://sqlmap.org)']]);
+    securityRequest($project, 'https://shop.example.com/', '203.0.113.7', headers: ['user-agent' => ['sqlmap/1.8.2#stable (https://sqlmap.org)']]);
 
     expect($project->issues()->sole()->message)->toContain('Suspicious Security Tool Detected: sqlmap');
 });
 
 test('threat issues from addresses quiet for a day are resolved; audits stay open', function () {
     $project = Project::factory()->create();
-    securityRequest($project, 'https://keepitfive.ie/.git/config', '203.0.113.7');
+    securityRequest($project, 'https://shop.example.com/.git/config', '203.0.113.7');
     // From before issues were kept per address: one per risk level.
     $older = $project->issues()->create([
         'hash' => md5('security_critical_198.51.100.4'), 'type' => 'security', 'status' => 'open', 'priority' => 'critical',
@@ -153,7 +153,7 @@ test('threat issues from addresses quiet for a day are resolved; audits stay ope
     ]);
 
     $this->travel(23)->hours();
-    securityRequest($project, 'https://keepitfive.ie/.git/HEAD', '192.0.2.1');
+    securityRequest($project, 'https://shop.example.com/.git/HEAD', '192.0.2.1');
     $this->travel(2)->hours();
 
     $this->artisan('laraowl:security:resolve-quiet')
@@ -174,12 +174,12 @@ test('threat issues from addresses quiet for a day are resolved; audits stay ope
 
 test('a resolved address that comes back reopens its issue, rated afresh', function () {
     $project = Project::factory()->create();
-    securityRequest($project, 'https://keepitfive.ie/.git/config', '203.0.113.7');
-    securityRequest($project, 'https://keepitfive.ie/.git/HEAD', '203.0.113.7');
+    securityRequest($project, 'https://shop.example.com/.git/config', '203.0.113.7');
+    securityRequest($project, 'https://shop.example.com/.git/HEAD', '203.0.113.7');
     $this->travel(25)->hours();
     $this->artisan('laraowl:security:resolve-quiet');
 
-    securityRequest($project, 'https://keepitfive.ie/.git/config', '203.0.113.7');
+    securityRequest($project, 'https://shop.example.com/.git/config', '203.0.113.7');
 
     $issue = $project->issues()->sole();
     expect($issue->status)->toBe('open')
@@ -190,10 +190,10 @@ test('a resolved address that comes back reopens its issue, rated afresh', funct
 
 test('an ignored address stays ignored', function () {
     $project = Project::factory()->create();
-    securityRequest($project, 'https://keepitfive.ie/.git/config', '203.0.113.7');
+    securityRequest($project, 'https://shop.example.com/.git/config', '203.0.113.7');
     $project->issues()->update(['status' => 'ignored']);
 
-    securityRequest($project, 'https://keepitfive.ie/.git/HEAD', '203.0.113.7');
+    securityRequest($project, 'https://shop.example.com/.git/HEAD', '203.0.113.7');
 
     expect($project->issues()->sole()->status)->toBe('ignored');
 });

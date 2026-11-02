@@ -134,3 +134,25 @@ test('the servers page carries every server sparkline and its insights', functio
                 ->and($servers['web-1']['insights']['cpu_avg'])->toEqual(30);
         });
 });
+
+test('each server on the page shows its own newest sample', function () {
+    [$user, $team, $web] = insightServer();
+    $db = Server::factory()->create(['team_id' => $team->id, 'name' => 'db-1']);
+    Server::factory()->create(['team_id' => $team->id, 'name' => 'idle-1']);
+
+    insightSample($web, 0.02, ['cpu_percent' => 11]);
+    insightSample($web, 0.001, ['cpu_percent' => 42]);
+    insightSample($db, 0.001, ['cpu_percent' => 7]);
+    insightSample($db, 0.03, ['cpu_percent' => 99]);
+
+    $this->actingAs($user)
+        ->get(route('servers.index', ['current_team' => $team->slug]))
+        ->assertOk()
+        ->assertInertia(function (Assert $page) {
+            $servers = collect($page->toArray()['props']['servers'])->keyBy('name');
+
+            expect($servers['web-1']['latest']['cpu'])->toEqual(42)
+                ->and($servers['db-1']['latest']['cpu'])->toEqual(7)
+                ->and($servers['idle-1']['latest'])->toBeNull();
+        });
+});

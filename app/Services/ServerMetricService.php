@@ -47,22 +47,52 @@ class ServerMetricService
     public function overview(Team $team): array
     {
         $servers = $team->servers()
-            ->with(['latestMetric', 'projects' => fn ($query) => $query->orderBy('name')])
+            ->with(['projects' => fn ($query) => $query->orderBy('name')])
             ->orderBy('name')
             ->get();
+        $latest = $this->latestSamples($servers->modelKeys());
         $sparklines = $this->sparklines($servers->modelKeys(), now()->subHour(), now(), 60);
         $insights = $this->insights($team);
 
         return $servers
             ->map(fn (Server $server) => [
                 ...$this->summary($server),
-                'latest' => $server->latestMetric ? $this->presentSample($server->latestMetric) : null,
+                'latest' => $latest->has($server->id) ? $this->presentSample($latest[$server->id]) : null,
                 'sparkline' => $sparklines->get($server->id, []),
                 'projects' => $this->presentProjects($server),
                 'insights' => $insights[$server->id] ?? null,
             ])
             ->values()
             ->all();
+    }
+
+    /**
+     * The newest sample of each server, keyed by server id. Each id is looked
+     * up on the (server_id, recorded_ts) index; latestOfMany() groups the whole
+     * table first, which took ~200ms on a few hundred thousand samples.
+     *
+     * @param  list<int>  $ids
+     * @return Collection<int, ServerMetric>
+     */
+    private function latestSamples(array $ids): Collection
+    {
+        if ($ids === []) {
+            return collect();
+        }
+
+        $newest = Server::query()
+            ->whereKey($ids)
+            ->toBase()
+            ->select(['latest_id' => ServerMetric::query()
+                ->select('id')
+                ->whereColumn('server_metrics.server_id', 'servers.id')
+                ->orderByDesc('recorded_ts')
+                ->orderByDesc('id')
+                ->limit(1)])
+            ->pluck('latest_id')
+            ->filter();
+
+        return ServerMetric::query()->whereKey($newest)->get()->keyBy('server_id');
     }
 
     /**

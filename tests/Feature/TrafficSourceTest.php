@@ -112,6 +112,8 @@ test('the dashboard page takes the sources from the query string', function () {
 });
 
 test('the source rollups can be rebuilt from raw requests', function () {
+    // Mid-hour, so the records an hour back always sit in a finished hour.
+    $this->travelTo(now()->startOfHour()->addMinutes(30));
     $project = Project::factory()->create();
 
     app(IngestService::class)->ingest($project, [

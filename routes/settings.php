@@ -3,6 +3,7 @@
 use App\Http\Controllers\Settings\McpTokenController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SecurityController;
+use App\Http\Controllers\Teams\CostController;
 use App\Http\Controllers\Teams\TeamController;
 use App\Http\Controllers\Teams\TeamInvitationController;
 use App\Http\Controllers\Teams\TeamMemberController;
@@ -42,5 +43,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::post('settings/teams/{team}/invitations', [TeamInvitationController::class, 'store'])->name('teams.invitations.store');
         Route::delete('settings/teams/{team}/invitations/{invitation}', [TeamInvitationController::class, 'destroy'])->name('teams.invitations.destroy');
+    });
+
+    // What the team pays: owners and admins only.
+    Route::middleware(EnsureTeamMembership::class.':admin')->scopeBindings()->group(function () {
+        Route::get('settings/teams/{team}/costs', [CostController::class, 'index'])->name('teams.costs.index');
+        Route::post('settings/teams/{team}/costs', [CostController::class, 'store'])->name('teams.costs.store');
+        Route::patch('settings/teams/{team}/costs/{cost}', [CostController::class, 'update'])->name('teams.costs.update');
+        Route::delete('settings/teams/{team}/costs/{cost}', [CostController::class, 'destroy'])->name('teams.costs.destroy');
     });
 });

@@ -13,13 +13,18 @@ import {
 } from '@/components/charts/chart-tooltip';
 import { categoryColors, seriesColor } from '@/components/charts/format';
 import { TimeSeriesChart } from '@/components/charts/time-series-chart';
+import { CostSplitToggle } from '@/components/cost-split-toggle';
 import { ProjectTile } from '@/components/project-tile';
 import { Card } from '@/components/ui/card';
+import { useCostSplit } from '@/hooks/use-cost-split';
 import { useHiddenSeries } from '@/hooks/use-hidden-series';
 import AppLayout from '@/layouts/app-layout';
+import type { Spending } from '@/lib/costs';
+import { formatMoney, shareCents } from '@/lib/costs';
 import type { ServerSample, ServerSummary } from '@/lib/server-metrics';
 import { formatPercent, usageTone } from '@/lib/server-metrics';
 import { cn } from '@/lib/utils';
+import { index as costsIndex } from '@/routes/teams/costs';
 
 type TrendPoint = {
     t: number;
@@ -78,6 +83,7 @@ type OverviewProps = {
     groups: OverviewGroup[];
     period: string;
     slot_seconds: number;
+    spending: Spending | null;
 };
 
 const PERIOD_LABELS: Record<string, string> = {
@@ -493,6 +499,142 @@ function AppsChart({
     );
 }
 
+/**
+ * The monthly run-rate split by what it pays for, and the apps that cost
+ * the most once their server's price is shared out.
+ */
+function SpendingCard({
+    spending,
+    teamSlug,
+}: {
+    spending: Spending;
+    teamSlug: string;
+}) {
+    const [split, setSplit] = useCostSplit();
+    const money = (cents: number) => formatMoney(cents, spending.currency);
+    const prefix = spending.approximate ? '≈ ' : '';
+    const topApps = [...spending.apps]
+        .sort((a, b) => shareCents(b, split) - shareCents(a, split))
+        .slice(0, 5);
+
+    return (
+        <ChartCard
+            title="Spending per month"
+            href={costsIndex(teamSlug).url}
+            linkLabel="Edit costs"
+            value={`${prefix}${formatMoney(spending.monthly_cents, spending.currency, true)}`}
+        >
+            {spending.count === 0 ? (
+                <div className="flex h-24 items-center justify-center text-xs text-muted-foreground">
+                    No costs yet. Add what you pay to see it here.
+                </div>
+            ) : (
+                <div className="grid gap-6 px-2 pb-2 lg:grid-cols-2">
+                    <div className="space-y-3">
+                        <div className="flex h-2 w-full overflow-hidden rounded-full bg-muted">
+                            {spending.categories.map((category, index) => (
+                                <div
+                                    key={category.category}
+                                    className="h-full"
+                                    style={{
+                                        width: `${(category.monthly_cents / spending.monthly_cents) * 100}%`,
+                                        backgroundColor:
+                                            categoryColors[
+                                                index % categoryColors.length
+                                            ],
+                                    }}
+                                />
+                            ))}
+                        </div>
+                        <ul className="space-y-1.5 text-[12px]">
+                            {spending.categories.map((category, index) => (
+                                <li
+                                    key={category.category}
+                                    className="flex items-center justify-between gap-3"
+                                >
+                                    <span className="flex items-center gap-2 text-foreground/70">
+                                        <span
+                                            className="size-2 rounded-[2px]"
+                                            style={{
+                                                backgroundColor:
+                                                    categoryColors[
+                                                        index %
+                                                            categoryColors.length
+                                                    ],
+                                            }}
+                                        />
+                                        {category.label}
+                                    </span>
+                                    <span className="text-foreground tabular-nums">
+                                        {money(category.monthly_cents)}
+                                    </span>
+                                </li>
+                            ))}
+                        </ul>
+                        <div className="text-[11px] text-foreground/40">
+                            {prefix}
+                            {formatMoney(
+                                spending.yearly_cents,
+                                spending.currency,
+                                true,
+                            )}{' '}
+                            a year
+                            {spending.approximate &&
+                                ' · other currencies converted at a fixed rate'}
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between gap-3">
+                            <span className="text-[11px] font-medium text-foreground/45">
+                                Server cost by app
+                            </span>
+                            <CostSplitToggle
+                                split={split}
+                                onChange={setSplit}
+                            />
+                        </div>
+                        {topApps.length === 0 ? (
+                            <div className="text-[12px] text-foreground/40">
+                                No server prices yet
+                            </div>
+                        ) : (
+                            <ul className="space-y-1.5 text-[12px]">
+                                {topApps.map((app) => (
+                                    <li
+                                        key={app.id}
+                                        className="flex items-center justify-between gap-3"
+                                    >
+                                        <span className="min-w-0 truncate">
+                                            <Link
+                                                href={`/${teamSlug}/${app.slug}/dashboard`}
+                                                className="text-foreground/80 hover:text-foreground"
+                                            >
+                                                {app.name}
+                                            </Link>
+                                            <span className="ml-2 text-foreground/35">
+                                                {app.server_name}
+                                            </span>
+                                        </span>
+                                        <span className="shrink-0 text-foreground tabular-nums">
+                                            {money(shareCents(app, split))}
+                                        </span>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                        {split === 'traffic' && (
+                            <div className="text-[11px] text-foreground/40">
+                                By share of requests over the last{' '}
+                                {spending.traffic_days} days
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+        </ChartCard>
+    );
+}
+
 function Stat({
     label,
     value,
@@ -685,6 +827,7 @@ export default function Overview({
     groups,
     period,
     slot_seconds,
+    spending,
 }: OverviewProps) {
     const { props }: any = usePage();
     const teamSlug: string = props.currentTeam?.slug ?? '';
@@ -725,7 +868,14 @@ export default function Overview({
                 </Card>
             ) : (
                 <>
-                    <Card className="grid grid-cols-2 gap-0 divide-border/60 overflow-hidden border-border bg-card p-0 sm:grid-cols-3 sm:divide-x xl:grid-cols-6">
+                    <Card
+                        className={cn(
+                            'grid grid-cols-2 gap-0 divide-border/60 overflow-hidden border-border bg-card p-0 sm:grid-cols-3 sm:divide-x',
+                            spending
+                                ? 'lg:grid-cols-4 xl:grid-cols-7'
+                                : 'xl:grid-cols-6',
+                        )}
+                    >
                         <Stat
                             label="Requests"
                             value={formatCount(totals.requests)}
@@ -777,6 +927,21 @@ export default function Overview({
                                     : undefined
                             }
                         />
+                        {spending && (
+                            <Stat
+                                label="Spend / month"
+                                value={
+                                    spending.count === 0
+                                        ? '—'
+                                        : `${spending.approximate ? '≈ ' : ''}${formatMoney(spending.monthly_cents, spending.currency, true)}`
+                                }
+                                detail={
+                                    spending.count === 0
+                                        ? 'no costs entered'
+                                        : `${formatMoney(spending.yearly_cents, spending.currency, true)} a year`
+                                }
+                            />
+                        )}
                     </Card>
 
                     <div className="grid gap-4 lg:grid-cols-2">
@@ -793,6 +958,10 @@ export default function Overview({
                             chart="overview-issues"
                         />
                     </div>
+
+                    {spending && (
+                        <SpendingCard spending={spending} teamSlug={teamSlug} />
+                    )}
 
                     <div className="enter-stagger space-y-4">
                         {groups.map((group) => (

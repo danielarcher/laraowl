@@ -7,12 +7,15 @@ import {
     Gauge,
     HardDrive,
     MemoryStick,
+    Wallet,
 } from 'lucide-react';
 import { categoryColors, seriesColor } from '@/components/charts/format';
 import { ServerMetricChart } from '@/components/server-metric-chart';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
+import type { ServerCost } from '@/lib/costs';
+import { formatMoney } from '@/lib/costs';
 import type {
     ServerPoint,
     ServerSample,
@@ -26,13 +29,93 @@ import {
     usageTone,
 } from '@/lib/server-metrics';
 import { cn } from '@/lib/utils';
+import { index as costsIndex } from '@/routes/teams/costs';
 
 type ServerShowProps = {
     server: ServerSummary;
     latest: ServerSample | null;
     history: ServerPoint[];
     bucket_seconds: number;
+    cost: ServerCost | null;
 };
+
+/**
+ * What the server costs and how its apps share that: evenly, and by their
+ * requests over the last 30 days.
+ */
+function CostCard({ cost, teamSlug }: { cost: ServerCost; teamSlug: string }) {
+    return (
+        <Card className="gap-0 overflow-hidden border-border bg-card">
+            <div className="flex items-center justify-between border-b border-border/50 px-6 py-4">
+                <div className="flex items-center gap-2 text-xs font-semibold tracking-widest text-foreground uppercase">
+                    <Wallet className="size-3.5 text-muted-foreground" />
+                    Cost · {formatMoney(cost.monthly_cents)} per month
+                </div>
+                <Link
+                    href={costsIndex(teamSlug)}
+                    className="text-[10px] text-muted-foreground hover:text-foreground"
+                >
+                    Edit costs
+                </Link>
+            </div>
+            {cost.apps.length === 0 ? (
+                <div className="px-6 py-4 text-[11px] text-muted-foreground">
+                    No apps run here, so the price isn't split.
+                </div>
+            ) : (
+                <table className="w-full text-[12px]">
+                    <thead>
+                        <tr className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
+                            <th className="px-6 py-2.5 text-left font-semibold">
+                                App
+                            </th>
+                            <th className="px-3 py-2.5 text-right font-semibold">
+                                Requests · 30d
+                            </th>
+                            <th className="px-3 py-2.5 text-right font-semibold">
+                                Traffic
+                            </th>
+                            <th className="px-3 py-2.5 text-right font-semibold">
+                                Even split
+                            </th>
+                            <th className="px-6 py-2.5 text-right font-semibold">
+                                By traffic
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/50 border-t border-border/50 tabular-nums">
+                        {cost.apps.map((app) => (
+                            <tr key={app.slug}>
+                                <td className="px-6 py-2.5">
+                                    <Link
+                                        href={`/${teamSlug}/${app.slug}/dashboard`}
+                                        className="text-foreground hover:underline"
+                                    >
+                                        {app.name}
+                                    </Link>
+                                </td>
+                                <td className="px-3 py-2.5 text-right text-muted-foreground">
+                                    {app.requests.toLocaleString('en-GB')}
+                                </td>
+                                <td className="px-3 py-2.5 text-right text-muted-foreground">
+                                    {app.traffic_share === null
+                                        ? '—'
+                                        : `${app.traffic_share}%`}
+                                </td>
+                                <td className="px-3 py-2.5 text-right text-foreground">
+                                    {formatMoney(app.equal_cents)}
+                                </td>
+                                <td className="px-6 py-2.5 text-right text-foreground">
+                                    {formatMoney(app.traffic_cents)}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            )}
+        </Card>
+    );
+}
 
 const percent = (value: number) => `${Math.round(value)}%`;
 
@@ -75,6 +158,7 @@ export default function ServerShow({
     latest,
     history,
     bucket_seconds,
+    cost,
 }: ServerShowProps) {
     const { props }: any = usePage();
     const teamSlug: string = props.currentTeam?.slug ?? '';
@@ -118,6 +202,11 @@ export default function ServerShow({
                         >
                             {status.label}
                         </span>
+                        {cost && (
+                            <span className="text-[13px] font-medium text-muted-foreground tabular-nums">
+                                {formatMoney(cost.monthly_cents)}/mo
+                            </span>
+                        )}
                     </div>
                     <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
                         {server.hostname && <span>{server.hostname}</span>}
@@ -307,6 +396,8 @@ export default function ServerShow({
                     ]}
                 />
             </div>
+
+            {cost && <CostCard cost={cost} teamSlug={teamSlug} />}
 
             {latest && latest.disks.length > 0 && (
                 <Card className="gap-0 overflow-hidden border-border bg-card">

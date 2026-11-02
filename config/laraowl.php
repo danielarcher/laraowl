@@ -68,6 +68,29 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Costs
+    |--------------------------------------------------------------------------
+    |
+    | What the team pays, entered by hand under Settings. Totals are shown in
+    | the base currency; other currencies are converted at these fixed rates
+    | (one unit in the base currency) and marked as approximate. A server's
+    | price is split across its apps evenly and by their share of requests
+    | over the traffic window.
+    |
+    */
+
+    'costs' => [
+        'currency' => env('LARAOWL_COST_CURRENCY', 'USD'),
+        'rates' => [
+            'USD' => 1.0,
+            'EUR' => (float) env('LARAOWL_COST_RATE_EUR', 1.16),
+            'BRL' => (float) env('LARAOWL_COST_RATE_BRL', 0.18),
+        ],
+        'traffic_days' => (int) env('LARAOWL_COST_TRAFFIC_DAYS', 30),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Raw Detail
     |--------------------------------------------------------------------------
     |

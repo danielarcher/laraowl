@@ -95,6 +95,14 @@ class Team extends Model
     }
 
     /**
+     * @return HasMany<Cost, $this>
+     */
+    public function costs(): HasMany
+    {
+        return $this->hasMany(Cost::class);
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>

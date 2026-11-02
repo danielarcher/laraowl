@@ -8,9 +8,13 @@ import {
     Server as ServerIcon,
 } from 'lucide-react';
 import { Area, AreaChart, ResponsiveContainer, YAxis } from 'recharts';
+import { CostSplitToggle } from '@/components/cost-split-toggle';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import { useCostSplit } from '@/hooks/use-cost-split';
 import AppLayout from '@/layouts/app-layout';
+import type { CostSplit, ServerCost } from '@/lib/costs';
+import { formatMoney, shareCents } from '@/lib/costs';
 import type { ServerOverview } from '@/lib/server-metrics';
 import {
     formatAgo,
@@ -23,6 +27,7 @@ import { cn } from '@/lib/utils';
 
 type ServersIndexProps = {
     servers: ServerOverview[];
+    costs: Record<string, ServerCost> | null;
     agentUrl: string;
 };
 
@@ -83,11 +88,60 @@ function StatusDot({ server }: { server: ServerOverview }) {
     );
 }
 
+/**
+ * The server's apps with their share of its monthly price.
+ */
+function AppShares({ cost, split }: { cost: ServerCost; split: CostSplit }) {
+    if (cost.apps.length === 0) {
+        return (
+            <div className="text-[11px] text-muted-foreground">
+                No apps · {formatMoney(cost.monthly_cents)} not split
+            </div>
+        );
+    }
+
+    return (
+        <ul className="w-full space-y-1">
+            <li className="flex items-center justify-between gap-3 text-[9px] font-semibold tracking-widest text-muted-foreground uppercase">
+                <span>App</span>
+                <span className="flex shrink-0 items-center gap-3">
+                    <span className="w-12 text-right">Traffic</span>
+                    <span className="w-16 text-right">Monthly</span>
+                </span>
+            </li>
+            {cost.apps.map((app) => (
+                <li
+                    key={app.slug}
+                    className="flex items-center justify-between gap-3 text-[11px]"
+                >
+                    <span className="truncate text-foreground/80">
+                        {app.name}
+                    </span>
+                    <span className="flex shrink-0 items-center gap-3 tabular-nums">
+                        <span className="w-12 text-right text-muted-foreground">
+                            {app.traffic_share === null
+                                ? '—'
+                                : `${app.traffic_share}%`}
+                        </span>
+                        <span className="w-16 text-right font-medium text-foreground">
+                            {formatMoney(shareCents(app, split))}
+                        </span>
+                    </span>
+                </li>
+            ))}
+        </ul>
+    );
+}
+
 function ServerCard({
     server,
+    cost,
+    split,
     teamSlug,
 }: {
     server: ServerOverview;
+    cost: ServerCost | null;
+    split: CostSplit;
     teamSlug: string;
 }) {
     const latest = server.latest;
@@ -107,6 +161,14 @@ function ServerCard({
                             <h3 className="truncate text-lg font-semibold tracking-tight text-foreground">
                                 {server.name}
                             </h3>
+                            {cost && (
+                                <span
+                                    className="shrink-0 text-[12px] font-medium text-muted-foreground tabular-nums"
+                                    data-test="server-price"
+                                >
+                                    {formatMoney(cost.monthly_cents)}/mo
+                                </span>
+                            )}
                         </div>
                         <div className="mt-1 truncate text-[11px] text-muted-foreground">
                             {[server.hostname, server.ip_address]
@@ -219,24 +281,30 @@ function ServerCard({
                 )}
 
                 <div className="mt-5 flex items-center justify-between gap-3 border-t border-border/50 pt-4">
-                    <div className="flex min-w-0 flex-wrap gap-1.5">
-                        {server.projects.length > 0 ? (
-                            server.projects.map((project) => (
-                                <Badge
-                                    key={project.slug}
-                                    variant="secondary"
-                                    className="text-[10px]"
-                                >
-                                    {project.name}
-                                </Badge>
-                            ))
-                        ) : (
-                            <span className="text-[10px] text-muted-foreground">
-                                {server.os ?? 'No apps reporting'}
-                            </span>
-                        )}
-                    </div>
-                    <span className="shrink-0 text-[10px] text-muted-foreground">
+                    {cost ? (
+                        <div className="min-w-0 flex-1">
+                            <AppShares cost={cost} split={split} />
+                        </div>
+                    ) : (
+                        <div className="flex min-w-0 flex-wrap gap-1.5">
+                            {server.projects.length > 0 ? (
+                                server.projects.map((project) => (
+                                    <Badge
+                                        key={project.slug}
+                                        variant="secondary"
+                                        className="text-[10px]"
+                                    >
+                                        {project.name}
+                                    </Badge>
+                                ))
+                            ) : (
+                                <span className="text-[10px] text-muted-foreground">
+                                    {server.os ?? 'No apps reporting'}
+                                </span>
+                            )}
+                        </div>
+                    )}
+                    <span className="shrink-0 self-start text-[10px] text-muted-foreground">
                         {formatAgo(server.last_seen_at)}
                     </span>
                 </div>
@@ -245,10 +313,21 @@ function ServerCard({
     );
 }
 
-export default function ServersIndex({ servers, agentUrl }: ServersIndexProps) {
+export default function ServersIndex({
+    servers,
+    costs,
+    agentUrl,
+}: ServersIndexProps) {
     const { props }: any = usePage();
     const teamSlug: string = props.currentTeam?.slug ?? '';
     const online = servers.filter((server) => server.is_online).length;
+    const [split, setSplit] = useCostSplit();
+    const monthly = costs
+        ? Object.values(costs).reduce(
+              (sum, cost) => sum + cost.monthly_cents,
+              0,
+          )
+        : 0;
 
     usePoll(60_000);
 
@@ -263,9 +342,19 @@ export default function ServersIndex({ servers, agentUrl }: ServersIndexProps) {
                     </h1>
                     <p className="mt-1 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
                         {servers.length} server{servers.length === 1 ? '' : 's'}{' '}
-                        · {online} online · refreshes every minute
+                        · {online} online
+                        {costs && monthly > 0
+                            ? ` · ${formatMoney(monthly)}/mo`
+                            : ''}{' '}
+                        · refreshes every minute
                     </p>
                 </div>
+                {costs && monthly > 0 && (
+                    <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                        Split prices
+                        <CostSplitToggle split={split} onChange={setSplit} />
+                    </div>
+                )}
             </div>
 
             {servers.length === 0 ? (
@@ -290,6 +379,8 @@ export default function ServersIndex({ servers, agentUrl }: ServersIndexProps) {
                         <ServerCard
                             key={server.id}
                             server={server}
+                            cost={costs?.[server.id] ?? null}
+                            split={split}
                             teamSlug={teamSlug}
                         />
                     ))}

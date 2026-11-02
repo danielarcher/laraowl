@@ -66,6 +66,16 @@ class Server extends Model
     }
 
     /**
+     * What the team pays for this machine.
+     *
+     * @return HasMany<Cost, $this>
+     */
+    public function costs(): HasMany
+    {
+        return $this->hasMany(Cost::class);
+    }
+
+    /**
      * @return HasMany<ServerMetric, $this>
      */
     public function metrics(): HasMany

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Record;
 use App\Models\Server;
 use App\Models\Team;
+use App\Services\CostService;
 use App\Services\ServerMetricService;
 use Carbon\CarbonInterface;
 use Illuminate\Http\Request;
@@ -16,7 +17,7 @@ use Throwable;
 
 class ServerController extends Controller
 {
-    public function __construct(private ServerMetricService $metrics)
+    public function __construct(private ServerMetricService $metrics, private CostService $costs)
     {
         //
     }
@@ -24,10 +25,11 @@ class ServerController extends Controller
     /**
      * Every server of the team with its current load.
      */
-    public function index(Team $current_team): Response
+    public function index(Request $request, Team $current_team): Response
     {
         return Inertia::render('servers/index', [
             'servers' => $this->metrics->overview($current_team),
+            'costs' => $this->shares($request, $current_team),
             'agentUrl' => url('/agent.sh'),
             'offlineAfterSeconds' => (int) config('laraowl.servers.offline_after_seconds'),
         ]);
@@ -42,6 +44,7 @@ class ServerController extends Controller
 
         return Inertia::render('servers/show', [
             ...$this->metrics->detail($server, $from, $to),
+            'cost' => $this->shares($request, $current_team)[$server->id] ?? null,
             'period' => $request->query('period', '1h'),
         ]);
     }
@@ -69,5 +72,17 @@ class ServerController extends Controller
         }
 
         return [Record::periodStartsAt(is_string($period) ? $period : null), now()];
+    }
+
+    /**
+     * Each server's price and its apps' shares, for owners and admins only.
+     *
+     * @return array<int, array<string, mixed>>|null
+     */
+    private function shares(Request $request, Team $team): ?array
+    {
+        return $this->costs->canManage($request->user(), $team)
+            ? $this->costs->serverShares($team)
+            : null;
     }
 }

@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import type { PropsWithChildren } from 'react';
 import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,8 @@ import { index as mcpTokens } from '@/routes/mcp-tokens';
 import { edit } from '@/routes/profile';
 import { edit as editSecurity } from '@/routes/security';
 import { index as teams } from '@/routes/teams';
-import type { NavItem } from '@/types';
+import { index as costs } from '@/routes/teams/costs';
+import type { NavItem, Team } from '@/types';
 
 const sidebarNavItems: NavItem[] = [
     {
@@ -36,6 +37,16 @@ const sidebarNavItems: NavItem[] = [
 
 export default function SettingsLayout({ children }: PropsWithChildren) {
     const { isCurrentOrParentUrl } = useCurrentUrl();
+    const currentTeam = usePage<{ currentTeam: Team | null }>().props
+        .currentTeam;
+    const canManageCosts =
+        currentTeam?.role === 'owner' || currentTeam?.role === 'admin';
+    const navItems: NavItem[] = canManageCosts
+        ? [
+              ...sidebarNavItems,
+              { title: 'Costs', href: costs(currentTeam.slug), icon: null },
+          ]
+        : sidebarNavItems;
 
     return (
         <div className="px-4 py-6">
@@ -50,7 +61,7 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                         className="flex flex-col space-y-1 space-x-0"
                         aria-label="Settings"
                     >
-                        {sidebarNavItems.map((item, index) => (
+                        {navItems.map((item, index) => (
                             <Button
                                 key={`${toUrl(item.href)}-${index}`}
                                 size="sm"

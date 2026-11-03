@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Services\ArrayIngestBuffer;
 use App\Services\IngestBuffer;
+use App\Services\Push\MinishlinkPushGateway;
+use App\Services\Push\PushGateway;
 use App\Services\RedisIngestBuffer;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
@@ -25,6 +27,8 @@ class AppServiceProvider extends ServiceProvider
                 config('laraowl.ingest.max_failed'),
             ),
         });
+
+        $this->app->bind(PushGateway::class, MinishlinkPushGateway::class);
     }
 
     /**

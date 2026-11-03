@@ -27,8 +27,8 @@ class IntegrationController extends Controller
     {
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'type' => ['required', 'string', 'in:slack,discord,telegram,webhook,email'],
-            'data' => ['required', 'array'],
+            'type' => ['required', 'string', 'in:slack,discord,telegram,webhook,email,push'],
+            'data' => ['present', 'array'],
         ]);
 
         $integration = $project->integrations()->create([
@@ -52,7 +52,7 @@ class IntegrationController extends Controller
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'is_enabled' => ['required', 'boolean'],
-            'data' => ['required', 'array'],
+            'data' => ['present', 'array'],
         ]);
 
         $integration->update([

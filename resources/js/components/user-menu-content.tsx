@@ -1,5 +1,5 @@
 import { Link, router } from '@inertiajs/react';
-import { LogOut, Settings } from 'lucide-react';
+import { Bell, Download, LogOut, Settings } from 'lucide-react';
 import {
     DropdownMenuGroup,
     DropdownMenuItem,
@@ -7,7 +7,9 @@ import {
     DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { UserInfo } from '@/components/user-info';
+import { useInstallPrompt } from '@/hooks/use-install-prompt';
 import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
+import { edit as notifications } from '@/routes/notifications';
 import { edit } from '@/routes/profile';
 import type { User } from '@/types';
 
@@ -17,6 +19,7 @@ type Props = {
 
 export function UserMenuContent({ user }: Props) {
     const cleanup = useMobileNavigation();
+    const { canInstall, install } = useInstallPrompt();
 
     const handleLogout = () => {
         cleanup();
@@ -43,6 +46,26 @@ export function UserMenuContent({ user }: Props) {
                         Settings
                     </Link>
                 </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                    <Link
+                        className="block w-full cursor-pointer"
+                        href={notifications()}
+                        prefetch
+                        onClick={cleanup}
+                    >
+                        <Bell className="mr-2" />
+                        Notifications
+                    </Link>
+                </DropdownMenuItem>
+                {canInstall && (
+                    <DropdownMenuItem
+                        className="cursor-pointer"
+                        onSelect={() => void install()}
+                    >
+                        <Download className="mr-2" />
+                        Install app
+                    </DropdownMenuItem>
+                )}
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>

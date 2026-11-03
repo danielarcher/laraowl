@@ -1,4 +1,5 @@
-import { createInertiaApp } from '@inertiajs/react';
+import { createInertiaApp, router } from '@inertiajs/react';
+import { toast } from 'sonner';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { initializeTheme } from '@/hooks/use-appearance';
@@ -6,6 +7,7 @@ import AppLayout from '@/layouts/app-layout';
 import AuthLayout from '@/layouts/auth-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import '@/lib/echo';
+import { initPwa } from '@/lib/pwa';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -44,3 +46,16 @@ createInertiaApp({
 
 // This will set light / dark mode on load...
 initializeTheme();
+
+// Installable app + push: an alert that arrives while LaraOwl is open shows in place too.
+initPwa((message) => {
+    toast(message.title, {
+        description: message.body,
+        action: message.data?.url
+            ? {
+                  label: 'Open',
+                  onClick: () => router.visit(message.data!.url!),
+              }
+            : undefined,
+    });
+});

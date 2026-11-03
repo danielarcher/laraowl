@@ -1,0 +1,32 @@
+{
+    "id": "/",
+    "name": "LaraOwl",
+    "short_name": "LaraOwl",
+    "description": "Monitoring for your Laravel apps and servers.",
+    "start_url": "/dashboard?source=pwa",
+    "scope": "/",
+    "display": "standalone",
+    "orientation": "any",
+    "background_color": "#0a0a0a",
+    "theme_color": "#0a0a0a",
+    "categories": ["developer", "productivity", "utilities"],
+    "icons": [
+        { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+        { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+        { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    ],
+    "shortcuts": [
+        {
+            "name": "Overview",
+            "short_name": "Overview",
+            "url": "/dashboard?source=pwa-shortcut",
+            "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+        },
+        {
+            "name": "Notifications",
+            "short_name": "Alerts",
+            "url": "/settings/notifications?source=pwa-shortcut",
+            "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+        }
+    ]
+}

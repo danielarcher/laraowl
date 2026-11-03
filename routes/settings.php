@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Settings\McpTokenController;
+use App\Http\Controllers\Settings\NotificationController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SecurityController;
 use App\Http\Controllers\Teams\CostController;
@@ -31,6 +32,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('settings/mcp-tokens', [McpTokenController::class, 'index'])->name('mcp-tokens.index');
     Route::post('settings/mcp-tokens', [McpTokenController::class, 'store'])->name('mcp-tokens.store');
     Route::delete('settings/mcp-tokens/{token}', [McpTokenController::class, 'destroy'])->name('mcp-tokens.destroy');
+
+    Route::get('settings/notifications', [NotificationController::class, 'edit'])->name('notifications.edit');
+    Route::post('settings/notifications/devices', [NotificationController::class, 'store'])
+        ->middleware('throttle:20,1')
+        ->name('notifications.devices.store');
+    Route::delete('settings/notifications/devices/{subscription}', [NotificationController::class, 'destroy'])->name('notifications.devices.destroy');
+    Route::post('settings/notifications/test', [NotificationController::class, 'test'])
+        ->middleware('throttle:6,1')
+        ->name('notifications.test');
+    Route::put('settings/notifications/apps/{project:id}', [NotificationController::class, 'updateApp'])->name('notifications.apps.update');
 
     Route::middleware(EnsureTeamMembership::class)->group(function () {
         Route::get('settings/teams/{team}', [TeamController::class, 'edit'])->name('teams.edit');

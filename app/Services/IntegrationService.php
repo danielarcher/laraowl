@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Integration;
 use App\Models\Issue;
+use App\Services\Push\WebPushService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -61,6 +62,7 @@ class IntegrationService
             'telegram' => $this->sendToTelegram($integration, $title, $message, $fields, $url),
             'webhook' => $this->sendToWebhook($integration, $title, $message, $fields, $url),
             'email' => $this->sendToEmail($integration, $title, $message, $fields, $url),
+            'push' => $this->sendToPush($integration, $title, $message, $fields, $url),
             default => null,
         };
     }
@@ -202,6 +204,20 @@ class IntegrationService
         });
     }
 
+    /**
+     * Every device the project's team switched push on for (the installed app or a browser).
+     */
+    protected function sendToPush(Integration $integration, string $title, string $message, array $fields = [], ?string $url = null): void
+    {
+        $team = $integration->project?->team;
+
+        if (! $team) {
+            return;
+        }
+
+        app(WebPushService::class)->sendToTeam($team, $title, $message, $fields, $url);
+    }
+
     public function getAvailableTypes(): array
     {
         return [
@@ -240,6 +256,11 @@ class IntegrationService
                 'fields' => [
                     ['name' => 'email', 'label' => 'Email Address', 'type' => 'email', 'placeholder' => 'ops@example.com'],
                 ],
+            ],
+            [
+                'id' => 'push',
+                'name' => 'Push (LaraOwl app)',
+                'fields' => [],
             ],
         ];
     }

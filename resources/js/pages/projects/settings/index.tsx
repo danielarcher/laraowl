@@ -20,6 +20,7 @@ import {
     AlertCircle,
     Info,
     Lock,
+    Smartphone,
 } from 'lucide-react';
 
 import { useState } from 'react';
@@ -68,6 +69,7 @@ const iconMap: any = {
     webhook: Globe,
     telegram: Send,
     email: Mail,
+    push: Smartphone,
 };
 
 export default function ProjectSettings({
@@ -1268,6 +1270,13 @@ export default function ProjectSettings({
                                                 desc: 'Send an email to any address.',
                                                 color: 'from-purple-500/20 to-indigo-500/20',
                                                 icon: Mail,
+                                            },
+                                            {
+                                                id: 'push',
+                                                name: 'Push (LaraOwl app)',
+                                                desc: 'Push to every device the team turned on in Settings, Notifications.',
+                                                color: 'from-amber-500/20 to-orange-500/20',
+                                                icon: Smartphone,
                                             },
                                         ].map((item) => {
                                             const isConfigured =

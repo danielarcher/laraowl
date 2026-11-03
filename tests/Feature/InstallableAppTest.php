@@ -6,7 +6,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 
 it('ships a manifest that browsers accept as an installable app', function () {
-    $manifest = json_decode(file_get_contents(public_path('manifest.webmanifest')), true, flags: JSON_THROW_ON_ERROR);
+    $manifest = json_decode(file_get_contents(public_path('manifest.json')), true, flags: JSON_THROW_ON_ERROR);
 
     expect($manifest)
         ->name->toBe('LaraOwl')
@@ -29,7 +29,7 @@ it('links the manifest and the iPhone icon from every page', function () {
     $this->actingAs($user)
         ->get('/settings/profile')
         ->assertOk()
-        ->assertSee('<link rel="manifest" href="/manifest.webmanifest">', false)
+        ->assertSee('<link rel="manifest" href="/manifest.json">', false)
         ->assertSee('/icons/apple-touch-icon.png', false)
         ->assertSee('viewport-fit=cover', false);
 });

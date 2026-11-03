@@ -56,7 +56,7 @@ it('registers the service worker and links the manifest', function () {
     signedInWithApp();
 
     visit('/settings/notifications')
-        ->assertScript('document.querySelector(\'link[rel="manifest"]\').getAttribute("href")', '/manifest.webmanifest')
+        ->assertScript('document.querySelector(\'link[rel="manifest"]\').getAttribute("href")', '/manifest.json')
         ->assertScript('navigator.serviceWorker.ready.then((r) => r.active.scriptURL.endsWith("/sw.js"))', true);
 });
 

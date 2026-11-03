@@ -37,7 +37,7 @@
 
         <link rel="icon" type="image/png" href="/logo.png">
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
-        <link rel="manifest" href="/manifest.webmanifest">
+        <link rel="manifest" href="/manifest.json">
         <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
         <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)">
         <meta name="application-name" content="LaraOwl">

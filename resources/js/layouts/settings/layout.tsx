@@ -6,6 +6,7 @@ import { Separator } from '@/components/ui/separator';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { cn, toUrl } from '@/lib/utils';
 import { index as mcpTokens } from '@/routes/mcp-tokens';
+import { edit as notifications } from '@/routes/notifications';
 import { edit } from '@/routes/profile';
 import { edit as editSecurity } from '@/routes/security';
 import { index as teams } from '@/routes/teams';
@@ -21,6 +22,11 @@ const sidebarNavItems: NavItem[] = [
     {
         title: 'Security',
         href: editSecurity(),
+        icon: null,
+    },
+    {
+        title: 'Notifications',
+        href: notifications(),
         icon: null,
     },
     {
@@ -56,9 +62,9 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
             />
 
             <div className="flex flex-col lg:flex-row lg:space-x-12">
-                <aside className="w-full max-w-xl lg:w-48">
+                <aside className="w-full lg:w-48">
                     <nav
-                        className="flex flex-col space-y-1 space-x-0"
+                        className="-mx-4 flex gap-1 overflow-x-auto px-4 [scrollbar-width:none] lg:mx-0 lg:flex-col lg:gap-0 lg:space-y-1 lg:overflow-visible lg:px-0"
                         aria-label="Settings"
                     >
                         {navItems.map((item, index) => (
@@ -67,9 +73,14 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                                 size="sm"
                                 variant="ghost"
                                 asChild
-                                className={cn('w-full justify-start', {
-                                    'bg-muted': isCurrentOrParentUrl(item.href),
-                                })}
+                                className={cn(
+                                    'shrink-0 justify-start lg:w-full',
+                                    {
+                                        'bg-muted': isCurrentOrParentUrl(
+                                            item.href,
+                                        ),
+                                    },
+                                )}
                             >
                                 <Link href={item.href}>
                                     {item.icon && (
@@ -82,7 +93,7 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                     </nav>
                 </aside>
 
-                <Separator className="my-6 lg:hidden" />
+                <Separator className="my-4 lg:hidden" />
 
                 <div className="flex-1 md:max-w-2xl">
                     <section className="max-w-xl space-y-12">

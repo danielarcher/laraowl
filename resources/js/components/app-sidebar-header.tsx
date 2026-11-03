@@ -21,7 +21,7 @@ export function AppSidebarHeader({
             : props.breadcrumbs || [];
 
     return (
-        <header className="sticky top-0 z-50 flex h-16 shrink-0 items-center justify-between border-b border-border bg-background/80 px-6 backdrop-blur-md transition-all md:px-6">
+        <header className="sticky top-0 z-50 flex h-[calc(4rem+env(safe-area-inset-top))] shrink-0 items-center justify-between gap-3 border-b border-border bg-background/80 px-4 pt-[env(safe-area-inset-top)] backdrop-blur-md transition-all sm:px-6">
             <div className="flex items-center gap-4">
                 <Tooltip>
                     <TooltipTrigger asChild>

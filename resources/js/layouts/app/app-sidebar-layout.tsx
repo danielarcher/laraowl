@@ -3,6 +3,8 @@ import { AppContent } from '@/components/app-content';
 import { AppShell } from '@/components/app-shell';
 import { AppSidebar } from '@/components/app-sidebar';
 import { AppSidebarHeader } from '@/components/app-sidebar-header';
+import { MobileTabBar } from '@/components/mobile-tab-bar';
+import { PullToRefresh } from '@/components/pull-to-refresh';
 import { UpdateBanner } from '@/components/update-banner';
 import { useVisitPending } from '@/hooks/use-visit-pending';
 import type { AppLayoutProps } from '@/types';
@@ -27,12 +29,14 @@ export default function AppSidebarLayout({
                 <AppSidebarHeader breadcrumbs={breadcrumbs} />
                 <div
                     key={pageKey}
-                    className={`enter-stagger mx-auto w-full max-w-[1600px] space-y-8 p-6 md:p-8 ${pending ? 'visit-pending' : 'visit-settled'}`}
+                    className={`enter-stagger mx-auto w-full max-w-[1600px] space-y-8 p-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:p-6 sm:pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:p-8 ${pending ? 'visit-pending' : 'visit-settled'}`}
                 >
                     <UpdateBanner />
                     {children}
                 </div>
+                <PullToRefresh />
             </AppContent>
+            <MobileTabBar />
         </AppShell>
     );
 }

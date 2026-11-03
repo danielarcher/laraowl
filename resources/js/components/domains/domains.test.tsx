@@ -142,6 +142,7 @@ describe('renewal radar', () => {
 describe('uptime strip', () => {
     it('draws one cell a day, coloured by how much it was up', () => {
         const days = uptime(1);
+        days[2] = { ...days[2], ratio: 0.9986 };
         days[3] = { ...days[3], ratio: 0.99 };
         days[4] = { ...days[4], ratio: 0.5 };
         days[5] = { ...days[5], ratio: null, ms: null, checks: 0 };
@@ -151,6 +152,7 @@ describe('uptime strip', () => {
 
         expect(cells).toHaveLength(30);
         expect(cells[0].className).toContain('bg-emerald-500');
+        expect(cells[2].className).toContain('bg-emerald-500');
         expect(cells[3].className).toContain('bg-amber-500');
         expect(cells[4].className).toContain('bg-red-500');
         expect(cells[5].getAttribute('title')).toContain('no checks');

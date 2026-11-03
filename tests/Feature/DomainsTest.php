@@ -70,7 +70,7 @@ it('finds domains from the apps and the domain costs, and scans them', function 
         'staging.on-forge.com' => FakeDomainProbe::cert('staging.on-forge.com'),
         'old-brand.com' => FakeDomainProbe::cert('old-brand.com'),
     ];
-    $this->probe->nameservers = ['example.com' => ['ns1.cloudflare.com', 'ns2.cloudflare.com'], 'old-brand.com' => ['dns1.registrar-servers.com']];
+    $this->probe->nameservers = ['example.com' => ['ns1.cloudflare.com', 'ns2.cloudflare.com'], 'old-brand.com' => ['ns4.wixdns.net']];
     $this->probe->txt = ['example.com' => ['v=spf1 include:_spf.mail.test -all'], '_dmarc.example.com' => ['v=DMARC1; p=reject']];
     $this->probe->mx = ['example.com' => true];
     $this->probe->heads = ['old-brand.com' => ['status' => 301, 'location' => 'https://example.com/']];
@@ -110,7 +110,7 @@ it('finds domains from the apps and the domain costs, and scans them', function 
     $old = domainRow($props, 'old-brand.com');
     expect($old['redirects_to'])->toBe('example.com')
         ->and($old['rdap_status'])->toBe('unsupported')
-        ->and($old['dns_provider'])->toBe('Namecheap')
+        ->and($old['dns_provider'])->toBe('Wix')
         ->and($old['email']['grade'])->toBe('F');
 
     expect(domainRow($props, 'staging.on-forge.com'))

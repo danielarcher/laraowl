@@ -46,6 +46,8 @@ class DomainScanner
         'linode.com' => 'Akamai Linode',
         'hetzner.com' => 'Hetzner',
         'spaceship.net' => 'Spaceship',
+        'fastsecurehost.com' => 'Maxer',
+        'wixdns.net' => 'Wix',
     ];
 
     /** RDAP data only changes on renewal: look it up about once a day. */

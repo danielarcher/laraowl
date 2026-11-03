@@ -7,11 +7,12 @@ function cellTone(ratio: number | null): string {
         return 'bg-foreground/[0.07]';
     }
 
-    if (ratio >= 0.999) {
+    // A failed check or two a day is noise; about 7 minutes down is not.
+    if (ratio >= 0.995) {
         return 'bg-emerald-500/85';
     }
 
-    return ratio >= 0.98 ? 'bg-amber-500' : 'bg-red-500';
+    return ratio >= 0.95 ? 'bg-amber-500' : 'bg-red-500';
 }
 
 /**

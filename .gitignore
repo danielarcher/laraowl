@@ -28,3 +28,4 @@ yarn-error.log
 /.vscode
 /.zed
 /deploy.env
+/tests/Browser/Screenshots

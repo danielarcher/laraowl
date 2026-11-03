@@ -156,6 +156,7 @@ deploy() {
 
     step "Tests"
     php artisan test --compact
+    npm run --silent test
     npm run --silent types:check
 
     step "Push"

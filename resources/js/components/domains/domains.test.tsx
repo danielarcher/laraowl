@@ -51,6 +51,11 @@ describe('domain row', () => {
             screen.getByRole('link', { name: 'Shop' }).getAttribute('href'),
         ).toBe('/archer/shop/dashboard');
         expect(screen.getByText(/years old/)).toBeTruthy();
+        expect(
+            screen.getByRole('link', { name: 'Manage' }).getAttribute('href'),
+        ).toBe(
+            'https://dash.cloudflare.com/?to=/:account/example.com/dns/records',
+        );
     });
 
     it('calls a domain with no app that redirects elsewhere parked', () => {

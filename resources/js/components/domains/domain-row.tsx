@@ -1,5 +1,11 @@
 import { Link } from '@inertiajs/react';
-import { ArrowRight, ChevronDown, Cloud, Server } from 'lucide-react';
+import {
+    ArrowRight,
+    ArrowUpRight,
+    ChevronDown,
+    Cloud,
+    Server,
+} from 'lucide-react';
 import { useState } from 'react';
 import { GRADE_COPY, gradeTone } from '@/components/domains/breakdowns';
 import { CertLifeline } from '@/components/domains/cert-lifeline';
@@ -9,6 +15,7 @@ import type { DomainHost, DomainRow as Row, Finding } from '@/lib/domains';
 import {
     countdownTone,
     dnsLabel,
+    dnsManageUrl,
     domainAge,
     formatDay,
     formatDays,
@@ -76,6 +83,7 @@ function Field({
 
 function Details({ row, teamSlug }: { row: Row; teamSlug: string }) {
     const age = domainAge(row.registered_at);
+    const manageUrl = dnsManageUrl(row.dns_provider, row.name);
 
     return (
         <div className="space-y-5 border-t border-border/60 bg-foreground/[0.015] px-5 py-5">
@@ -172,7 +180,22 @@ function Details({ row, teamSlug }: { row: Row; teamSlug: string }) {
                         </p>
                     ) : (
                         <dl>
-                            <Field label="DNS">{row.dns_provider ?? '—'}</Field>
+                            <Field label="DNS">
+                                <span className="flex items-center justify-between gap-2">
+                                    {row.dns_provider ?? '—'}
+                                    {manageUrl && (
+                                        <a
+                                            href={manageUrl}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="inline-flex shrink-0 items-center gap-0.5 rounded-[4px] border border-border px-1.5 py-0.5 text-[11px] text-foreground/70 transition-colors hover:bg-muted hover:text-foreground"
+                                        >
+                                            Manage
+                                            <ArrowUpRight className="size-3" />
+                                        </a>
+                                    )}
+                                </span>
+                            </Field>
                             <Field label="Nameservers">
                                 <span className="font-mono text-[11px]">
                                     {row.nameservers.join(', ') || '—'}

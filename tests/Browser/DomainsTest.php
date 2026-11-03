@@ -37,6 +37,7 @@ it('shows every domain and opens one for its records', function () {
         ->assertSee('old-brand.com')
         ->click('[aria-label="example.com details"]')
         ->assertSee('Gandi SAS')
+        ->assertAttribute('a:has-text("Manage")', 'href', 'https://admin.gandi.net/domain/')
         ->assertSee('p=quarantine')
         ->assertSee('v=spf1 include:_spf.mail.test -all')
         ->assertNoJavaScriptErrors();

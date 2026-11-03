@@ -220,3 +220,37 @@ export function dnsLabel(row: DomainRow): string {
 
     return row.kind === 'platform' ? 'Platform' : 'Unknown';
 }
+
+/**
+ * Where a provider's DNS for a domain is edited: the domain's own records
+ * page when the provider links to it by name, its domain list otherwise.
+ * Null for a provider we have no page for.
+ */
+export function dnsManageUrl(
+    provider: string | null,
+    domain: string,
+): string | null {
+    const name = encodeURIComponent(domain);
+    const pages: Record<string, string> = {
+        Cloudflare: `https://dash.cloudflare.com/?to=/:account/${name}/dns/records`,
+        Namecheap: `https://ap.www.namecheap.com/Domains/DomainControlPanel/${name}/advancedns`,
+        Gandi: 'https://admin.gandi.net/domain/',
+        'AWS Route 53':
+            'https://us-east-1.console.aws.amazon.com/route53/v2/hostedzones',
+        DigitalOcean: `https://cloud.digitalocean.com/networking/domains/${name}`,
+        GoDaddy: `https://dcc.godaddy.com/control/dnsmanagement?domainName=${name}`,
+        'Registro.br': 'https://registro.br/painel/',
+        Hostinger: `https://hpanel.hostinger.com/domain/${name}/dns`,
+        Vercel: 'https://vercel.com/dashboard/domains',
+        Maxer: 'https://my.maxer.com/',
+        'Akamai Linode': 'https://cloud.linode.com/domains',
+        Hetzner: 'https://dns.hetzner.com/',
+        Spaceship:
+            'https://www.spaceship.com/application/domain-list-application/',
+        Wix: 'https://manage.wix.com/account/domains',
+        Blacknight: 'https://cp.blacknight.com/',
+        NS1: 'https://my.nsone.net/',
+    };
+
+    return provider ? (pages[provider] ?? null) : null;
+}

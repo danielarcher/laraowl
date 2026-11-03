@@ -115,6 +115,7 @@ class CheckProjectUptime extends Command
         $project->update([
             'last_uptime_check_at' => now(),
             'last_uptime_status' => $status,
+            'last_uptime_error' => $error === null ? null : mb_substr($error, 0, 500),
         ]);
 
         // Trigger Alert if status changed to 'down'

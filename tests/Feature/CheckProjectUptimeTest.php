@@ -271,3 +271,36 @@ test('a check with no answer falls back to the time since the batch started', fu
     expect(CheckProjectUptime::responseTime(new ConnectException('refused', new Request('GET', 'https://down.example.com')), $batchStart))
         ->toBeGreaterThanOrEqual(2000)->toBeLessThan(2500);
 });
+
+test('it remembers why the last check failed, and forgets it once the site is back', function () {
+    $team = Team::factory()->create();
+    $project = Project::factory()->create([
+        'team_id' => $team->id,
+        'url' => 'https://moved.example.com',
+        'last_uptime_status' => 'up',
+    ]);
+
+    $hostIsBack = false;
+    Http::fake(['*' => function () use (&$hostIsBack) {
+        if ($hostIsBack) {
+            return Http::response('OK', 200);
+        }
+
+        throw new ConnectException('cURL error 6: Could not resolve host: moved.example.com', new Request('GET', 'https://moved.example.com'));
+    }]);
+    $this->artisan('projects:check-health')->assertExitCode(0);
+
+    $project->refresh();
+    expect($project->last_uptime_status)->toBe('down')
+        ->and($project->last_uptime_error)->toContain('Could not resolve host')
+        ->and($project->uptimeFailureKind())->toBe('host-not-found');
+
+    $hostIsBack = true;
+    $project->update(['last_uptime_check_at' => null]);
+    $this->artisan('projects:check-health')->assertExitCode(0);
+
+    $project->refresh();
+    expect($project->last_uptime_status)->toBe('up')
+        ->and($project->last_uptime_error)->toBeNull()
+        ->and($project->uptimeFailureKind())->toBeNull();
+});

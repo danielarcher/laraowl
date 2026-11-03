@@ -247,6 +247,7 @@ class OverviewService
             'server_id' => $project->server_id,
             'uptime' => $project->hasUptimeMonitoring() ? ($project->last_uptime_status ?? 'unknown') : 'off',
             'last_uptime_check_at' => $project->last_uptime_check_at?->toIso8601String(),
+            'uptime_failure' => $project->hasUptimeMonitoring() ? $project->uptimeFailureKind() : null,
             'requests' => $count,
             'server_errors' => $serverErrors,
             'client_errors' => (int) ($requests->client_error_count ?? 0),
@@ -294,7 +295,8 @@ class OverviewService
         return [
             'apps' => $rows->count(),
             'apps_up' => $rows->where('uptime', 'up')->count(),
-            'apps_down' => $rows->where('uptime', 'down')->count(),
+            'apps_down' => $rows->where('uptime_failure', 'down')->count(),
+            'apps_host_not_found' => $rows->where('uptime_failure', 'host-not-found')->count(),
             'apps_quiet' => $rows->where('requests', 0)->count(),
             'requests' => $requests,
             'server_errors' => $serverErrors,

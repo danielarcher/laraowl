@@ -1,6 +1,7 @@
 import { Head, Link, usePage, usePoll } from '@inertiajs/react';
 import { ArrowUpRight, Radar, Server as ServerIcon } from 'lucide-react';
 import { useState } from 'react';
+import type { ReactNode } from 'react';
 import { Area, AreaChart, Tooltip, YAxis } from 'recharts';
 import {
     ChartCard,
@@ -33,6 +34,9 @@ type TrendPoint = {
 
 type Uptime = 'up' | 'down' | 'unknown' | 'off';
 
+// A domain that no longer resolves is almost always a stale URL, not an outage.
+type UptimeFailure = 'down' | 'host-not-found';
+
 type OverviewApp = {
     id: number;
     name: string;
@@ -41,6 +45,7 @@ type OverviewApp = {
     logo_url: string | null;
     server_id: number | null;
     uptime: Uptime;
+    uptime_failure: UptimeFailure | null;
     last_uptime_check_at: string | null;
     requests: number;
     server_errors: number;
@@ -65,6 +70,7 @@ type OverviewTotals = {
     apps: number;
     apps_up: number;
     apps_down: number;
+    apps_host_not_found: number;
     apps_quiet: number;
     requests: number;
     server_errors: number;
@@ -139,7 +145,22 @@ function latencyTone(ms: number | null): string {
     return ms >= 1000 ? 'text-amber-500' : 'text-foreground/70';
 }
 
-function UptimeDot({ uptime }: { uptime: Uptime }) {
+function UptimeDot({
+    uptime,
+    failure = null,
+}: {
+    uptime: Uptime;
+    failure?: UptimeFailure | null;
+}) {
+    if (failure === 'host-not-found') {
+        return (
+            <span
+                title="Host not found: the app's URL doesn't resolve. Check it in the app's settings."
+                className="size-2 shrink-0 rounded-[2px] bg-amber-500"
+            />
+        );
+    }
+
     const label = {
         up: 'Up',
         down: 'Down',
@@ -504,7 +525,7 @@ function Stat({
 }: {
     label: string;
     value: string;
-    detail?: string;
+    detail?: ReactNode;
     tone?: string;
 }) {
     return (
@@ -526,6 +547,52 @@ function Stat({
                 </div>
             )}
         </div>
+    );
+}
+
+/**
+ * What isn't up, coloured by how bad it is. The count of apps that are up
+ * stays neutral: it is the good news.
+ */
+export function UptimeDetail({
+    totals,
+}: {
+    totals: Pick<OverviewTotals, 'apps_down' | 'apps_host_not_found'>;
+}) {
+    const parts: ReactNode[] = [];
+
+    if (totals.apps_down > 0) {
+        parts.push(
+            <span key="down" className="font-medium text-red-500">
+                {totals.apps_down} down
+            </span>,
+        );
+    }
+
+    if (totals.apps_host_not_found > 0) {
+        parts.push(
+            <span
+                key="host"
+                className="text-amber-500"
+                title="These apps' URLs don't resolve any more: usually an old address after a move."
+            >
+                {totals.apps_host_not_found} host not found
+            </span>,
+        );
+    }
+
+    if (parts.length === 0) {
+        return <>nothing down</>;
+    }
+
+    return (
+        <>
+            {parts.flatMap((part, index) =>
+                index === 0
+                    ? [part]
+                    : [<span key={`sep-${index}`}> · </span>, part],
+            )}
+        </>
     );
 }
 
@@ -627,7 +694,10 @@ function AppRow({
                     <span className="truncate text-[13px] font-medium text-foreground">
                         {app.name}
                     </span>
-                    <UptimeDot uptime={app.uptime} />
+                    <UptimeDot
+                        uptime={app.uptime}
+                        failure={app.uptime_failure}
+                    />
                 </Link>
             </td>
             <td className="px-3 py-1">
@@ -770,16 +840,7 @@ export default function Overview({
                         <Stat
                             label="Uptime"
                             value={`${totals.apps_up} up`}
-                            detail={
-                                totals.apps_down > 0
-                                    ? `${totals.apps_down} down`
-                                    : 'nothing down'
-                            }
-                            tone={
-                                totals.apps_down > 0
-                                    ? 'text-red-500'
-                                    : undefined
-                            }
+                            detail={<UptimeDetail totals={totals} />}
                         />
                     </Card>
 

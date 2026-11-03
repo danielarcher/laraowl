@@ -149,6 +149,27 @@ test('the overview counts apps that are up, down or quiet', function () {
         );
 });
 
+test('the overview keeps apps whose host is gone apart from real outages', function () {
+    [$user, $team] = overviewTeam();
+    Project::factory()->create(['team_id' => $team->id, 'name' => 'Up', 'url' => 'https://up.test', 'uptime_monitoring_enabled' => true, 'last_uptime_status' => 'up']);
+    Project::factory()->create(['team_id' => $team->id, 'name' => 'Broken', 'url' => 'https://broken.test', 'uptime_monitoring_enabled' => true, 'last_uptime_status' => 'down', 'last_uptime_error' => 'HTTP error status: 502']);
+    Project::factory()->create(['team_id' => $team->id, 'name' => 'Moved', 'url' => 'https://moved.test', 'uptime_monitoring_enabled' => true, 'last_uptime_status' => 'down', 'last_uptime_error' => 'cURL error 6: Could not resolve host: moved.test']);
+
+    $this->actingAs($user)
+        ->get(route('overview', ['current_team' => $team->slug]))
+        ->assertInertia(function (Assert $page) {
+            $page->where('totals.apps_up', 1)
+                ->where('totals.apps_down', 1)
+                ->where('totals.apps_host_not_found', 1);
+
+            $apps = collect($page->toArray()['props']['groups'])->flatMap(fn ($g) => $g['projects'])->keyBy('name');
+
+            expect($apps['Up']['uptime_failure'])->toBeNull()
+                ->and($apps['Broken']['uptime_failure'])->toBe('down')
+                ->and($apps['Moved']['uptime_failure'])->toBe('host-not-found');
+        });
+});
+
 test('only team members can open the overview', function () {
     [, $team] = overviewTeam();
 

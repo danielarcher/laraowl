@@ -80,6 +80,7 @@ class Project extends Model implements HasMedia
         'uptime_check_interval',
         'last_uptime_check_at',
         'last_uptime_status',
+        'last_uptime_error',
         'retention_days',
         'rollup_retention_days',
         'settings',
@@ -139,6 +140,23 @@ class Project extends Model implements HasMedia
      * Built against the configured app URL so it stays correct when generated
      * outside of an HTTP request, such as from a queued job or scheduled command.
      */
+    /**
+     * Why the last uptime check failed, in a few words, or null when it didn't.
+     *
+     * "host-not-found" means the URL's domain doesn't resolve: usually a stale
+     * address after a move, not an outage, so the overview shows it apart.
+     */
+    public function uptimeFailureKind(): ?string
+    {
+        if ($this->last_uptime_status !== 'down') {
+            return null;
+        }
+
+        return str_contains((string) $this->last_uptime_error, 'Could not resolve host')
+            ? 'host-not-found'
+            : 'down';
+    }
+
     public function dashboardUrl(): string
     {
         $this->loadMissing('team');

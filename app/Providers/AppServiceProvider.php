@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Services\ArrayIngestBuffer;
+use App\Services\Domains\DomainProbe;
+use App\Services\Domains\LiveDomainProbe;
 use App\Services\IngestBuffer;
 use App\Services\Push\MinishlinkPushGateway;
 use App\Services\Push\PushGateway;
@@ -29,6 +31,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $this->app->bind(PushGateway::class, MinishlinkPushGateway::class);
+        $this->app->bind(DomainProbe::class, LiveDomainProbe::class);
     }
 
     /**

@@ -81,6 +81,14 @@ class Team extends Model
         return $this->hasMany(TeamInvitation::class);
     }
 
+    /**
+     * @return HasMany<Domain, $this>
+     */
+    public function domains(): HasMany
+    {
+        return $this->hasMany(Domain::class);
+    }
+
     public function projects(): HasMany
     {
         return $this->hasMany(Project::class);

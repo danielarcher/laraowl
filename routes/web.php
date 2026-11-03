@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Domains\DomainController;
 use App\Http\Controllers\Projects\AlertRuleController;
 use App\Http\Controllers\Projects\FirewallController;
 use App\Http\Controllers\Projects\IntegrationController;
@@ -55,6 +56,14 @@ Route::prefix('{current_team}/servers')
     ->group(function () {
         Route::get('/', [ServerController::class, 'index'])->name('servers.index');
         Route::get('{server}', [ServerController::class, 'show'])->whereNumber('server')->name('servers.show');
+    });
+
+// The team's domains, team-wide like servers.
+Route::prefix('{current_team}/domains')
+    ->middleware(['auth', 'verified', EnsureTeamMembership::class])
+    ->group(function () {
+        Route::get('/', [DomainController::class, 'index'])->name('domains.index');
+        Route::post('scan', [DomainController::class, 'scan'])->middleware('throttle:4,1')->name('domains.scan');
     });
 
 // Every app of the team on one page; like the servers routes, registered

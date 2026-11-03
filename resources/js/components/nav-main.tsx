@@ -1,4 +1,5 @@
 import { Link } from '@inertiajs/react';
+import type { ReactNode } from 'react';
 import {
     SidebarGroup,
     SidebarGroupLabel,
@@ -12,15 +13,23 @@ import type { NavItem } from '@/types';
 export function NavMain({
     items = [],
     label,
+    heading,
 }: {
     items: NavItem[];
     label?: string;
+    /** A visible section title, unlike `label`, which only names the group. */
+    heading?: ReactNode;
 }) {
     const { isCurrentUrl } = useCurrentUrl();
 
     return (
         <SidebarGroup className="px-2 py-0">
-            {label && (
+            {heading && (
+                <div className="mb-1 px-2 pt-0.5 group-data-[collapsible=icon]:hidden">
+                    {heading}
+                </div>
+            )}
+            {label && !heading && (
                 <SidebarGroupLabel className="hidden text-[9px] font-bold tracking-widest text-foreground/20 uppercase group-data-[collapsible=icon]:hidden">
                     {label}
                 </SidebarGroupLabel>

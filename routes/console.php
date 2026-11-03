@@ -20,6 +20,7 @@ Schedule::command('model:prune')->hourly()->withoutOverlapping(60);
 Schedule::command('laraowl:update --check')->daily();
 Schedule::command('laraowl:projects:link-servers')->everyTenMinutes()->withoutOverlapping(10);
 Schedule::command('laraowl:security:resolve-quiet')->hourly();
+Schedule::command('laraowl:domains:scan')->everySixHours()->withoutOverlapping(30);
 
 // Picks the ingest buffer back up if a drain job was lost (a worker killed
 // mid-job); normally every accepted batch queues one.

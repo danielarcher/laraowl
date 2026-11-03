@@ -21,6 +21,7 @@ import {
     Lock as LockIcon,
     Server as ServerIcon,
     Radar,
+    Globe2,
 } from 'lucide-react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { NavMain } from '@/components/nav-main';
@@ -34,6 +35,14 @@ import {
 import { WorkspaceSwitcher } from '@/components/workspace-switcher';
 import type { PageProps } from '@/types';
 import type { NavItem } from '@/types';
+
+function SectionHeading({ children }: { children: React.ReactNode }) {
+    return (
+        <div className="text-[10px] font-medium tracking-[0.08em] text-foreground/35 uppercase">
+            {children}
+        </div>
+    );
+}
 
 export function AppSidebar() {
     const { props } = usePage<PageProps>();
@@ -68,6 +77,11 @@ export function AppSidebar() {
 
         return `${base}?${searchParams.toString()}`;
     };
+
+    const appName: string | null =
+        currentProject?.name ??
+        projects.find((p: { slug: string }) => p.slug === projectSlug)?.name ??
+        null;
 
     const overviewUrl = teamSlug ? withPeriod(`/${teamSlug}/overview`) : '/';
 
@@ -221,14 +235,33 @@ export function AppSidebar() {
                                 icon: Radar,
                             },
                             {
-                                title: 'Dashboard',
-                                href: dashboardUrl,
-                                icon: LayoutGrid,
-                            },
-                            {
                                 title: 'Servers',
                                 href: `/${teamSlug}/servers`,
                                 icon: ServerIcon,
+                            },
+                            {
+                                title: 'Domains',
+                                href: `/${teamSlug}/domains`,
+                                icon: Globe2,
+                            },
+                        ]}
+                        label="All applications"
+                        heading={
+                            <SectionHeading>All applications</SectionHeading>
+                        }
+                    />
+
+                    <div
+                        className="mx-2 border-t border-sidebar-border/70 group-data-[collapsible=icon]:mx-1"
+                        role="separator"
+                    />
+
+                    <NavMain
+                        items={[
+                            {
+                                title: 'Dashboard',
+                                href: dashboardUrl,
+                                icon: LayoutGrid,
                             },
                             {
                                 title: 'Issues',
@@ -238,7 +271,20 @@ export function AppSidebar() {
                                 icon: AlertCircle,
                             },
                         ]}
-                        label="Platform"
+                        label="This application"
+                        heading={
+                            <div className="space-y-0.5">
+                                <SectionHeading>
+                                    This application
+                                </SectionHeading>
+                                <div
+                                    className="truncate text-[12px] font-medium text-foreground/80"
+                                    data-test="sidebar-current-app"
+                                >
+                                    {appName ?? 'No app yet'}
+                                </div>
+                            </div>
+                        }
                     />
 
                     <NavMain items={activityNavItems} label="Activity" />

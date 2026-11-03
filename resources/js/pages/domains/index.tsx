@@ -18,6 +18,7 @@ import type {
 } from '@/lib/domains';
 import {
     countdownTone,
+    dnsLabel,
     formatDay,
     sortDomains,
     worstLevel,
@@ -145,7 +146,27 @@ export default function DomainsIndex({
         { key: 'parked', label: 'Parked', count: parkedCount },
         { key: 'platform', label: 'Platform', count: summary.platform },
     ];
-    const visible = sortDomains(filterDomains(domains, filter), sort);
+    const [dns, setDns] = useState<string>('all');
+    const dnsCounts = domains.reduce<Record<string, number>>((counts, row) => {
+        const label = dnsLabel(row);
+        counts[label] = (counts[label] ?? 0) + 1;
+
+        return counts;
+    }, {});
+    // Busiest provider first; Platform and Unknown always last.
+    const dnsOptions = Object.entries(dnsCounts).sort(([a, ca], [b, cb]) => {
+        const tail = (label: string) =>
+            label === 'Platform' || label === 'Unknown' ? 1 : 0;
+
+        return tail(a) - tail(b) || cb - ca || a.localeCompare(b);
+    });
+    const dnsFilter = dns === 'all' || dnsCounts[dns] ? dns : 'all';
+    const visible = sortDomains(
+        filterDomains(domains, filter).filter(
+            (row) => dnsFilter === 'all' || dnsLabel(row) === dnsFilter,
+        ),
+        sort,
+    );
 
     return (
         <>
@@ -317,6 +338,37 @@ export default function DomainsIndex({
                                     </button>
                                 ))}
                             </div>
+                            <div className="flex flex-wrap items-center gap-2 text-[11px] text-foreground/45">
+                                DNS
+                                <div
+                                    className="flex flex-wrap rounded-md border border-border p-0.5"
+                                    role="group"
+                                    aria-label="Filter by DNS provider"
+                                >
+                                    {[
+                                        ['all', domains.length] as const,
+                                        ...dnsOptions,
+                                    ].map(([key, count]) => (
+                                        <button
+                                            key={key}
+                                            type="button"
+                                            aria-pressed={dnsFilter === key}
+                                            onClick={() => setDns(key)}
+                                            className={cn(
+                                                'rounded-sm px-2 py-0.5 transition-colors',
+                                                dnsFilter === key
+                                                    ? 'bg-muted text-foreground'
+                                                    : 'text-muted-foreground hover:text-foreground',
+                                            )}
+                                        >
+                                            {key === 'all' ? 'All' : key}
+                                            <span className="ml-1.5 text-foreground/40 tabular-nums">
+                                                {count}
+                                            </span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
                             <div className="flex items-center gap-2 text-[11px] text-foreground/45">
                                 Sort
                                 <div
@@ -353,6 +405,7 @@ export default function DomainsIndex({
                         >
                             <span>Domain</span>
                             <span>Points at</span>
+                            <span>DNS</span>
                             <span>Certificate</span>
                             <span>Uptime · 30 days</span>
                             <span>Renews</span>

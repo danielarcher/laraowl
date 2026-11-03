@@ -208,3 +208,15 @@ export function sortDomains(rows: DomainRow[], sort: DomainSort): DomainRow[] {
         }
     });
 }
+
+/**
+ * Who runs a domain's DNS, as the list and its filter name it. A platform
+ * host has no DNS of its own: the platform answers for it.
+ */
+export function dnsLabel(row: DomainRow): string {
+    if (row.dns_provider) {
+        return row.dns_provider;
+    }
+
+    return row.kind === 'platform' ? 'Platform' : 'Unknown';
+}

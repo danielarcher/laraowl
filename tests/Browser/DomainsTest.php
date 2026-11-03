@@ -49,6 +49,16 @@ it('filters to parked domains', function () {
         ->assertMissing('[aria-label="example.com details"]');
 });
 
+it('filters by DNS provider', function () {
+    visit("/{$this->team->slug}/domains")
+        ->click('[aria-label="Filter by DNS provider"] >> text=Gandi')
+        ->assertPresent('[aria-label="example.com details"]')
+        ->assertMissing('[aria-label="old-brand.com details"]')
+        ->click('[aria-label="Filter by DNS provider"] >> text=All')
+        ->assertPresent('[aria-label="old-brand.com details"]')
+        ->assertNoJavaScriptErrors();
+});
+
 it('scans again from the button', function () {
     visit("/{$this->team->slug}/domains")
         ->click('Scan now')

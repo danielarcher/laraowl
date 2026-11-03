@@ -75,6 +75,7 @@ describe('domain row', () => {
             <ul>
                 <DomainRow
                     row={domainRow({
+                        dns_provider: 'Gandi',
                         hosts: [
                             {
                                 ...domainRow().hosts[0],
@@ -89,6 +90,31 @@ describe('domain row', () => {
         );
 
         expect(screen.getByText('Cloudflare')).toBeTruthy();
+    });
+
+    it('names who runs the DNS, or the platform for a platform host', () => {
+        const { unmount } = render(
+            <ul>
+                <DomainRow
+                    row={domainRow({ dns_provider: 'Namecheap' })}
+                    teamSlug="archer"
+                />
+            </ul>,
+        );
+
+        expect(screen.getByText('Namecheap')).toBeTruthy();
+        unmount();
+
+        render(
+            <ul>
+                <DomainRow
+                    row={domainRow({ kind: 'platform', dns_provider: null })}
+                    teamSlug="archer"
+                />
+            </ul>,
+        );
+
+        expect(screen.getByText('Platform')).toBeTruthy();
     });
 });
 

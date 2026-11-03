@@ -8,6 +8,7 @@ import { formatMoney } from '@/lib/costs';
 import type { DomainHost, DomainRow as Row, Finding } from '@/lib/domains';
 import {
     countdownTone,
+    dnsLabel,
     domainAge,
     formatDay,
     formatDays,
@@ -22,7 +23,7 @@ const LEVEL_TONE: Record<Finding['level'], string> = {
 };
 
 export const ROW_GRID =
-    'lg:grid lg:grid-cols-[minmax(0,2.2fr)_minmax(0,1.1fr)_minmax(0,1.2fr)_minmax(0,1.6fr)_minmax(0,1fr)_44px_minmax(0,0.8fr)_20px] lg:items-center lg:gap-5';
+    'lg:grid lg:grid-cols-[minmax(0,2.2fr)_minmax(0,1.1fr)_minmax(0,0.9fr)_minmax(0,1.2fr)_minmax(0,1.6fr)_minmax(0,1fr)_44px_minmax(0,0.8fr)_20px] lg:items-center lg:gap-5';
 
 function PointsAt({ host }: { host: DomainHost | undefined }) {
     if (!host) {
@@ -345,6 +346,20 @@ export function DomainRow({ row, teamSlug }: { row: Row; teamSlug: string }) {
                         Points at
                     </span>
                     <PointsAt host={primary} />
+                </div>
+
+                <div className="flex items-center justify-between gap-3 text-[12px] lg:block lg:min-w-0">
+                    <span className="text-[11px] text-foreground/40 lg:hidden">
+                        DNS
+                    </span>
+                    <span
+                        className={cn(
+                            'truncate',
+                            row.dns_provider === null && 'text-foreground/40',
+                        )}
+                    >
+                        {dnsLabel(row)}
+                    </span>
                 </div>
 
                 <div className="lg:min-w-0">

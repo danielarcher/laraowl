@@ -11,6 +11,7 @@ use App\Models\RecordIpBucket;
 use App\Models\RecordRollup;
 use App\Models\RecordSourceRollup;
 use App\Models\RecordUserBucket;
+use App\Support\RoutePattern;
 use App\Support\TimeSlots;
 use App\Support\TrafficSource;
 use Carbon\Carbon;
@@ -56,14 +57,14 @@ class RecordService
     /**
      * Aggregate Request Data
      */
-    public function getRequestStats(Project $project, ?string $period = null, ?string $from = null, ?string $to = null, string $sort = 'total', string $direction = 'desc', ?array $sources = null, ?array $routes = null, ?string $user = null): array
+    public function getRequestStats(Project $project, ?string $period = null, ?string $from = null, ?string $to = null, string $sort = 'total', string $direction = 'desc', ?array $sources = null, ?array $routes = null, ?string $user = null, ?RoutePattern $filter = null): array
     {
         $allowedSorts = ['method', 'path', 'total', 'ok_count', 'client_error_count', 'server_error_count', 'avg_duration', 'p95_duration'];
         $sort = in_array($sort, $allowedSorts) ? $sort : 'total';
         $direction = $direction === 'asc' ? 'asc' : 'desc';
 
         if ($user !== null) {
-            return $this->getUserRequestStats($project, $user, $period, $from, $to, $sort, $direction, $sources, $routes);
+            return $this->getUserRequestStats($project, $user, $period, $from, $to, $sort, $direction, $sources, $routes, $filter);
         }
 
         $overview = $this->rollupTotals($project, 'request', $period, $from, $to, $sources, $routes);
@@ -74,6 +75,7 @@ class RecordService
             direction: $direction,
             sortMap: ['method' => 'label', 'path' => 'sublabel', 'p95_duration' => 'max_duration'],
             sources: $sources,
+            filter: $filter,
         )->through(function ($row) {
             $row->method = $row->label;
             $row->path = $row->sublabel;
@@ -88,6 +90,7 @@ class RecordService
             'source_totals' => $this->sourceTotals($project, $period, $from, $to),
             'source_series' => $this->sourceSeries($project, $period, $from, $to),
             'routes' => $routes ?? [],
+            'filter' => $filter?->text,
             'users' => $this->requestUsers($project, $period, $from, $to),
             'user' => null,
             'activity' => [],
@@ -120,7 +123,7 @@ class RecordService
      * @param  list<string>|null  $sources
      * @param  list<string>|null  $routes
      */
-    protected function getUserRequestStats(Project $project, string $user, ?string $period, ?string $from, ?string $to, string $sort, string $direction, ?array $sources, ?array $routes): array
+    protected function getUserRequestStats(Project $project, string $user, ?string $period, ?string $from, ?string $to, string $sort, string $direction, ?array $sources, ?array $routes, ?RoutePattern $filter = null): array
     {
         $writer = app(RollupWriter::class);
         $grid = TimeSlots::for($period ?: '1h', $from, $to);
@@ -202,6 +205,7 @@ class RecordService
 
                 return $row;
             })
+            ->when($filter !== null, fn ($rows) => $rows->filter(fn (object $row) => $filter->matches($row->method, $row->path)))
             ->sortBy(fn (object $row) => $row->{$sort} ?? '', SORT_REGULAR, $direction === 'desc')
             ->values();
 
@@ -225,6 +229,7 @@ class RecordService
             'source_totals' => $this->sourceTotals($project, $period, $from, $to),
             'source_series' => $this->sourceSeries($project, $period, $from, $to),
             'routes' => $routes ?? [],
+            'filter' => $filter?->text,
             'users' => $this->requestUsers($project, $period, $from, $to),
             'user' => [
                 'key' => $user,
@@ -1424,9 +1429,9 @@ class RecordService
     /**
      * Distinct groups of a type over the period, straight off the group rollups.
      */
-    protected function distinctGroups(Project $project, string|array $types, ?string $period, ?string $from, ?string $to, string $column = 'group_key', ?array $sources = null): int
+    protected function distinctGroups(Project $project, string|array $types, ?string $period, ?string $from, ?string $to, string $column = 'group_key', ?array $sources = null, ?RoutePattern $filter = null): int
     {
-        return $this->groupRollupQuery($project, $types, $sources)
+        return $this->groupRollupQuery($project, $types, $sources, $filter)
             ->forPeriod($period, $from, $to)
             ->distinct()
             ->count($column);
@@ -1476,15 +1481,17 @@ class RecordService
      *
      * @param  string|list<string>  $types
      * @param  list<string>|null  $sources
+     * @param  RoutePattern|null  $filter  keeps only the groups whose label and sublabel (method and path) match
      * @return Builder<RecordGroupRollup>|Builder<RecordGroupSourceRollup>
      */
-    protected function groupRollupQuery(Project $project, string|array $types, ?array $sources = null): Builder
+    protected function groupRollupQuery(Project $project, string|array $types, ?array $sources = null, ?RoutePattern $filter = null): Builder
     {
         $query = $sources === null ? RecordGroupRollup::query() : RecordGroupSourceRollup::query()->whereIn('source', $sources);
 
         return $query
             ->where('project_id', $project->id)
-            ->whereIn('type', (array) $types);
+            ->whereIn('type', (array) $types)
+            ->when($filter !== null, fn (Builder $narrowed) => $filter->scope($narrowed, 'label', 'sublabel'));
     }
 
     /**
@@ -1745,6 +1752,7 @@ class RecordService
         string $direction = 'desc',
         array $sortMap = [],
         ?array $sources = null,
+        ?RoutePattern $filter = null,
     ): LengthAwarePaginator {
         $sum = fn (string $column, string $alias) => DB::raw('SUM('.$this->col($column).') as '.$alias);
 
@@ -1779,7 +1787,7 @@ class RecordService
 
         $orderBy = $sortMap[$sort] ?? $sort;
 
-        $groups = $this->groupRollupQuery($project, $types, $sources)
+        $groups = $this->groupRollupQuery($project, $types, $sources, $filter)
             ->forPeriod($period, $from, $to)
             ->select($columns)
             ->groupBy('group_key')
@@ -1787,7 +1795,7 @@ class RecordService
 
         return $this->paginateWithKnownTotal(
             $groups,
-            $this->distinctGroups($project, $types, $period, $from, $to, sources: $sources),
+            $this->distinctGroups($project, $types, $period, $from, $to, sources: $sources, filter: $filter),
             perPage: 20,
         )
             ->through(function ($row) {

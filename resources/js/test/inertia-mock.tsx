@@ -7,6 +7,7 @@ import { vi } from 'vitest';
 export const page = { props: {} as Record<string, unknown>, url: '/' };
 
 export const router = {
+    get: vi.fn(),
     post: vi.fn(),
     put: vi.fn(),
     delete: vi.fn(),

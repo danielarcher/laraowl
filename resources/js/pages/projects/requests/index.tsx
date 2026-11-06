@@ -16,6 +16,7 @@ import { ActivityCharts } from '@/components/charts/activity-charts';
 import { seriesColor } from '@/components/charts/format';
 import { EmptyState } from '@/components/empty-state';
 import { Pagination } from '@/components/pagination';
+import { RouteFilter, routeFilterUrl } from '@/components/route-filter';
 import { SourceFilter } from '@/components/source-filter';
 import type { SourcePoint, TrafficSourceKey } from '@/components/source-filter';
 import {
@@ -80,6 +81,7 @@ export default function RequestsIndex({
     source_totals,
     source_series,
     routes,
+    filter = null,
     users = [],
     user = null,
     activity = [],
@@ -101,6 +103,8 @@ export default function RequestsIndex({
     source_series?: SourcePoint[];
     /** The routes (group hashes) the charts are narrowed to; none = all. */
     routes?: string[];
+    /** The text the route list is filtered by, if any. */
+    filter?: string | null;
     /** The period's most active signed-in users. */
     users?: RequestUser[];
     /** The user the page is narrowed to, if any. */
@@ -335,13 +339,24 @@ export default function RequestsIndex({
 
                 {/* Table Section */}
                 <div className="space-y-4">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex items-center gap-2 font-bold text-foreground">
                             <Globe className="h-4 w-4 text-muted-foreground" />
                             <span>
-                                {formatCompactNumber(data.length)} Routes
+                                {formatCompactNumber(
+                                    requests.total ?? data.length,
+                                )}{' '}
+                                {(requests.total ?? data.length) === 1
+                                    ? 'Route'
+                                    : 'Routes'}
                             </span>
+                            {filter && (
+                                <span className="text-xs font-normal text-muted-foreground">
+                                    matching the filter
+                                </span>
+                            )}
                         </div>
+                        <RouteFilter value={filter} />
                     </div>
 
                     <div className="overflow-hidden rounded-lg border border-border bg-card">
@@ -542,6 +557,24 @@ export default function RequestsIndex({
                                     meta={requests}
                                 />
                             </>
+                        ) : filter ? (
+                            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 px-6 py-10 text-sm text-muted-foreground">
+                                <span>
+                                    No routes match{' '}
+                                    <span className="font-mono text-foreground">
+                                        {filter}
+                                    </span>
+                                </span>
+                                <Link
+                                    href={routeFilterUrl('')}
+                                    preserveState={false}
+                                    preserveScroll
+                                    replace
+                                    className="text-xs underline-offset-2 transition-colors hover:text-foreground hover:underline"
+                                >
+                                    Clear the filter
+                                </Link>
+                            </div>
                         ) : (
                             <div className="p-12">
                                 <EmptyState

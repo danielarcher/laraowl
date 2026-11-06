@@ -8,6 +8,7 @@ use App\Models\Record;
 use App\Models\Team;
 use App\Services\RecordService;
 use App\Support\ExceptionTrace;
+use App\Support\RoutePattern;
 use App\Support\TrafficSource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -75,8 +76,9 @@ class RecordController extends Controller
         $routes = $this->routesFromQuery(request()->query('routes'));
         $user = request()->query('user');
         $user = is_string($user) && $user !== '' ? mb_substr($user, 0, 64) : null;
+        $filter = RoutePattern::parse(request()->query('filter'));
 
-        return $this->renderWithStats('projects/requests', $this->recordService->getRequestStats($project, $period, $from, $to, $sort, $direction, $sources, $routes, $user), $project, $period, $from, $to);
+        return $this->renderWithStats('projects/requests', $this->recordService->getRequestStats($project, $period, $from, $to, $sort, $direction, $sources, $routes, $user, $filter), $project, $period, $from, $to);
     }
 
     /**

@@ -45,7 +45,7 @@ function sourcesUrl(selected: string[]): string {
 /**
  * Which traffic the request figures count, by who sent it (read from the
  * user agent). Each source shows its size for the period whether it is
- * counted or not, and a bar beneath gives the mix at a glance. Click
+ * counted or not, and the columns beneath show it over the period. Click
  * switches a source; Alt-click keeps only that one.
  */
 export function SourceFilter({
@@ -174,10 +174,34 @@ export function SourceFilter({
     );
 }
 
+/** How many times the period's busy slots a column may reach before it is clipped. */
+const OUTLIER_FACTOR = 3;
+
 /**
- * Traffic over the period, one stacked column per chart slot. Column height
- * follows the square root of its total, so a single flood doesn't flatten
- * every other slot; inside a column each source keeps its true share.
+ * The total a full-height column stands for: the busiest slot, unless it
+ * towers over the period's busy slots (95th percentile) by more than
+ * OUTLIER_FACTOR, as a crawler flood does. Then the top is set by those
+ * busy slots and the few columns above it are drawn clipped, so one flood
+ * doesn't flatten the daily rhythm of everything else.
+ */
+export function columnTop(totals: number[]): number {
+    const sorted = totals.filter((total) => total > 0).sort((a, b) => a - b);
+
+    if (sorted.length === 0) {
+        return 0;
+    }
+
+    const peak = sorted[sorted.length - 1];
+    const busy = sorted[Math.floor((sorted.length - 1) * 0.95)];
+
+    return Math.min(peak, busy * OUTLIER_FACTOR);
+}
+
+/**
+ * Traffic over the period, one stacked column per chart slot, on a linear
+ * scale from zero so quiet and busy hours keep their true proportions.
+ * Inside a column each source keeps its true share; a clipped column shows
+ * a break near its top, and its tooltip carries the real counts.
  */
 function SourceTimeline({
     series,
@@ -191,20 +215,21 @@ function SourceTimeline({
             (sum, source) => sum + (point[source.key] ?? 0),
             0,
         );
-    const peak = Math.max(0, ...series.map(totalOf));
+    const top = columnTop(series.map(totalOf));
 
-    if (series.length === 0 || peak === 0) {
+    if (series.length === 0 || top === 0) {
         return <div className="h-px bg-border" aria-hidden />;
     }
 
     return (
         <div
-            className="flex h-10 items-end gap-px border-t border-border px-3 pt-1.5"
+            className="flex h-12 items-end gap-px border-t border-border px-3 pt-1.5"
             aria-label="Requests per traffic source over the period"
         >
             {series.map((point) => {
                 const total = totalOf(point);
-                const height = total > 0 ? Math.sqrt(total / peak) * 100 : 0;
+                const clipped = total > top;
+                const height = Math.min(total / top, 1) * 100;
                 const label = [
                     slotTime.format(new Date(point.t * 1000)),
                     ...trafficSources
@@ -218,12 +243,23 @@ function SourceTimeline({
                 return (
                     <div
                         key={point.t}
-                        title={total > 0 ? label : `${label} · no requests`}
+                        title={
+                            total === 0
+                                ? `${label} · no requests`
+                                : clipped
+                                  ? `${label} · off the scale`
+                                  : label
+                        }
+                        data-slot-column
                         className="flex h-full min-w-px flex-1 flex-col-reverse justify-start hover:bg-muted/40"
                     >
                         <div
-                            className="flex w-full flex-col-reverse"
-                            style={{ height: `${height}%` }}
+                            className="relative flex w-full flex-col-reverse"
+                            style={{
+                                height: `${height}%`,
+                                // A slot with any traffic stays visible.
+                                minHeight: total > 0 ? 1 : 0,
+                            }}
                         >
                             {trafficSources.map((source) => {
                                 const count = point[source.key] ?? 0;
@@ -243,6 +279,13 @@ function SourceTimeline({
                                     />
                                 ) : null;
                             })}
+                            {clipped && (
+                                <div
+                                    aria-hidden
+                                    data-clipped
+                                    className="absolute inset-x-0 top-[3px] h-px bg-card"
+                                />
+                            )}
                         </div>
                     </div>
                 );
